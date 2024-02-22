@@ -2,7 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GameSettings
+//logical Hex
+public abstract class Hex
 {
     
 }

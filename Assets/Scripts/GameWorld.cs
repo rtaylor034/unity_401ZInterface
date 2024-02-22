@@ -4,5 +4,5 @@ using UnityEngine;
 
 public class GameWorld : MonoBehaviour
 {
-    
+    private Dictionary<Unit, Physical.Unit> _unitMap;
 }
