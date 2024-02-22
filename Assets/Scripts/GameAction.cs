@@ -9,6 +9,8 @@ public abstract class GameAction
 {
     public UnevaluatedAction EvaluatedFrom;
 
+    
+
     public abstract void Perform(Game game);
     public abstract void Undo(Game game);
     //use when unevaluated GameAction is cancelled.

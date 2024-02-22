@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -6,6 +7,10 @@ public class Game
 {
     private GameWorld _world;
 
+    // in settings
+    private Dictionary<EMoveFlags, PathfindingFunction> _pathfindingImplementations;
+
+    public delegate void PathfindingFunction();
     public delegate IEnumerable<UnevaluatedAction> ResultantAdder(GameAction action);
     public delegate void ActionModifier(UnevaluatedAction action);
 
@@ -23,5 +28,16 @@ public class Game
         BeforeActionEvaluate = new(_requestModifiers);
 
     }
+
+
+    //location not yet decided
+    public enum EMoveFlags
+    {
+        // dummy keys
+        STANDARD,
+        SOMETHING,
+        IGNOREWALL,
+    }
+
 }
  
