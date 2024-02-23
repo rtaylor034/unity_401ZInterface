@@ -6,17 +6,8 @@ using System.Threading.Tasks;
 public class Game
 {
     private GameWorld _world;
+    private GameSettings _settings;
 
-    // in settings
-    // -- kinda just have to use a switch statement for this.
-    // private Dictionary<EMoveType, PathfindingFunction> _pathfindingImplementations;
-
-    private struct PathfindState
-    {
-        //probably contains an int with the amount of steps required/left.
-    }
-
-    private delegate PathfindState PathfindingFunction(PathfindState currentState, Hex from, Hex to);
     public delegate IEnumerable<UnevaluatedAction> ResultantAdder(GameAction action);
     public delegate void ActionModifier(UnevaluatedAction action);
 
@@ -35,14 +26,33 @@ public class Game
 
     }
 
-
-    //classes like these act as typed enums.
-    public abstract class MoveRestriction
+    //-- CLASS LOCATION TO BE DETERMINED --
+    
+    public HashSet<Hex> DoPathing(Unit mover, Player player, IEnumerable<EPathingSpecification> specifications)
     {
-        public Unit Mover;
+        List<PathingFunction> pathingFunctions = new();
+        foreach (var spec in specifications) pathingFunctions.Add(_settings.PathingImplementations.Invoke(mover, player, spec));
 
-        public class Standard { }
-        public class IgnoreWall { }
+        throw new NotImplementedException();
+    }
+
+    public class PathingState
+    {
+        public int Cost;
+        public bool Blocked;
+    }
+
+    public delegate void PathingFunction(PathingState state, Hex from, Hex to);
+    //classes like these act as typed enums.
+    public abstract class EPathingSpecification
+    {
+        public class Standard : EPathingSpecification { }
+        public class IgnoreWall : EPathingSpecification { }
+    }
+
+    public abstract class ETargetingSpecification
+    {
+
     }
 
 }
