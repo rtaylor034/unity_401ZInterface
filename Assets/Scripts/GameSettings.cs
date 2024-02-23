@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class GameSettings
 {
-    public delegate Game.PathingFunction ImplementPathing(Unit mover, Player player, Game.EPathingSpecification pathingSpec);
+    public delegate Game.PathingFunction ImplementPathing(Game.EPathingSpecification pathingSpec);
 
     public ImplementPathing PathingImplementations;
 
@@ -19,7 +19,7 @@ public class GameSettings
 
     //placeholder constant
     public static GameSettings STANDARD = new(
-        PATHING_IMPLEMENTATIONS: (mover, player, pathingSpec) =>
+        PATHING_IMPLEMENTATIONS: (pathingSpec) =>
             {
                 throw new NotImplementedException();
                 switch (pathingSpec)

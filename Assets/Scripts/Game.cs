@@ -7,6 +7,7 @@ public class Game
 {
     private GameWorld _world;
     private GameSettings _settings;
+    
 
     public delegate IEnumerable<UnevaluatedAction> ResultantAdder(GameAction action);
     public delegate void ActionModifier(UnevaluatedAction action);
@@ -31,8 +32,7 @@ public class Game
     public HashSet<Hex> DoPathing(Unit mover, Player player, IEnumerable<EPathingSpecification> specifications)
     {
         List<PathingFunction> pathingFunctions = new();
-        foreach (var spec in specifications) pathingFunctions.Add(_settings.PathingImplementations.Invoke(mover, player, spec));
-
+        foreach (var spec in specifications) pathingFunctions.Add(_settings.PathingImplementations.Invoke(spec));
         throw new NotImplementedException();
     }
 
@@ -42,7 +42,7 @@ public class Game
         public bool Blocked;
     }
 
-    public delegate void PathingFunction(PathingState state, Hex from, Hex to);
+    public delegate void PathingFunction(Unit mover, Player player, PathingState state, Hex from, Hex to);
     //classes like these act as typed enums.
     public abstract class EPathingSpecification
     {
