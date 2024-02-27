@@ -10,7 +10,7 @@ public class Game
     
 
     public delegate IEnumerable<UnevaluatedAction> ResultantAdder(GameAction action);
-    public delegate void ActionModifier(UnevaluatedAction action);
+    public delegate void ActionModifier(ref UnevaluatedAction action);
 
     private List<ResultantAdder> _evaluationAdders;
     private List<ActionModifier> _requestModifiers; 
