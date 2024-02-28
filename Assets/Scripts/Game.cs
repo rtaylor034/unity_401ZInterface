@@ -7,10 +7,11 @@ public class Game
 {
     private GameWorld _world;
     private GameSettings _settings;
-    
+    private GameState _state;
+    private Stack<GameActionNode> _actionStack;
 
-    public delegate IEnumerable<UnevaluatedAction> ResultantAdder(GameAction action);
-    public delegate void ActionModifier(ref UnevaluatedAction action);
+    public delegate IEnumerable<ActionRequest> ResultantAdder(GameAction action);
+    public delegate void ActionModifier(ref ActionRequest action);
 
     private List<ResultantAdder> _evaluationAdders;
     private List<ActionModifier> _requestModifiers; 

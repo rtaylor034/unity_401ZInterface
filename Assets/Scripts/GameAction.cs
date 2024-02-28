@@ -4,32 +4,23 @@ using System.Threading.Tasks;
 using Unity.VisualScripting;
 using UnityEngine;
 
-//would be really cool if system was immutable and pre/post gamestates were stored so Perform and Undo could be inferred, but we must make compromises (i.e. skill issue).
 #nullable enable
 public abstract class GameAction
 {
-    private GameAction? _parent;
-    public UnevaluatedAction EvaluatedFrom;
-    private List<GameAction> _resultants;
-    public int Depth { get; private set; }
-    
-    public GameAction(UnevaluatedAction evaluatedFrom, GameAction parent)
+    public ActionRequest EvaluatedFrom;
+    public GameAction(ActionRequest evaluatedFrom)
     {
-        _parent = parent;
         EvaluatedFrom = evaluatedFrom;
-        _resultants = new();
-        Depth = _parent is null ? 0 : _parent.Depth + 1;
     }
-    public abstract void Perform(Game game);
-    public abstract void Undo(Game game);
+    public abstract void Forward(GameState state);
+    public abstract void Backward(GameState state);
 
     //use when unevaluated GameAction is cancelled.
     public class None : GameAction
     {
-        public None(UnevaluatedAction evaluatedFrom, GameAction parent) : base(evaluatedFrom, parent) { }
+        public None(ActionRequest evaluatedFrom) : base(evaluatedFrom) { }
 
-        public override void Perform(Game _) { }
-        
-        public override void Undo(Game _) { }
+        public override void Forward(GameState _) { }
+        public override void Backward(GameState _) { }
     }
 }
