@@ -8,38 +8,38 @@ using UnityEngine;
 #nullable enable
 namespace GFunction.ConsequentialTimeline
 {
-    public class ConsequentialTimeline<TState, TAction, TEval, TInput>
-        where TState : class
-        where TAction : ITimelineAction<TState>
-        where TEval : ITimelineEvaluator<TState, TInput>
+    public class ConsequentialTimeline<TState, TInput> where TState : class
     {
-        private ConsequentialTimelineNode<TState, TAction> _head;
+        public delegate void EvaluatorModifier(ref ITimelineEvaluator<TState, TInput> evaluator);
+        public delegate IEnumerable<ITimelineEvaluator<TState, TInput>> ConsequenceAdder(in ITimelineAction<TState> action);
+
+        private ConsequentialTimelineNode<TState> _head;
         private TState _state;
-        private bool _consequenceListeners;
+        private List<ConsequenceAdder> _consequenceAdders;
+        private List<EvaluatorModifier> _evaluatorModifiers;
 
-
-        public ConsequentialTimeline(TState infoState, TAction head)
+        public ConsequentialTimeline(TState infoState, ITimelineAction<TState> head)
         {
             _state = infoState;
             _head = new(head, null, 0, _state);
+            _consequenceAdders = new();
+            _evaluatorModifiers = new();
         }
     }
-    public class ConsequentialTimelineNode<TState, TAction>
-        where TState : class
-        where TAction : ITimelineAction<TState>
+    public class ConsequentialTimelineNode<TState> where TState : class
     {
         public int LeftForward => _consequences.Count - _pointer;
         public int LeftBackward => _pointer + 1;
-        public ConsequentialTimelineNode<TState, TAction>? Parent => _parent;
+        public ConsequentialTimelineNode<TState>? Parent => _parent;
 
         internal T _value;
         internal TState _state;
-        internal ConsequentialTimelineNode<TState, TAction>? _parent;
         internal int _pointer = -1;
         internal int _depth;
-        internal List<ConsequentialTimelineNode<TState, TAction>> _consequences;
+        internal ConsequentialTimelineNode<TState>? _parent;
+        internal List<ConsequentialTimelineNode<TState>> _consequences;
 
-        public void AddConsequence(TAction consequence)
+        public void AddConsequence(ITimelineAction<TState> consequence)
         {
             _consequences.Add(new(consequence, this, _depth + 1, _state));
         }
@@ -73,7 +73,7 @@ namespace GFunction.ConsequentialTimeline
             return true;
         }
 
-        internal ConsequentialTimelineNode(TAction value, ConsequentialTimelineNode<TState, TAction>? parent, int depth, TState state)
+        internal ConsequentialTimelineNode(ITimelineAction<TState> value, ConsequentialTimelineNode<TState>? parent, int depth, TState state)
         {
             _value = value;
             _parent = parent;
@@ -83,6 +83,17 @@ namespace GFunction.ConsequentialTimeline
         }
     }
 
+    internal struct TimelineEvaluation<TState, TInput> where TState : class
+    {
+        public ITimelineEvaluator<TState, TInput> EvaluatedFrom;
+        public ITimelineAction<TState> Action;
+
+        internal TimelineEvaluation(ITimelineEvaluator<TState, TInput> evaluatedFrom, ITimelineAction<TState> action)
+        {
+            EvaluatedFrom = evaluatedFrom;
+            Action = action;
+        }
+    }
     public interface ITimelineAction<TState> where TState : class
     {
         public abstract void Forward(ref TState state);
