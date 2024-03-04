@@ -1,128 +1,108 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.UIElements;
 //make it abstract they said. keep it simple they said. ('they' is the voices)
-//also, its ITimelineEvaluator is just async becuase fuck you!
-#nullable enable
+//also, Resolve() returns a Task because fuck you!
+#nullable disable
 namespace GFunction.ConsequentialTimeline
 {
-    /// <summary>
-    /// The entirety of this class works on the assumption that every implementation of <see cref="ITimelineAction{TState}"/> and <see cref="ITimelineEvaluator{TState, TInput}"/> are 100% clean.
-    /// </summary>
-    /// <typeparam name="TState"></typeparam>
-    /// <typeparam name="TInput"></typeparam>
-    public class ConsequentialTimeline<TState, TInput> where TState : class
+    public delegate IEnumerable<ITimelineUnresolved<TState, TInput>> ConsequenceListener<TState, TInput>(ITimelineAction<TState> action);
+    public delegate ITimelineUnresolved<TState, TInput> UnresolvedModifier<TState, TInput>(ITimelineUnresolved<TState, TInput> unresolved);
+    public class ConsequentialTimeline<TState, TInput>
     {
-        public delegate void EvaluatorModifier(ref ITimelineEvaluator<TState, TInput> evaluator);
-        public delegate IEnumerable<ITimelineEvaluator<TState, TInput>> ConsequenceAdder(in ITimelineAction<TState> action);
+        public GuardedCollectionHandle<ConsequenceListener<TState, TInput>> ConsequenceListeners;
+        public GuardedCollectionHandle<UnresolvedModifier<TState, TInput>> UnresolvedActionModifiers;
 
-        /// <summary>
-        /// Volitile. Proper clearing/removing of added function is the responsibility of user.
-        /// </summary>
-        public GuardedCollectionHandle<ConsequenceAdder> ConsequenceListeners => new(_consequenceAdders);
-        /// <summary>
-        /// Volitile. Proper clearing/removing of added function is the responsibility of user.
-        /// </summary>
-        public GuardedCollectionHandle<EvaluatorModifier> EvaluatorListeners => new(_evaluatorModifiers);
-
-
-        private ConsequenceSequence<TState> _head;
+        private List<ActionWrapper<TState>> _timeline;
+        private Dictionary<ActionWrapper<TState>, List<ConsequentialTimeline<TState, TInput>>> _branches;
+        private int _location;
+        private List<ConsequenceListener<TState, TInput>> _consequenceListeners;
+        private List<UnresolvedModifier<TState, TInput>> _unresolvedModifiers;
         private TState _state;
-        private List<ConsequenceAdder> _consequenceAdders;
-        private List<EvaluatorModifier> _evaluatorModifiers;
-        private List<ConsequentialTimeline<TState, TInput>> _branches;
+        private TInput _input;
+        private int _maxDepth;
+        private ConsequentialTimeline<TState, TInput> _currentBranch;
+        
+        private ActionWrapper<TState> CurrentAction => _timeline[_location];
+        private ActionWrapper<TState> NextAction => _timeline[_location + 1];
+        private bool TimeIsPresent => (_timeline.Count - 1 == _location);
 
-        public ConsequentialTimeline(TState infoState, ITimelineAction<TState> head)
-        {
-            _state = infoState;
-            _head = new(head, null, 0, _state);
-            _consequenceAdders = new();
-            _evaluatorModifiers = new();
-            _branches = new();
+        public void AdvanceWith(ITimelineUnresolved<TState, TInput> unresolvedAction)
+        {n
+            if (TimeIsPresent) AdvanceInternal(unresolvedAction, 0);
+            else AdvanceInternal(unresolvedAction, CurrentAction._depth);
         }
-        //branch constructor
-        private ConsequentialTimeline(ConsequentialTimeline<TState, TInput> source, ConsequenceSequence<TState> head)
+        public void Rewind(int toDepth)
         {
-            _state = source._state;
-            _head = head;
-            _consequenceAdders = new(source._consequenceAdders);
-            _evaluatorModifiers = new(source._evaluatorModifiers);
+            // :: NEEDS BOUNDS CHECK ::
+
+        }
+
+        private void AdvanceInternal(ITimelineUnresolved<TState, TInput> unresolvedAction, int depth)
+        {
+            foreach (var modifier in _unresolvedModifiers) unresolvedAction = modifier.Invoke(unresolvedAction);
+            var action = unresolvedAction.Resolve(_input);
+
+        }
+        private void AddNode(ActionWrapper<TState> action)
+        {
+            ref var c = ref _currentBranch;
+            if (c.TimeIsPresent)
+            {
+                c._timeline.Add(action);
+                c._location++;
+                return;
+            }
+            if (action.EquivalentTo(NextAction))
+            {
+                c._location++;
+                return;
+            }
+            //-- otherwise, create new branch
+            ConsequentialTimeline<TState, TInput> newBranch = new();
+            newBranch.AddNode(action);
+            if (!c._branches.TryAdd(c.CurrentAction, new(newBranch.Wrapped())))
+            {
+                c._branches[CurrentAction].Add(newBranch);
+            }
+            c._currentBranch = newBranch;
+        }
+        private ConsequentialTimeline()
+        {
+            _timeline = new();
             _branches = new();
+            _location = -1;
         }
     }
 
-    public class TimelineNode<TState, TInput> where TState : class
+    internal class ActionWrapper<TSTate>
     {
-        private ITimelineEvaluator<TState, TInput> _evaluator;
-        private List<ConsequenceSequence<TState>> _branches;
-        private TimelineNode<TState, TInput> _from;
-    }
-    public class ConsequenceSequence<TState> where TState : class
-    {
-        public int LeftForward => _consequences.Count - _pointer;
-        public int LeftBackward => _pointer + 1;
-        public ConsequenceSequence<TState>? Parent => _parent;
-
-        internal ITimelineAction<TState> _cause;
-        internal TState _state;
-        internal int _pointer = -1;
         internal int _depth;
-        internal ConsequenceSequence<TState>? _parent;
-        internal List<ConsequenceSequence<TState>> _consequences;
+        internal ITimelineAction<TSTate> _action;
 
-        public void AddConsequence(ITimelineAction<TState> consequence)
+        internal ActionWrapper(ITimelineAction<TSTate> action, int depth)
         {
-            _consequences.Add(new(consequence, this, _depth + 1, _state));
-        }
-
-        internal bool ForwardAll()
-        {
-            if (LeftForward <= 0) return false;
-            if (_pointer == -1)
-            {
-                _cause.Forward(ref _state);
-                _pointer++;
-            }
-            for (int i = _pointer; i < LeftForward; i++)
-            {
-                _consequences[_pointer].ForwardAll();
-            }
-            if (_parent is not null) _parent._pointer++;
-            return true;
-        }
-        internal bool BackwardAll()
-        {
-            if (LeftBackward <= 0) return false;
-            for (int i = _pointer - 1; i >= 0; i--)
-            {
-                _consequences[_pointer].BackwardAll();
-            }
-            Debug.Assert(_pointer == 0);
-            _cause.Backward(ref _state);
-            _pointer--;
-            if (_parent is not null) _parent._pointer--;
-            return true;
-        }
-
-        internal ConsequenceSequence(ITimelineAction<TState> cause, ConsequenceSequence<TState>? parent, int depth, TState state)
-        {
-            _cause = cause;
-            _parent = parent;
             _depth = depth;
-            _consequences = new();
-            _state = state;
+            _action = action;
+        }
+        internal bool EquivalentTo(ActionWrapper<TSTate> action)
+        {
+            return (action._depth == _depth && action._action.EquivalentTo(_action));
         }
     }
-    public interface ITimelineAction<TState> where TState : class
+    public interface ITimelineAction<TState>
     {
         public abstract void Forward(ref TState state);
         public abstract void Backward(ref TState state);
-        public abstract bool Equivalent(ITimelineAction<TState> other);
+        public abstract bool EquivalentTo(ITimelineAction<TState> other);
     }
-    public interface ITimelineEvaluator<TState, TInput> where TState : class
+
+    public interface ITimelineUnresolved<TState, TInput>
     {
-        public abstract Task<ITimelineAction<TState>> Evaluate(TInput input);
+        public abstract Task<ITimelineAction<TState>> Resolve(TInput input);
     }
 }
