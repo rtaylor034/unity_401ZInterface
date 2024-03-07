@@ -1,104 +1,121 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Net.NetworkInformation;
 using System.Threading.Tasks;
-using UnityEngine;
-using UnityEngine.UIElements;
 //make it abstract they said. keep it simple they said. ('they' is the voices)
 //also, Resolve() returns a Task because fuck you!
-#nullable disable
+#nullable enable
 namespace GFunction.ConsequentialTimeline
 {
-    public delegate IEnumerable<ITimelineUnresolved<TState, TInput>> ConsequenceListener<TState, TInput>(ITimelineAction<TState> action);
-    public delegate ITimelineUnresolved<TState, TInput> UnresolvedModifier<TState, TInput>(ITimelineUnresolved<TState, TInput> unresolved);
     public class ConsequentialTimeline<TState, TInput>
     {
-        public GuardedCollectionHandle<ConsequenceListener<TState, TInput>> ConsequenceListeners;
-        public GuardedCollectionHandle<UnresolvedModifier<TState, TInput>> UnresolvedActionModifiers;
+        public GuardedCollectionHandle<ConsequenceListener> ConsequenceListeners;
+        public GuardedCollectionHandle<UnresolvedModifier> UnresolvedActionModifiers;
 
-        private List<ActionWrapper<TState>> _timeline;
-        private Dictionary<ActionWrapper<TState>, List<ConsequentialTimeline<TState, TInput>>> _branches;
-        private int _location;
-        private List<ConsequenceListener<TState, TInput>> _consequenceListeners;
-        private List<UnresolvedModifier<TState, TInput>> _unresolvedModifiers;
+        public delegate IEnumerable<ITimelineUnresolved<TState, TInput>> ConsequenceListener(ITimelineAction<TState> action);
+
+        /// <summary>
+        /// DO NOT mutate <paramref name="unresolved"/>, create a new unresolved action and return it.
+        /// </summary>
+        /// <param name="unresolved"></param>
+        /// <returns></returns>
+        public delegate ITimelineUnresolved<TState, TInput>? UnresolvedModifier(ITimelineUnresolved<TState, TInput> unresolved);
+
+        private List<ConsequenceListener> _consequenceListeners;
+        private List<UnresolvedModifier> _unresolvedModifiers;
         private TState _state;
         private TInput _input;
         private int _maxDepth;
-        private ConsequentialTimeline<TState, TInput> _currentBranch;
-        
-        private ActionWrapper<TState> CurrentAction => _timeline[_location];
-        private ActionWrapper<TState> NextAction => _timeline[_location + 1];
-        private bool TimeIsPresent => (_timeline.Count - 1 == _location);
+        private Branch _currentBranch;
 
-        public void AdvanceWith(ITimelineUnresolved<TState, TInput> unresolvedAction)
-        {n
-            if (TimeIsPresent) AdvanceInternal(unresolvedAction, 0);
-            else AdvanceInternal(unresolvedAction, CurrentAction._depth);
-        }
-        public void Rewind(int toDepth)
+        public async Task ResolveAtPresent(ITimelineUnresolved<TState, TInput> unresolvedAction)
         {
-            // :: NEEDS BOUNDS CHECK ::
-
+            if (_currentBranch.TimeIsPresent) await ResolveInternal(unresolvedAction, 0);
+            else await ResolveInternal(unresolvedAction, _currentBranch.NextAction.depth);
+            
         }
 
-        private void AdvanceInternal(ITimelineUnresolved<TState, TInput> unresolvedAction, int depth)
+        private async Task ResolveInternal(ITimelineUnresolved<TState, TInput> unresolvedAction, int depth)
         {
-            foreach (var modifier in _unresolvedModifiers) unresolvedAction = modifier.Invoke(unresolvedAction);
-            var action = unresolvedAction.Resolve(_input);
-
-        }
-        private void AddNode(ActionWrapper<TState> action)
-        {
-            ref var c = ref _currentBranch;
-            if (c.TimeIsPresent)
+            if (depth > _maxDepth) return;
+            List<ITimelineUnresolved<TState, TInput>> unresolvedStates = new() { unresolvedAction };
+            foreach (var modifier in _unresolvedModifiers)
             {
-                c._timeline.Add(action);
-                c._location++;
-                return;
+                var newState = modifier.Invoke(unresolvedAction);
+                if (newState is not null)
+                {
+                    unresolvedStates.Add(newState);
+                    unresolvedAction = newState;
+                }
             }
-            if (action.EquivalentTo(NextAction))
-            {
-                c._location++;
-                return;
-            }
-            //-- otherwise, create new branch
-            ConsequentialTimeline<TState, TInput> newBranch = new();
-            newBranch.AddNode(action);
-            if (!c._branches.TryAdd(c.CurrentAction, new(newBranch.Wrapped())))
-            {
-                c._branches[CurrentAction].Add(newBranch);
-            }
-            c._currentBranch = newBranch;
+            var newNode = new ActionNode(await unresolvedAction.Resolve(_input), depth, unresolvedStates);
         }
-        private ConsequentialTimeline()
+        private class Branch
         {
-            _timeline = new();
-            _branches = new();
-            _location = -1;
+            private Branch _parent;
+            private List<ActionNode> _timeline;
+            private Dictionary<ActionNode, List<Branch>> _childBranches;
+            int _pointer;
+            public ActionNode CurrentAction => _timeline[_pointer];
+            public ActionNode NextAction => _timeline[_pointer + 1];
+            public bool TimeIsPresent => (_timeline.Count - 1 == _pointer);
+            public IEnumerable<Branch>? BranchesFromCurrent => _childBranches.TryGetValue(CurrentAction, out var o) ? o : null;
+
+            private Branch(Branch parent, ActionNode head)
+            {
+                _parent = parent;
+                _timeline = new();
+                _childBranches = new();
+                _pointer = -1;
+                AddNode(head);
+            }
+
+            private Branch AddNode(ActionNode action)
+            {
+                if (TimeIsPresent)
+                {
+                    _timeline.Add(action);
+                    _pointer++;
+                    return this;
+                }
+                if (action.Equals(NextAction))
+                {
+                    _pointer++;
+                    return this;
+                }
+                //-- otherwise, create new branch
+                Branch newBranch = new(this, action);
+                if (!_childBranches.TryAdd(CurrentAction, new() { newBranch }))
+                {
+                    _childBranches[CurrentAction].Add(newBranch);
+                }
+                return newBranch;
+            }
         }
+
+        private class ActionNode
+        {
+            public List<ITimelineUnresolved<TState, TInput>> unresolvedStates;
+            public int depth;
+            public ITimelineAction<TState> action;
+
+            public ActionNode(ITimelineAction<TState> action, int depth, List<ITimelineUnresolved<TState, TInput>> unresolvedStates)
+            {
+                this.depth = depth;
+                this.action = action;
+                this.unresolvedStates = unresolvedStates;
+            }
+        }
+
     }
 
-    internal class ActionWrapper<TSTate>
-    {
-        internal int _depth;
-        internal ITimelineAction<TSTate> _action;
-
-        internal ActionWrapper(ITimelineAction<TSTate> action, int depth)
-        {
-            _depth = depth;
-            _action = action;
-        }
-        internal bool EquivalentTo(ActionWrapper<TSTate> action)
-        {
-            return (action._depth == _depth && action._action.EquivalentTo(_action));
-        }
-    }
+    /// <summary>
+    /// Equivalent actions should return 'true' for <see cref="object.Equals(object)"/>
+    /// </summary>
+    /// <typeparam name="TState"></typeparam>
     public interface ITimelineAction<TState>
     {
         public abstract void Forward(ref TState state);
         public abstract void Backward(ref TState state);
-        public abstract bool EquivalentTo(ITimelineAction<TState> other);
     }
 
     public interface ITimelineUnresolved<TState, TInput>
