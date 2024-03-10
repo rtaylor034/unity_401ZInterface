@@ -2,38 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-#nullable enable
+#nullable disable
 public class Game
 {
     private GameWorld _world;
     private GameSettings _settings;
     private GameState _state;
-    private Stack<GameActionNode> _actionStack;
-
-    public delegate IEnumerable<ActionRequest> ResultantAdder(GameAction action);
-    public delegate void ActionModifier(ref ActionRequest action);
-
-    private List<ResultantAdder> _evaluationAdders;
-    private List<ActionModifier> _requestModifiers; 
-
-    public GuardedCollectionHandle<ResultantAdder> OnActionEvaluate { get; private set; }
-    public GuardedCollectionHandle<ActionModifier> BeforeActionEvaluate { get; private set; }
-
-    public Game()
-    {
-        _evaluationAdders = new();
-        _requestModifiers = new();
-        OnActionEvaluate = new(_evaluationAdders);
-        BeforeActionEvaluate = new(_requestModifiers);
-
-    }
 
     //-- CLASS LOCATION TO BE DETERMINED --
     
     public HashSet<Hex> DoPathing(Unit mover, Player player, IEnumerable<EPathingSpecification> specifications)
     {
         List<PathingFunction> pathingFunctions = new();
-        foreach (var spec in specifications) pathingFunctions.Add(_settings.PathingImplementations.Invoke(spec));
+        foreach (var spec in specifications) pathingFunctions.Add(_settings.PathingImplementations(spec));
         throw new NotImplementedException();
     }
 
@@ -45,16 +26,21 @@ public class Game
 
     public delegate void PathingFunction(Unit mover, Player player, PathingState state, Hex from, Hex to);
     //classes like these act as typed enums.
-    public abstract class EPathingSpecification
+    public interface EPathingSpecification
     {
         public class Standard : EPathingSpecification { }
         public class IgnoreWall : EPathingSpecification { }
     }
 
-    public abstract class ETargetingSpecification
+    public interface ETargetingSpecification
     {
 
     }
-
+    public interface EConsequenceSpecification
+    {
+        public class Passive : EConsequenceSpecification
+        {
+            public List<Func<bool>> PassiveSpecific;
+        }
+    }
 }
- 

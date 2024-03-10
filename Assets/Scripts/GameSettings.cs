@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+// this shits bout to look worse than javascript on momma.
 public class GameSettings
 {
     public delegate Game.PathingFunction ImplementPathing(Game.EPathingSpecification pathingSpec);

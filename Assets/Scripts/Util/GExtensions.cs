@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 using UnityEngine;
 
 
@@ -18,19 +17,15 @@ public static class GExtensions
     /// <param name="enumberable"></param>
     /// <param name="element"></param>
     /// <remarks>
-    /// > If TRUE, <paramref name="element"/> is set to the element. (will be garbage value if FALSE).
+    /// > <paramref name="element"/> is set to the first yielded value (default if no value is yielded).
     /// </remarks>
     public static bool IsSingleElement<T>(this IEnumerable<T> enumerable, out T element)
     {
-        bool i = true;
         element = default;
-        foreach (var item in enumerable)
-        {
-            if (!i) return false;
-            element = item;
-            i = false;
-        }
-        return !i;
+        var iter = enumerable.GetEnumerator();
+        if (!iter.MoveNext()) return false;
+        element = iter.Current;
+        return !iter.MoveNext();
     }
 
     //taken from https://stackoverflow.com/questions/1577822/passing-a-single-item-as-ienumerablet
