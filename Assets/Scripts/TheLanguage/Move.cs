@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using any = Context.IContext;
 using Context.Token;
 
 //would be so insanely insane with macros or rust guys.
@@ -10,15 +9,17 @@ namespace GameActions
 {
     namespace Move
     {
-        public class Expression<C> : IExpression<Packet, C> where C : any
+        public class Expression<C> : IExpression<Packet, C> where C : Context.IContextData
         {
             public IToken<List<Unit>, C> MovableUnits;
+            public IToken<Unit, C> Test;
+            public IToken<int, C> TestInt;
 
-            public Packet Resolve(GameState game, C context)
+            public Packet Resolve(C context)
             {
                 return new()
                 {
-                    MovableUnits = MovableUnits.Resolve(game, context),
+                    MovableUnits = MovableUnits.Resolve(context),
                 };
             }
         }

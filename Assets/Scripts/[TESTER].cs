@@ -2,7 +2,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Context.Token;
+using GameActions;
 using UnityEngine;
+using UnityEngine.Scripting.APIUpdating;
 
 public class TESTER : MonoBehaviour
 {
@@ -11,7 +13,7 @@ public class TESTER : MonoBehaviour
     {
         List<Func<int>> bruh = new()
         {
-            () => 6
+            () => 6 m
         };
         Debug.Log(bruh.Count);
 
@@ -21,8 +23,10 @@ public class TESTER : MonoBehaviour
         };
         ok.Remove(bruh[0]);
         Debug.Log(ok.Count);
-        IToken<int, Context.Global> o = null;
-        IToken<int, Context.Ability> a = o;
+        GameActions.Move.Expression<Context.Ability.Data> expression = new()
+        {
+            TestInt = new Context.Global.Tokens.TestValue()
+        };
     }
 
     // Update is called once per frame

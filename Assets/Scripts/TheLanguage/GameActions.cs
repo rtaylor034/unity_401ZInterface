@@ -4,9 +4,9 @@ using Unity.VisualScripting.Antlr3.Runtime;
 
 namespace GameActions
 {
-    public class ExpressionSet<C> where C : Context.IContext
+    public class ExpressionSet<C> where C : Context.IContextData
     {
-        private List<IExpression<IPacket, C>> _expressions;
+        public List<IExpression<IPacket, C>> _expressions;
 
         public ExpressionSet()
         {
@@ -15,9 +15,9 @@ namespace GameActions
     }
     public interface IExpression<out P, in C>
         where P : IPacket
-        where C : Context.IContext
+        where C : Context.IContextData
     {
-        public P Resolve(GameState game, C context);
+        public P Resolve(C context);
     }
     public interface IPacket { }
     public interface IEvaluation { }
