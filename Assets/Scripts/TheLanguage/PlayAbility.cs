@@ -18,7 +18,7 @@ namespace GameActions
         }
         public class Packet : IPacket
         {
-               //maybe like a "PacketResponse" type and a special "IReferenceToken<_, _, PacketResponse>"
+               
         }
         public class Evaluation : IEvaluation
         {

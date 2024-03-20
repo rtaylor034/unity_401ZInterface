@@ -13,7 +13,7 @@ public class TESTER : MonoBehaviour
     {
         List<Func<int>> bruh = new()
         {
-            () => 6 m
+            () => 6
         };
         Debug.Log(bruh.Count);
 
@@ -27,6 +27,11 @@ public class TESTER : MonoBehaviour
         {
             TestInt = new Context.Global.Tokens.TestValue()
         };
+        In<AClass> ina = null;
+        In<BClass> inb = null;
+        Out<AClass> outa = null;
+        Out<BClass> outb = null;
+        outa = outb;
     }
 
     // Update is called once per frame
@@ -35,3 +40,14 @@ public class TESTER : MonoBehaviour
         
     }
 }
+
+public class AClass
+{
+
+}
+public class BClass : AClass
+{
+
+}
+public interface In<in T> { }
+public interface Out<out T> { }

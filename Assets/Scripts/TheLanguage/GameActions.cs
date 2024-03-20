@@ -13,12 +13,11 @@ namespace GameActions
             _expressions = new();
         }
     }
-    public interface IExpression<out P, in C>
+    public interface IExpression<out P, in C> : Token.IToken<P, C>
         where P : IPacket
         where C : Context.IContextData
-    {
-        public P Resolve(C context);
-    }
+    { }
+
     public interface IPacket { }
     public interface IEvaluation { }
 }

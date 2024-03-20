@@ -12,7 +12,7 @@ namespace GameActions
         public class Expression<C> : IExpression<Packet, C> where C : Context.IContextData
         {
             public IToken<List<Unit>, C> MovableUnits;
-            public IToken<Unit, C> Test;
+  ;          public IToken<Unit, C> Test;
             public IToken<int, C> TestInt;
 
             public Packet Resolve(C context)
