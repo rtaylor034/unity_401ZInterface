@@ -93,9 +93,10 @@ namespace Context
     {
         // genuinely on suicide watch due to https://github.com/dotnet/roslyn/issues/2981.
         // UPDATE : its ok guys, 3rd party library is here :D
-        public interface IToken<out T, in C> where C : IContextData
+        public interface IToken<out T, in C> : IDisplayComponent where C : IContextData
         {
             public IProtocol<T> Resolve(C context);
         }
+        public interface IDisplayComponent { }
     }
 }

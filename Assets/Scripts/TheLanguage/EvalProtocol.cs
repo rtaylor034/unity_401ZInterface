@@ -9,6 +9,7 @@ using System.Threading.Tasks.Sources;
 
 namespace EvaluationProtocol
 {
+    // use a seperate 'IDisplayableAsToken' or something for sourcing token displays. too many damn interfaces.
     public interface IProtocol<out T>
     {
         public ITask<T> Evaluate(Evaluator evaluator);
