@@ -4,7 +4,9 @@ using UnityEngine;
 using Token;
 using ResolutionProtocol;
 using System;
-//TOKENSTREAM :D
+using GStructures;
+
+#nullable enable
 namespace Context
 {
     public interface IContextData { }
@@ -62,7 +64,23 @@ namespace Context
                         public IProtocol<T> Evaluate(Data _) => new ResolutionProtocol.Select.One<T>(this, From);
                     }
                 }
-                
+            }
+            // our special friends
+            public sealed class Referable<T> : IToken<T, Data>
+            {
+                public readonly IToken<T, Data> Value;
+                private Option<ResolutionProtocol.Referable<T>> _evaluation;
+                public Referable(IToken<T, Data> value)
+                {
+                    Value = value;
+                    _evaluation = new Option<ResolutionProtocol.Referable<T>>.None();
+                }
+                public IProtocol<T> Evaluate(Data context)
+                {
+                    _evaluation = (_evaluation is Option<ResolutionProtocol.Referable<T>>.Some val) ? val
+                        : new Option<ResolutionProtocol.Referable<T>>.Some(new ResolutionProtocol.Referable<T>(this, Value.Evaluate(context)));
+                    return _evaluation.Unwrap();
+                }
             }
         }
     }
