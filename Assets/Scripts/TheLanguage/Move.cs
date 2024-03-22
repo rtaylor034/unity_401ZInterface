@@ -10,31 +10,28 @@ namespace GameActions
 {
     namespace Move
     {
-        public class Expression<C> : IExpression<Resolution, C> where C : Context.IContextData
+        public class Token<C> : IToken<Resolution, C> where C : Context.IContextData
         {
             public IToken<IEnumerable<Unit>, C> MovableUnits;
             public IToken<Unit, C> Test;
-            public IToken<int, C> TestInt;
-
-            // find a sensible way to seperate gameaction expression/packet from token/protocol
-            public IPacket<Resolution> Evaluate(C context)
+            public IToken<int, C> TestInt; 
+            public IProtocol<Resolution> Evaluate(C context)
             {
-                return new Static<Packet>(this, new()
+                return new Packet(this)
                 {
                     MovableUnits = MovableUnits.Evaluate(context),
-                });
+                };
             }
         }
-        public class Packet : IPacket<Resolution>
+        public class Packet : TokenSourced<Resolution>
         {
             public IProtocol<IEnumerable<Unit>> MovableUnits;
             public (int Min, int Max) Total;
             public (int Min, int Max) PerUnit;
             public List<string> PathingRules;
 
-            public IDisplayable DisplaySource => throw new System.NotImplementedException();
-
-            public ITask<Resolution> Resolve(GameWorld resolver)
+            public Packet(IDisplayable source) : base(source) { }
+            public override ITask<Resolution> Resolve(GameWorld resolver)
             {
                 throw new System.NotImplementedException();
             }

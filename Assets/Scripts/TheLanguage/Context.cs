@@ -7,6 +7,8 @@ using System;
 using GStructures;
 
 #nullable enable
+
+// ALL TOKENS ARE STATELESS WITH THE EXCEPTION OF 'Referable' and 'Reference'
 namespace Context
 {
     public interface IContextData { }

@@ -11,7 +11,6 @@ using GStructures;
 #nullable enable
 namespace ResolutionProtocol
 {
-    
     public interface IProtocol<out T>
     {
         public ITask<T> Resolve(Resolver resolver);
@@ -55,7 +54,6 @@ namespace ResolutionProtocol
     }
     namespace Select
     {
-        // may split into multiple enums, will probably use a switch statement for now.
         public class One<T> : TokenSourced<T>
         {
             public readonly IProtocol<IEnumerable<T>> From;
