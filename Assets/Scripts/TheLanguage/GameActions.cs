@@ -5,13 +5,13 @@ using Unity.VisualScripting.Antlr3.Runtime;
 namespace GameActions
 {
     
-    public interface IExpression<out P, in C> : Token.IToken<P, C>
-        where P : IPacket
+    public interface IExpression<out R, in C> : Token.IToken<R, C>
+        where R : IResolution
         where C : Context.IContextData
     { 
         
     }
-
-    public interface IPacket { }
-    public interface IEvaluation { }
+    
+    public interface IPacket<out R> : ResolutionProtocol.IProtocol<R> where R : IResolution { }
+    public interface IResolution { }
 }

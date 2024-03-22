@@ -55,7 +55,7 @@ namespace ResolutionProtocol
     }
     namespace Select
     {
-        //may split into multiple enums, will probably use a switch statement for now.
+        // may split into multiple enums, will probably use a switch statement for now.
         public class One<T> : TokenSourced<T>
         {
             public readonly IProtocol<IEnumerable<T>> From;
