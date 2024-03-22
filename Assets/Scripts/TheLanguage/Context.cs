@@ -1,8 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Context.Token;
-using EvaluationProtocol;
+using Token;
+using ResolutionProtocol;
 using System;
 //TOKENSTREAM :D
 namespace Context
@@ -23,7 +23,7 @@ namespace Context
                 {
                     public readonly int Value;
                     public Constant(int value) => Value = value;
-                    public IProtocol<int> Resolve(Data _) => new Static<int>(Value);
+                    public IProtocol<int> Evaluate(Data _) => new Static<int>(this, Value);
 
                 }
                 public sealed class BinaryOperation : IToken<int, Data>
@@ -38,7 +38,7 @@ namespace Context
                         Right = right;
                         Operation = operation;
                     }
-                    public IProtocol<int> Resolve(Data context)
+                    public IProtocol<int> Evaluate(Data context)
                     {
                         Func<int, int, int> function = Operation switch
                         {
@@ -47,7 +47,7 @@ namespace Context
                             EOperation.Multiply => (a, b) => a * b,
                             EOperation.Divide => (a, b) => a / b,
                         };
-                        return new Combine<int, int, int>(Left.Resolve(context), Right.Resolve(context), function);
+                        return new Combine<int, int, int>(this, Left.Evaluate(context), Right.Evaluate(context), function);
                     }
                 }
             }
@@ -59,7 +59,7 @@ namespace Context
                     {
                         public readonly IEnumerable<T> From;
                         public One(IEnumerable<T> from) => From = from;
-                        public IProtocol<T> Resolve(Data _) => new EvaluationProtocol.Select.One<T>(From);
+                        public IProtocol<T> Evaluate(Data _) => new ResolutionProtocol.Select.One<T>(this, From);
                     }
                 }
                 
@@ -74,7 +74,7 @@ namespace Context
         }
         namespace Tokens
         {
-            public sealed class AllUnits : IToken<IEnumerable<Unit>, Data> { public IProtocol<IEnumerable<Unit>> Resolve(Data context) => new Static<IEnumerable<Unit>>(context.AllUnits); }
+            public sealed class AllUnits : IToken<IEnumerable<Unit>, Data> { public IProtocol<IEnumerable<Unit>> Evaluate(Data context) => new Static<IEnumerable<Unit>>(this, context.AllUnits); }
         }
     }
     namespace Ability
@@ -85,18 +85,7 @@ namespace Context
         }
         namespace Tokens
         {
-            public sealed class Source : IToken<Unit, Data> { public IProtocol<Unit> Resolve(Data context) => new Static<Unit>(context.Source); }
+            public sealed class Source : IToken<Unit, Data> { public IProtocol<Unit> Evaluate(Data context) => new Static<Unit>(this, context.Source); }
         }
-    }
-
-    namespace Token
-    {
-        // genuinely on suicide watch due to https://github.com/dotnet/roslyn/issues/2981.
-        // UPDATE : its ok guys, 3rd party library is here :D
-        public interface IToken<out T, in C> : IDisplayComponent where C : IContextData
-        {
-            public IProtocol<T> Resolve(C context);
-        }
-        public interface IDisplayComponent { }
     }
 }
