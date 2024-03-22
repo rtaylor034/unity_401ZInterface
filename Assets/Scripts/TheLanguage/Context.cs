@@ -82,6 +82,12 @@ namespace Context
                     return _evaluation.Unwrap();
                 }
             }
+            public sealed class Reference<T> : IToken<T, Data>
+            {
+                public readonly Referable<T> RefersTo;
+                public Reference(Referable<T> refersTo) => RefersTo = refersTo;
+                public IProtocol<T> Evaluate(Data context) => RefersTo.Evaluate(context);
+            }
         }
     }
     namespace Global

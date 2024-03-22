@@ -92,4 +92,10 @@ namespace ResolutionProtocol
             return _resolution.Unwrap();
         }
     }
+    public sealed class Reference<T> : TokenSourced<T>
+    {
+        public readonly Referable<T> RefersTo;
+        public Reference(Context.Any.Tokens.Reference<T> source, Referable<T> refersTo) : base(source) => RefersTo = refersTo;
+        public override ITask<T> Resolve(Resolver resolver) => RefersTo.Resolve(resolver);
+    }
 }
