@@ -53,15 +53,21 @@ namespace Context
                     }
                 }
             }
-            namespace Set
+            namespace Multi
             {
                 namespace Select
                 {
                     public sealed class One<T> : IToken<T, Data>
                     {
-                        public readonly IEnumerable<T> From;
-                        public One(IEnumerable<T> from) => From = from;
-                        public IProtocol<T> Evaluate(Data _) => new ResolutionProtocol.Select.One<T>(this, From);
+                        public readonly IToken<IEnumerable<T>, Data> From;
+                        public One(IToken<IEnumerable<T>, Data> from) => From = from;
+                        public IProtocol<T> Evaluate(Data context) => new ResolutionProtocol.Select.One<T>(this, From.Evaluate(context));
+                    }
+                    public sealed class Multiple<T> : IToken<IEnumerable<T>, Data>
+                    {
+                        public readonly IToken<IEnumerable<T>, Data> From;
+                        public Multiple(IToken<IEnumerable<T>, Data> from) => From = from;
+                        public IProtocol<IEnumerable<T>> Evaluate(Data context) => new ResolutionProtocol.Select.Multiple<T>(this, From.Evaluate(context));
                     }
                 }
             }
@@ -69,16 +75,21 @@ namespace Context
             public sealed class Referable<T> : IToken<T, Data>
             {
                 public readonly IToken<T, Data> Value;
+                public readonly string Label;
                 private Option<ResolutionProtocol.Referable<T>> _evaluation;
-                public Referable(IToken<T, Data> value)
+                public Referable(IToken<T, Data> value, string label)
                 {
+                    Label = label;
                     Value = value;
                     _evaluation = new Option<ResolutionProtocol.Referable<T>>.None();
                 }
                 public IProtocol<T> Evaluate(Data context)
                 {
-                    _evaluation = (_evaluation is Option<ResolutionProtocol.Referable<T>>.Some val) ? val
-                        : new Option<ResolutionProtocol.Referable<T>>.Some(new ResolutionProtocol.Referable<T>(this, Value.Evaluate(context)));
+                    _evaluation = _evaluation switch
+                    {
+                        Option<ResolutionProtocol.Referable<T>>.Some v => v,
+                        _ => new Option<ResolutionProtocol.Referable<T>>.Some(new ResolutionProtocol.Referable<T>(this, Value.Evaluate(context)))
+                    };
                     return _evaluation.Unwrap();
                 }
             }

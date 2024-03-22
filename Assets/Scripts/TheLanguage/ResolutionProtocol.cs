@@ -58,18 +58,18 @@ namespace ResolutionProtocol
         //may split into multiple enums, will probably use a switch statement for now.
         public class One<T> : TokenSourced<T>
         {
-            public readonly IEnumerable<T> From;
-            public One(IDisplayable source, IEnumerable<T> from) : base(source) { From = from; }
+            public readonly IProtocol<IEnumerable<T>> From;
+            public One(IDisplayable source, IProtocol<IEnumerable<T>> from) : base(source) { From = from; }
             public override ITask<T> Resolve(Resolver resolver)
             {
                 throw new System.NotImplementedException();
             }
         }
-        public class Multiple<T> : TokenSourced<T>
+        public class Multiple<T> : TokenSourced<IEnumerable<T>>
         {
-            public readonly IEnumerable<T> From;
-            public Multiple(IDisplayable source, IEnumerable<T> from) : base(source) { From = from; }
-            public override ITask<T> Resolve(Resolver resolver)
+            public readonly IProtocol<IEnumerable<T>> From;
+            public Multiple(IDisplayable source, IProtocol<IEnumerable<T>> from) : base(source) { From = from; }
+            public override ITask<IEnumerable<T>> Resolve(Resolver resolver)
             {
                 throw new System.NotImplementedException();
             }
@@ -88,7 +88,11 @@ namespace ResolutionProtocol
         }
         public override async ITask<T> Resolve(Resolver resolver)
         {
-            _resolution = (_resolution is Option<T>.Some val) ? val : new Option<T>.Some(await Value.Resolve(resolver));
+            _resolution = _resolution switch
+            {
+                Option<T>.Some v => v,
+                _ => new Option<T>.Some(await Value.Resolve(resolver)),
+            };
             return _resolution.Unwrap();
         }
     }
