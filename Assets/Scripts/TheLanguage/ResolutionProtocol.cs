@@ -28,29 +28,33 @@ namespace ResolutionProtocol
         public Static(IDisplayable source, T value) : base(source) => Value = value;
         public override ITask<T> Resolve(Resolver _) => Task.FromResult(Value).AsITask();
     }
-    public class Combine<TIn1, TIn2, TOut> : TokenSourced<TOut>
+
+    namespace Function
     {
-        public readonly IProtocol<TIn1> A;
-        public readonly IProtocol<TIn2> B;
-        public readonly Func<TIn1, TIn2, TOut> Function;
-        public Combine(IDisplayable source, IProtocol<TIn1> a, IProtocol<TIn2> b, Func<TIn1, TIn2, TOut> function) : base(source)
+        public class Combine<TIn1, TIn2, TOut> : TokenSourced<TOut>
         {
-            A = a;
-            B = b;
-            Function = function;
+            public readonly IProtocol<TIn1> A;
+            public readonly IProtocol<TIn2> B;
+            public readonly Func<TIn1, TIn2, TOut> Function;
+            public Combine(IDisplayable source, IProtocol<TIn1> a, IProtocol<TIn2> b, Func<TIn1, TIn2, TOut> function) : base(source)
+            {
+                A = a;
+                B = b;
+                Function = function;
+            }
+            public override async ITask<TOut> Resolve(Resolver resolver) => Function(await A.Resolve(resolver), await B.Resolve(resolver));
         }
-        public override async ITask<TOut> Resolve(Resolver resolver) => Function(await A.Resolve(resolver), await B.Resolve(resolver));
-    }
-    public class Transform<T> : TokenSourced<T>
-    {
-        public readonly IProtocol<T> Value;
-        public readonly Func<T, T> Function;
-        public Transform(IDisplayable source, IProtocol<T> value, Func<T, T> function) : base(source)
+        public class Transform<T> : TokenSourced<T>
         {
-            Value = value;
-            Function = function;
+            public readonly IProtocol<T> Value;
+            public readonly Func<T, T> Function;
+            public Transform(IDisplayable source, IProtocol<T> value, Func<T, T> function) : base(source)
+            {
+                Value = value;
+                Function = function;
+            }
+            public override async ITask<T> Resolve(Resolver resolver) => Function(await Value.Resolve(resolver));
         }
-        public override async ITask<T> Resolve(Resolver resolver) => Function(await Value.Resolve(resolver));
     }
     namespace Select
     {

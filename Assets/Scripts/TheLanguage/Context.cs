@@ -51,26 +51,23 @@ namespace Context
                             EOperation.Multiply => (a, b) => a * b,
                             EOperation.Divide => (a, b) => a / b,
                         };
-                        return new Combine<int, int, int>(this, Left.Evaluate(context), Right.Evaluate(context), function);
+                        return new ResolutionProtocol.Function.Combine<int, int, int>(this, Left.Evaluate(context), Right.Evaluate(context), function);
                     }
                 }
             }
-            namespace Multi
+            namespace Select
             {
-                namespace Select
+                public sealed class One<T> : IToken<T, Data>
                 {
-                    public sealed class One<T> : IToken<T, Data>
-                    {
-                        public readonly IToken<IEnumerable<T>, Data> From;
-                        public One(IToken<IEnumerable<T>, Data> from) => From = from;
-                        public IProtocol<T> Evaluate(Data context) => new ResolutionProtocol.Select.One<T>(this, From.Evaluate(context));
-                    }
-                    public sealed class Multiple<T> : IToken<IEnumerable<T>, Data>
-                    {
-                        public readonly IToken<IEnumerable<T>, Data> From;
-                        public Multiple(IToken<IEnumerable<T>, Data> from) => From = from;
-                        public IProtocol<IEnumerable<T>> Evaluate(Data context) => new ResolutionProtocol.Select.Multiple<T>(this, From.Evaluate(context));
-                    }
+                    public readonly IToken<IEnumerable<T>, Data> From;
+                    public One(IToken<IEnumerable<T>, Data> from) => From = from;
+                    public IProtocol<T> Evaluate(Data context) => new ResolutionProtocol.Select.One<T>(this, From.Evaluate(context));
+                }
+                public sealed class Multiple<T> : IToken<IEnumerable<T>, Data>
+                {
+                    public readonly IToken<IEnumerable<T>, Data> From;
+                    public Multiple(IToken<IEnumerable<T>, Data> from) => From = from;
+                    public IProtocol<IEnumerable<T>> Evaluate(Data context) => new ResolutionProtocol.Select.Multiple<T>(this, From.Evaluate(context));
                 }
             }
             // our special friends
