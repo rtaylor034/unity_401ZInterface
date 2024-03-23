@@ -55,6 +55,32 @@ namespace ResolutionProtocol
             }
             public override async ITask<T> Resolve(Resolver resolver) => Function(await Value.Resolve(resolver));
         }
+        
+    }
+    namespace Merge
+    {
+        public class Collect<T> : TokenSourced<IEnumerable<T>>
+        {
+            public readonly IEnumerable<IProtocol<T>> Values;
+            public Collect(IDisplayable source, IEnumerable<IProtocol<T>> values) : base(source) => Values = values;
+            public override async ITask<IEnumerable<T>> Resolve(Resolver resolver)
+            {
+                List<T> o = new();
+                foreach (var protocol in Values) o.Add(await protocol.Resolve(resolver));
+                return o;
+            }
+        }
+        public class Union<T> : TokenSourced<IEnumerable<T>>
+        {
+            public readonly IEnumerable<IProtocol<IEnumerable<T>>> Values;
+            public Union(IDisplayable source, IEnumerable<IProtocol<IEnumerable<T>>> values) : base(source) => Values = values;
+            public override async ITask<IEnumerable<T>> Resolve(Resolver resolver)
+            {
+                List<T> o = new();
+                foreach (var protocol in Values) o.AddRange(await protocol.Resolve(resolver));
+                return o;
+            }
+        }
     }
     namespace Select
     {

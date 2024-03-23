@@ -1,4 +1,4 @@
-using System.Collections;
+
 using System.Collections.Generic;
 using UnityEngine;
 using Token;
@@ -8,7 +8,8 @@ using GStructures;
 
 #nullable enable
 
-// ALL TOKENS ARE STATELESS WITH THE EXCEPTION OF 'Referable' and 'Reference'
+// All tokens are stateless with the exception of 'Referable' and 'Reference'
+// functional (non-functioning) programming B)
 namespace Context
 {
     public interface IContextData { }
@@ -68,6 +69,21 @@ namespace Context
                     public readonly IToken<IEnumerable<T>, Data> From;
                     public Multiple(IToken<IEnumerable<T>, Data> from) => From = from;
                     public IProtocol<IEnumerable<T>> Evaluate(Data context) => new ResolutionProtocol.Select.Multiple<T>(this, From.Evaluate(context));
+                }
+            }
+            namespace Merge
+            {
+                public sealed class Collect<T> : IToken<IEnumerable<T>, Data>
+                {
+                    public readonly IEnumerable<IToken<T, Data>> Elements;
+                    public Collect(IEnumerable<IToken<T, Data>> elements) => Elements = elements;
+                    public IProtocol<IEnumerable<T>> Evaluate(Data context) => new ResolutionProtocol.Merge.Collect<T>(this, Elements.Map(token => token.Evaluate(context)));
+                }
+                public sealed class Union<T> : IToken<IEnumerable<T>, Data>
+                {
+                    public readonly IEnumerable<IToken<IEnumerable<T>, Data>> Elements;
+                    public Union(IEnumerable<IToken<IEnumerable<T>, Data>> elements) => Elements = elements;
+                    public IProtocol<IEnumerable<T>> Evaluate(Data context) => new ResolutionProtocol.Merge.Union<T>(this, Elements.Map(token => token.Evaluate(context)));
                 }
             }
             // our special friends

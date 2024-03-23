@@ -27,6 +27,10 @@ public static class GExtensions
         element = iter.Current;
         return !iter.MoveNext();
     }
+    public static IEnumerable<TResult> Map<TIn, TResult>(this IEnumerable<TIn> enumerable, Func<TIn, TResult> mapFunction)
+    {
+        foreach (var e in enumerable) yield return mapFunction(e);
+    }
 
     //taken from https://stackoverflow.com/questions/1577822/passing-a-single-item-as-ienumerablet
     /// <summary>
