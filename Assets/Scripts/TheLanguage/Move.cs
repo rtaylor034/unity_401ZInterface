@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Token;
-using ResolutionProtocol;
+using Packet;
 using MorseCode.ITask;
 
 // would be so insanely insane with rust macros
@@ -15,7 +15,7 @@ namespace GameActions
             public IToken<IEnumerable<Unit>, C> MovableUnits;
             public IToken<Unit, C> Test;
             public IToken<int, C> TestInt; 
-            public IProtocol<Resolution> Evaluate(C context)
+            public IPacket<Resolution> Evaluate(C context)
             {
                 return new Packet(this)
                 {
@@ -25,7 +25,7 @@ namespace GameActions
         }
         public class Packet : TokenSourced<Resolution>
         {
-            public IProtocol<IEnumerable<Unit>> MovableUnits;
+            public IPacket<IEnumerable<Unit>> MovableUnits;
             public (int Min, int Max) Total;
             public (int Min, int Max) PerUnit;
             public List<string> PathingRules;
