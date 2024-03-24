@@ -22,22 +22,20 @@ public class TESTER : MonoBehaviour
         };
         ok.Remove(bruh[0]);
         Debug.Log(ok.Count);
-        GameActions.Move.Expression<Context.Ability.Data> expression1 = new()
+        GameActions.Move.Token<Context.Ability.Data> expression1 = new()
         {
-            MovableUnits = new Context.Global.Tokens.AllUnits(),
+            MovableUnits = new Context.Any.Tokens.Referable<Unit>(new Context.Global.Tokens.AllUnits(), "o"),
             TestInt = new Context.Any.Tokens.Int.Constant(5),
             Test = new Context.Ability.Tokens.Source()
         };
-        GameActions.Move.Expression<Context.Global.Data> expression2 = null;
-        ExpressionSet <Context.Ability.Data> o = null;
-        o._expressions.Add(expression1);
-        o._expressions.Add(expression2);
+        GameActions.Move.Token<Context.Global.Data> expression2 = null;
 
         In<AClass> ina = null;
         In<BClass> inb = null;
         Out<AClass> outa = null;
         Out<BClass> outb = null;
         outa = outb;
+        inb = ina;
     }
 
     // Update is called once per frame

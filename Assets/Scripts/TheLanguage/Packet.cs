@@ -82,6 +82,7 @@ namespace Packet
             }
         }
     }
+    //actual use of the gameworld prompting the player to select something.
     namespace Select
     {
         public class One<T> : TokenSourced<T>
