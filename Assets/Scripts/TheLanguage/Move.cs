@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Token;
+using PACKET = Packet;
 using Packet;
 using MorseCode.ITask;
 
@@ -39,6 +40,7 @@ namespace GameActions
         public class Resolution : IResolution
         {
             private List<PosChange> _posChanges;
+            public int TotalMoves_EXAMPLE;
             public struct PosChange
             {
                 public Unit Unit;
@@ -46,10 +48,19 @@ namespace GameActions
                 public Vector3Int To;
                 public PosChange(Unit unit, Vector3Int from, Vector3Int to)
                 {
-                    this.Unit = unit;
-                    this.From = from;
-                    this.To = to;
+                    Unit = unit;
+                    From = from;
+                    To = to;
                 }
+            }
+        }
+        namespace AccessTokens
+        {
+            public class TotalMoved<C> : IToken<int, C> where C : Context.IContextData
+            {
+                public IToken<Resolution, C> ActionToken;
+                public TotalMoved(IToken<Resolution, C> actionToken) => ActionToken = actionToken;
+                public IPacket<int> Evaluate(C context) => new PACKET.Function.Transform<Resolution, int>(this, ActionToken.Evaluate(context), resolution => resolution.TotalMoves_EXAMPLE);
             }
         }
     }

@@ -5,9 +5,9 @@ using Context;
 
 namespace Token
 {
-    public interface IToken<out T, in C> : IDisplayable where C : IContextData
+    public interface IToken<out TResolvesTo, in TMinContextData> : IDisplayable where TMinContextData : IContextData
     {
-        public Packet.IPacket<T> Evaluate(C context);
+        public Packet.IPacket<TResolvesTo> Evaluate(TMinContextData context);
     }
     public interface IDisplayable { }
 }

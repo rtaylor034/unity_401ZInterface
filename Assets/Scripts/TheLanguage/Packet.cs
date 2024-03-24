@@ -44,16 +44,16 @@ namespace Packet
             }
             public override async ITask<TOut> Resolve(Resolver resolver) => Function(await A.Resolve(resolver), await B.Resolve(resolver));
         }
-        public class Transform<T> : TokenSourced<T>
+        public class Transform<TIn, TOut> : TokenSourced<TOut>
         {
-            public readonly IPacket<T> Value;
-            public readonly Func<T, T> Function;
-            public Transform(IDisplayable source, IPacket<T> value, Func<T, T> function) : base(source)
+            public readonly IPacket<TIn> Value;
+            public readonly Func<TIn, TOut> Function;
+            public Transform(IDisplayable source, IPacket<TIn> value, Func<TIn, TOut> function) : base(source)
             {
                 Value = value;
                 Function = function;
             }
-            public override async ITask<T> Resolve(Resolver resolver) => Function(await Value.Resolve(resolver));
+            public override async ITask<TOut> Resolve(Resolver resolver) => Function(await Value.Resolve(resolver));
         }
         
     }

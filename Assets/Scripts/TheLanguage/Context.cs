@@ -55,6 +55,25 @@ namespace Context
                         return new Packet.Function.Combine<int, int, int>(this, Left.Evaluate(context), Right.Evaluate(context), function);
                     }
                 }
+                public sealed class UnaryOperation : IToken<int, Data>
+                {
+                    public enum EOperation { Negate }
+                    public readonly IToken<int, Data> Value;
+                    public readonly EOperation Operation;
+                    public UnaryOperation(IToken<int, Data> value, EOperation operation)
+                    {
+                        Value = value;
+                        Operation = operation;
+                    }
+                    public IPacket<int> Evaluate(Data context)
+                    {
+                        Func<int, int> function = Operation switch
+                        {
+                            EOperation.Negate => x => -x
+                        };
+                        return new Packet.Function.Transform<int, int>(this, Value.Evaluate(context), function);
+                    }
+                }
             }
             namespace Select
             {
@@ -108,6 +127,7 @@ namespace Context
                     return _evaluation.Unwrap();
                 }
             }
+            // i bet a foreach token is possible, but lets not for now yea.
             public sealed class Reference<T> : IToken<T, Data>
             {
                 public readonly Referable<T> RefersTo;
