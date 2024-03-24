@@ -9,14 +9,14 @@ using Token;
 using GStructures;
 
 #nullable enable
-namespace ResolutionProtocol
+namespace Packet
 {
-    public interface IProtocol<out T>
+    public interface IPacket<out T>
     {
         public ITask<T> Resolve(Resolver resolver);
         public IDisplayable DisplaySource { get; }
     }
-    public abstract class TokenSourced<T> : IProtocol<T>
+    public abstract class TokenSourced<T> : IPacket<T>
     {
         public IDisplayable DisplaySource { get; private set; }
         public abstract ITask<T> Resolve(Resolver resolver);
@@ -33,10 +33,10 @@ namespace ResolutionProtocol
     {
         public class Combine<TIn1, TIn2, TOut> : TokenSourced<TOut>
         {
-            public readonly IProtocol<TIn1> A;
-            public readonly IProtocol<TIn2> B;
+            public readonly IPacket<TIn1> A;
+            public readonly IPacket<TIn2> B;
             public readonly Func<TIn1, TIn2, TOut> Function;
-            public Combine(IDisplayable source, IProtocol<TIn1> a, IProtocol<TIn2> b, Func<TIn1, TIn2, TOut> function) : base(source)
+            public Combine(IDisplayable source, IPacket<TIn1> a, IPacket<TIn2> b, Func<TIn1, TIn2, TOut> function) : base(source)
             {
                 A = a;
                 B = b;
@@ -46,9 +46,9 @@ namespace ResolutionProtocol
         }
         public class Transform<T> : TokenSourced<T>
         {
-            public readonly IProtocol<T> Value;
+            public readonly IPacket<T> Value;
             public readonly Func<T, T> Function;
-            public Transform(IDisplayable source, IProtocol<T> value, Func<T, T> function) : base(source)
+            public Transform(IDisplayable source, IPacket<T> value, Func<T, T> function) : base(source)
             {
                 Value = value;
                 Function = function;
@@ -61,8 +61,8 @@ namespace ResolutionProtocol
     {
         public class Collect<T> : TokenSourced<IEnumerable<T>>
         {
-            public readonly IEnumerable<IProtocol<T>> Values;
-            public Collect(IDisplayable source, IEnumerable<IProtocol<T>> values) : base(source) => Values = values;
+            public readonly IEnumerable<IPacket<T>> Values;
+            public Collect(IDisplayable source, IEnumerable<IPacket<T>> values) : base(source) => Values = values;
             public override async ITask<IEnumerable<T>> Resolve(Resolver resolver)
             {
                 List<T> o = new();
@@ -72,8 +72,8 @@ namespace ResolutionProtocol
         }
         public class Union<T> : TokenSourced<IEnumerable<T>>
         {
-            public readonly IEnumerable<IProtocol<IEnumerable<T>>> Values;
-            public Union(IDisplayable source, IEnumerable<IProtocol<IEnumerable<T>>> values) : base(source) => Values = values;
+            public readonly IEnumerable<IPacket<IEnumerable<T>>> Values;
+            public Union(IDisplayable source, IEnumerable<IPacket<IEnumerable<T>>> values) : base(source) => Values = values;
             public override async ITask<IEnumerable<T>> Resolve(Resolver resolver)
             {
                 List<T> o = new();
@@ -86,8 +86,8 @@ namespace ResolutionProtocol
     {
         public class One<T> : TokenSourced<T>
         {
-            public readonly IProtocol<IEnumerable<T>> From;
-            public One(IDisplayable source, IProtocol<IEnumerable<T>> from) : base(source) { From = from; }
+            public readonly IPacket<IEnumerable<T>> From;
+            public One(IDisplayable source, IPacket<IEnumerable<T>> from) : base(source) { From = from; }
             public override ITask<T> Resolve(Resolver resolver)
             {
                 throw new System.NotImplementedException();
@@ -95,8 +95,8 @@ namespace ResolutionProtocol
         }
         public class Multiple<T> : TokenSourced<IEnumerable<T>>
         {
-            public readonly IProtocol<IEnumerable<T>> From;
-            public Multiple(IDisplayable source, IProtocol<IEnumerable<T>> from) : base(source) { From = from; }
+            public readonly IPacket<IEnumerable<T>> From;
+            public Multiple(IDisplayable source, IPacket<IEnumerable<T>> from) : base(source) { From = from; }
             public override ITask<IEnumerable<T>> Resolve(Resolver resolver)
             {
                 throw new System.NotImplementedException();
@@ -107,9 +107,9 @@ namespace ResolutionProtocol
     // our special friends
     public class Referable<T> : TokenSourced<T> 
     {
-        public readonly IProtocol<T> Value;
+        public readonly IPacket<T> Value;
         private Option<T> _resolution;
-        public Referable(Context.Any.Tokens.Referable<T> source, IProtocol<T> value) : base(source)
+        public Referable(Context.Any.Tokens.Referable<T> source, IPacket<T> value) : base(source)
         {
             Value = value;
             _resolution = new Option<T>.None();
