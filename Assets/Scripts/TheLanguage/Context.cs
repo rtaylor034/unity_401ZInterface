@@ -134,10 +134,6 @@ namespace Context
                 public Reference(Referable<T> refersTo) => RefersTo = refersTo;
                 public IPacket<T> Evaluate(Data context) => RefersTo.Evaluate(context);
             }
-            public sealed class ForEach<TIn, TOut> : IToken<TOut, Data>
-            {
-                public readonly Func<IToken<TIn, Data>>
-            }
         }
     }
     namespace Global
