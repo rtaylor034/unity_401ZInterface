@@ -9,6 +9,8 @@ using Tokens;
 using GStructures;
 
 #nullable enable
+
+//no WAY we can just remove packets.
 namespace Packets
 {
     public interface IPacket<out T>
@@ -130,5 +132,22 @@ namespace Packets
         public readonly Referable<T> RefersTo;
         public Reference(Tokens.Reference<T> source, Referable<T> refersTo) : base(source) => RefersTo = refersTo;
         public override ITask<T> Resolve(Resolver resolver) => RefersTo.Resolve(resolver);
+    }
+    public sealed class Map<TIn, TOut> : TokenSourced<IEnumerable<TOut>>
+    {
+        public readonly IToken<IEnumerable<TIn>> EnumeratorToken;
+        public readonly Func<IToken<TIn>, IToken<TOut>> MapFunction;
+        public Map(IDisplayable source, IToken<IEnumerable<TIn>> enumeratorToken, Func<IToken<TIn>, IToken<TOut>> mapFunction) : base(source)
+        {
+            EnumeratorToken = enumeratorToken;
+            MapFunction = mapFunction;
+        }
+        public async ITask<IEnumerable<TOut>> Evaluate(Resolver resolver)
+        {
+            foreach (var element in await EnumeratorToken.Evaluate().Resolve(resolver))
+            {
+                //this does not allow for all information to be stored in tokens. THE FINAL UNITY, REMOVE PACKETS.
+            }
+        }
     }
 }

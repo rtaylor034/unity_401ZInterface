@@ -4,6 +4,7 @@ using UnityEngine;
 using Packets;
 using System;
 using GStructures;
+using System.Net.Sockets;
 
 #nullable enable
 
@@ -128,4 +129,20 @@ namespace Tokens
         public Reference(Referable<T> refersTo) => RefersTo = refersTo;
         public IPacket<T> Evaluate() => RefersTo.Evaluate();
     }
+    public sealed class Map<TIn, TOut> : IToken<IEnumerable<TOut>>
+    {
+        public readonly IToken<IEnumerable<TIn>> Over;
+        public readonly Func<IToken<TIn>, IToken<TOut>> MapFunction;
+        public Map(IToken<IEnumerable<TIn>> over, Func<IToken<TIn>, IToken<TOut>> mapFunction)
+        {
+            Over = over;
+            MapFunction = mapFunction;
+        }
+        public IPacket<IEnumerable<TOut>> Evaluate()
+        {
+            
+        }
+
+    }
+    
 }
