@@ -5,6 +5,8 @@ using Packets;
 using System;
 using GStructures;
 using System.Net.Sockets;
+using MorseCode.ITask;
+using System.Threading.Tasks;
 
 #nullable enable
 
@@ -12,18 +14,18 @@ using System.Net.Sockets;
 // functional (non-functioning) programming B)
 namespace Tokens
 {
-    public interface IToken<out T> : IDisplayable
+    public interface IResolver { }
+    public interface IToken<out T>
     {
-        public IPacket<T> Evaluate();
+        public ITask<T> Resolve(IResolver resolver);
     }
-    public interface IDisplayable { }
     namespace Int
     {
         public sealed class Constant : IToken<int>
         {
             public readonly int Value;
             public Constant(int value) => Value = value;
-            public IPacket<int> Evaluate() => new Static<int>(this, Value);
+            public ITask<int> Resolve(IResolver _) => Task.FromResult(Value).AsITask();
 
         }
         public sealed class BinaryOperation : IToken<int>
@@ -38,7 +40,7 @@ namespace Tokens
                 Right = right;
                 Operation = operation;
             }
-            public IPacket<int> Evaluate()
+            public async ITask<int> Resolve(IResolver resolver)
             {
                 Func<int, int, int> function = Operation switch
                 {
@@ -47,7 +49,7 @@ namespace Tokens
                     EOperation.Multiply => (a, b) => a * b,
                     EOperation.Divide => (a, b) => a / b,
                 };
-                return new Packets.Function.Combine<int, int, int>(this, Left.Evaluate(), Right.Evaluate(), function);
+                return function(await Left.Resolve(resolver), await Right.Resolve(resolver));
             }
         }
         public sealed class UnaryOperation : IToken<int>
@@ -60,13 +62,13 @@ namespace Tokens
                 Value = value;
                 Operation = operation;
             }
-            public IPacket<int> Evaluate()
+            public async ITask<int> Resolve(IResolver resolver)
             {
                 Func<int, int> function = Operation switch
                 {
                     EOperation.Negate => x => -x
                 };
-                return new Packets.Function.Transform<int, int>(this, Value.Evaluate(), function);
+                return function(await Value.Resolve(resolver));
             }
         }
     }
@@ -76,13 +78,19 @@ namespace Tokens
         {
             public readonly IToken<IEnumerable<T>> From;
             public One(IToken<IEnumerable<T>> from) => From = from;
-            public IPacket<T> Evaluate() => new Packets.Select.One<T>(this, From.Evaluate());
+            public ITask<T> Resolve(IResolver resolver)
+            {
+                throw new System.NotImplementedException();
+            }
         }
         public sealed class Multiple<T> : IToken<IEnumerable<T>>
         {
             public readonly IToken<IEnumerable<T>> From;
             public Multiple(IToken<IEnumerable<T>> from) => From = from;
-            public IPacket<IEnumerable<T>> Evaluate() => new Packets.Select.Multiple<T>(this, From.Evaluate());
+            public ITask<IEnumerable<T>> Resolve(IResolver resolver)
+            {
+                throw new System.NotImplementedException();
+            }
         }
     }
     namespace Merge
@@ -91,13 +99,23 @@ namespace Tokens
         {
             public readonly IEnumerable<IToken<T>> Elements;
             public Collect(IEnumerable<IToken<T>> elements) => Elements = elements;
-            public IPacket<IEnumerable<T>> Evaluate() => new Packets.Merge.Collect<T>(this, Elements.Map(token => token.Evaluate()));
+            public async ITask<IEnumerable<T>> Resolve(IResolver resolver)
+            {
+                List<T> o = new();
+                foreach (var element in Elements) o.Add(await element.Resolve(resolver));
+                return o;
+            }
         }
         public sealed class Union<T> : IToken<IEnumerable<T>>
         {
             public readonly IEnumerable<IToken<IEnumerable<T>>> Elements;
             public Union(IEnumerable<IToken<IEnumerable<T>>> elements) => Elements = elements;
-            public IPacket<IEnumerable<T>> Evaluate() => new Packets.Merge.Union<T>(this, Elements.Map(token => token.Evaluate()));
+            public async ITask<IEnumerable<T>> Resolve(IResolver resolver)
+            {
+                List<T> o = new();
+                foreach (var element in Elements) o.AddRange(await element.Resolve(resolver));
+                return o;
+            }
         }
     }
     // our special friends
@@ -105,21 +123,21 @@ namespace Tokens
     {
         public readonly IToken<T> Value;
         public readonly string Label;
-        private Option<Packets.Referable<T>> _evaluation;
+        private Option<T> _resolution;
         public Referable(IToken<T> value, string label)
         {
             Label = label;
             Value = value;
-            _evaluation = new Option<Packets.Referable<T>>.None();
+            _resolution = new Option<T>.None();
         }
-        public IPacket<T> Evaluate()
+        public async ITask<T> Resolve(IResolver resolver)
         {
-            _evaluation = _evaluation switch
+            _resolution = _resolution switch
             {
-                Option<Packets.Referable<T>>.Some v => v,
-                _ => new Option<Packets.Referable<T>>.Some(new Packets.Referable<T>(this, Value.Evaluate()))
+                Option<T>.Some v => v,
+                _ => new Option<T>.Some(await Value.Resolve(resolver))
             };
-            return _evaluation.Unwrap();
+            return _resolution.Unwrap();
         }
     }
     // i bet a foreach token is possible, but lets not for now yea.
@@ -127,7 +145,7 @@ namespace Tokens
     {
         public readonly Referable<T> RefersTo;
         public Reference(Referable<T> refersTo) => RefersTo = refersTo;
-        public IPacket<T> Evaluate() => RefersTo.Evaluate();
+        public ITask<T> Resolve(IResolver resolver) => RefersTo.Resolve(resolver);
     }
     public sealed class Map<TIn, TOut> : IToken<IEnumerable<TOut>>
     {
@@ -138,9 +156,9 @@ namespace Tokens
             Over = over;
             MapFunction = mapFunction;
         }
-        public IPacket<IEnumerable<TOut>> Evaluate()
+        public async ITask<IEnumerable<TOut>> Resolve(IResolver resolver)
         {
-            
+            //add back context and packets guys, we gotta go bald.
         }
 
     }
