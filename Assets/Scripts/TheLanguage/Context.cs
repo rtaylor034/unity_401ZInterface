@@ -1,8 +1,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
-using Token;
-using Packet;
+using Packets;
 using System;
 using GStructures;
 
@@ -10,156 +9,123 @@ using GStructures;
 
 // All tokens are stateless with the exception of 'Referable' and 'Reference'
 // functional (non-functioning) programming B)
-namespace Context
+namespace Tokens
 {
-    public interface IContextData { }
-
-    namespace Any
+    public interface IToken<out T> : IDisplayable
     {
-        public class Data : IContextData
+        public IPacket<T> Evaluate();
+    }
+    public interface IDisplayable { }
+    namespace Int
+    {
+        public sealed class Constant : IToken<int>
         {
-            
-        }
-        namespace Tokens
-        {
-            namespace Int
-            {
-                public sealed class Constant : IToken<int, Data>
-                {
-                    public readonly int Value;
-                    public Constant(int value) => Value = value;
-                    public IPacket<int> Evaluate(Data _) => new Static<int>(this, Value);
+            public readonly int Value;
+            public Constant(int value) => Value = value;
+            public IPacket<int> Evaluate() => new Static<int>(this, Value);
 
-                }
-                public sealed class BinaryOperation : IToken<int, Data>
-                {
-                    public enum EOperation { Add, Subtract, Multiply, Divide }
-                    public readonly IToken<int, Data> Left;
-                    public readonly IToken<int, Data> Right;
-                    public readonly EOperation Operation;
-                    public BinaryOperation(IToken<int, Data> left, IToken<int, Data> right, EOperation operation)
-                    {
-                        Left = left;
-                        Right = right;
-                        Operation = operation;
-                    }
-                    public IPacket<int> Evaluate(Data context)
-                    {
-                        Func<int, int, int> function = Operation switch
-                        {
-                            EOperation.Add => (a, b) => a + b,
-                            EOperation.Subtract => (a, b) => a - b,
-                            EOperation.Multiply => (a, b) => a * b,
-                            EOperation.Divide => (a, b) => a / b,
-                        };
-                        return new Packet.Function.Combine<int, int, int>(this, Left.Evaluate(context), Right.Evaluate(context), function);
-                    }
-                }
-                public sealed class UnaryOperation : IToken<int, Data>
-                {
-                    public enum EOperation { Negate }
-                    public readonly IToken<int, Data> Value;
-                    public readonly EOperation Operation;
-                    public UnaryOperation(IToken<int, Data> value, EOperation operation)
-                    {
-                        Value = value;
-                        Operation = operation;
-                    }
-                    public IPacket<int> Evaluate(Data context)
-                    {
-                        Func<int, int> function = Operation switch
-                        {
-                            EOperation.Negate => x => -x
-                        };
-                        return new Packet.Function.Transform<int, int>(this, Value.Evaluate(context), function);
-                    }
-                }
-            }
-            namespace Select
+        }
+        public sealed class BinaryOperation : IToken<int>
+        {
+            public enum EOperation { Add, Subtract, Multiply, Divide }
+            public readonly IToken<int> Left;
+            public readonly IToken<int> Right;
+            public readonly EOperation Operation;
+            public BinaryOperation(IToken<int> left, IToken<int> right, EOperation operation)
             {
-                public sealed class One<T> : IToken<T, Data>
-                {
-                    public readonly IToken<IEnumerable<T>, Data> From;
-                    public One(IToken<IEnumerable<T>, Data> from) => From = from;
-                    public IPacket<T> Evaluate(Data context) => new Packet.Select.One<T>(this, From.Evaluate(context));
-                }
-                public sealed class Multiple<T> : IToken<IEnumerable<T>, Data>
-                {
-                    public readonly IToken<IEnumerable<T>, Data> From;
-                    public Multiple(IToken<IEnumerable<T>, Data> from) => From = from;
-                    public IPacket<IEnumerable<T>> Evaluate(Data context) => new Packet.Select.Multiple<T>(this, From.Evaluate(context));
-                }
+                Left = left;
+                Right = right;
+                Operation = operation;
             }
-            namespace Merge
+            public IPacket<int> Evaluate()
             {
-                public sealed class Collect<T> : IToken<IEnumerable<T>, Data>
+                Func<int, int, int> function = Operation switch
                 {
-                    public readonly IEnumerable<IToken<T, Data>> Elements;
-                    public Collect(IEnumerable<IToken<T, Data>> elements) => Elements = elements;
-                    public IPacket<IEnumerable<T>> Evaluate(Data context) => new Packet.Merge.Collect<T>(this, Elements.Map(token => token.Evaluate(context)));
-                }
-                public sealed class Union<T> : IToken<IEnumerable<T>, Data>
-                {
-                    public readonly IEnumerable<IToken<IEnumerable<T>, Data>> Elements;
-                    public Union(IEnumerable<IToken<IEnumerable<T>, Data>> elements) => Elements = elements;
-                    public IPacket<IEnumerable<T>> Evaluate(Data context) => new Packet.Merge.Union<T>(this, Elements.Map(token => token.Evaluate(context)));
-                }
+                    EOperation.Add => (a, b) => a + b,
+                    EOperation.Subtract => (a, b) => a - b,
+                    EOperation.Multiply => (a, b) => a * b,
+                    EOperation.Divide => (a, b) => a / b,
+                };
+                return new Packets.Function.Combine<int, int, int>(this, Left.Evaluate(), Right.Evaluate(), function);
             }
-            // our special friends
-            public sealed class Referable<T> : IToken<T, Data>
+        }
+        public sealed class UnaryOperation : IToken<int>
+        {
+            public enum EOperation { Negate }
+            public readonly IToken<int> Value;
+            public readonly EOperation Operation;
+            public UnaryOperation(IToken<int> value, EOperation operation)
             {
-                public readonly IToken<T, Data> Value;
-                public readonly string Label;
-                private Option<Packet.Referable<T>> _evaluation;
-                public Referable(IToken<T, Data> value, string label)
-                {
-                    Label = label;
-                    Value = value;
-                    _evaluation = new Option<Packet.Referable<T>>.None();
-                }
-                public IPacket<T> Evaluate(Data context)
-                {
-                    _evaluation = _evaluation switch
-                    {
-                        Option<Packet.Referable<T>>.Some v => v,
-                        _ => new Option<Packet.Referable<T>>.Some(new Packet.Referable<T>(this, Value.Evaluate(context)))
-                    };
-                    return _evaluation.Unwrap();
-                }
+                Value = value;
+                Operation = operation;
             }
-            // i bet a foreach token is possible, but lets not for now yea.
-            public sealed class Reference<T> : IToken<T, Data>
+            public IPacket<int> Evaluate()
             {
-                public readonly Referable<T> RefersTo;
-                public Reference(Referable<T> refersTo) => RefersTo = refersTo;
-                public IPacket<T> Evaluate(Data context) => RefersTo.Evaluate(context);
-            }
-            public sealed class ForEach<TIn, TOut> : IToken<TOut, Data>
-            {
-                public readonly Func<IToken<TIn, Data>>
+                Func<int, int> function = Operation switch
+                {
+                    EOperation.Negate => x => -x
+                };
+                return new Packets.Function.Transform<int, int>(this, Value.Evaluate(), function);
             }
         }
     }
-    namespace Global
+    namespace Select
     {
-        public class Data : Any.Data
+        public sealed class One<T> : IToken<T>
         {
-            public HashSet<Unit> AllUnits;
+            public readonly IToken<IEnumerable<T>> From;
+            public One(IToken<IEnumerable<T>> from) => From = from;
+            public IPacket<T> Evaluate() => new Packets.Select.One<T>(this, From.Evaluate());
         }
-        namespace Tokens
+        public sealed class Multiple<T> : IToken<IEnumerable<T>>
         {
-            public sealed class AllUnits : IToken<IEnumerable<Unit>, Data> { public IPacket<IEnumerable<Unit>> Evaluate(Data context) => new Static<IEnumerable<Unit>>(this, context.AllUnits); }
+            public readonly IToken<IEnumerable<T>> From;
+            public Multiple(IToken<IEnumerable<T>> from) => From = from;
+            public IPacket<IEnumerable<T>> Evaluate() => new Packets.Select.Multiple<T>(this, From.Evaluate());
         }
     }
-    namespace Ability
+    namespace Merge
     {
-        public class Data : Global.Data
+        public sealed class Collect<T> : IToken<IEnumerable<T>>
         {
-            public Unit Source;
+            public readonly IEnumerable<IToken<T>> Elements;
+            public Collect(IEnumerable<IToken<T>> elements) => Elements = elements;
+            public IPacket<IEnumerable<T>> Evaluate() => new Packets.Merge.Collect<T>(this, Elements.Map(token => token.Evaluate()));
         }
-        namespace Tokens
+        public sealed class Union<T> : IToken<IEnumerable<T>>
         {
-            public sealed class Source : IToken<Unit, Data> { public IPacket<Unit> Evaluate(Data context) => new Static<Unit>(this, context.Source); }
+            public readonly IEnumerable<IToken<IEnumerable<T>>> Elements;
+            public Union(IEnumerable<IToken<IEnumerable<T>>> elements) => Elements = elements;
+            public IPacket<IEnumerable<T>> Evaluate() => new Packets.Merge.Union<T>(this, Elements.Map(token => token.Evaluate()));
         }
+    }
+    // our special friends
+    public sealed class Referable<T> : IToken<T>
+    {
+        public readonly IToken<T> Value;
+        public readonly string Label;
+        private Option<Packets.Referable<T>> _evaluation;
+        public Referable(IToken<T> value, string label)
+        {
+            Label = label;
+            Value = value;
+            _evaluation = new Option<Packets.Referable<T>>.None();
+        }
+        public IPacket<T> Evaluate()
+        {
+            _evaluation = _evaluation switch
+            {
+                Option<Packets.Referable<T>>.Some v => v,
+                _ => new Option<Packets.Referable<T>>.Some(new Packets.Referable<T>(this, Value.Evaluate()))
+            };
+            return _evaluation.Unwrap();
+        }
+    }
+    // i bet a foreach token is possible, but lets not for now yea.
+    public sealed class Reference<T> : IToken<T>
+    {
+        public readonly Referable<T> RefersTo;
+        public Reference(Referable<T> refersTo) => RefersTo = refersTo;
+        public IPacket<T> Evaluate() => RefersTo.Evaluate();
     }
 }

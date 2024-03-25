@@ -5,11 +5,11 @@ using MorseCode.ITask;
 using Resolver = GameWorld;
 using System.Collections.Generic;
 using System;
-using Token;
+using Tokens;
 using GStructures;
 
 #nullable enable
-namespace Packet
+namespace Packets
 {
     public interface IPacket<out T>
     {
@@ -110,7 +110,7 @@ namespace Packet
     {
         public readonly IPacket<T> Value;
         private Option<T> _resolution;
-        public Referable(Context.Any.Tokens.Referable<T> source, IPacket<T> value) : base(source)
+        public Referable(Tokens.Referable<T> source, IPacket<T> value) : base(source)
         {
             Value = value;
             _resolution = new Option<T>.None();
@@ -128,7 +128,7 @@ namespace Packet
     public sealed class Reference<T> : TokenSourced<T>
     {
         public readonly Referable<T> RefersTo;
-        public Reference(Context.Any.Tokens.Reference<T> source, Referable<T> refersTo) : base(source) => RefersTo = refersTo;
+        public Reference(Tokens.Reference<T> source, Referable<T> refersTo) : base(source) => RefersTo = refersTo;
         public override ITask<T> Resolve(Resolver resolver) => RefersTo.Resolve(resolver);
     }
 }
