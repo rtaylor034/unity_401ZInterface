@@ -24,8 +24,8 @@ public class TESTER : MonoBehaviour
         Debug.Log(ok.Count);
         GameActions.Move.Token<Context.Ability.Data> expression1 = new()
         {
-            MovableUnits = new Context.Any.Tokens.Referable<IEnumerable<Unit>, Context.Global.Data>(new Context.Global.Tokens.AllUnits(), "o"),
-            TestInt = new Context.Any.Tokens.Int.Constant(5),
+            MovableUnits = new Context.Generic.Tokens.Referable<IEnumerable<Unit>, Context.Ability.Data>(new Context.Global.Tokens.AllUnits(), "o"),
+            TestInt = new Context.Generic.Tokens.Referable<int, Context.Ability.Data>(new Context.Any.Tokens.Int.Constant(5), "oe"),
             Test = new Context.Ability.Tokens.Source()
         };
         GameActions.Move.Token<Context.Global.Data> expression2 = null;
