@@ -92,32 +92,32 @@ namespace Context
             }
             namespace Merge
             {
-                public sealed class Collect<T> : IToken<IEnumerable<T>, Data>
+                public sealed class Collect<T, C> : IToken<IEnumerable<T>, C> where C : Data
                 {
-                    public readonly IEnumerable<IToken<T, Data>> Elements;
-                    public Collect(IEnumerable<IToken<T, Data>> elements) => Elements = elements;
-                    public IPacket<IEnumerable<T>> Evaluate(Data context) => new Packet.Merge.Collect<T>(this, Elements.Map(token => token.Evaluate(context)));
+                    public readonly IEnumerable<IToken<T, C>> Elements;
+                    public Collect(IEnumerable<IToken<T, C>> elements) => Elements = elements;
+                    public IPacket<IEnumerable<T>> Evaluate(C context) => new Packet.Merge.Collect<T>(this, Elements.Map(token => token.Evaluate(context)));
                 }
-                public sealed class Union<T> : IToken<IEnumerable<T>, Data>
+                public sealed class Union<T, C> : IToken<IEnumerable<T>, C> where C : Data
                 {
-                    public readonly IEnumerable<IToken<IEnumerable<T>, Data>> Elements;
-                    public Union(IEnumerable<IToken<IEnumerable<T>, Data>> elements) => Elements = elements;
-                    public IPacket<IEnumerable<T>> Evaluate(Data context) => new Packet.Merge.Union<T>(this, Elements.Map(token => token.Evaluate(context)));
+                    public readonly IEnumerable<IToken<IEnumerable<T>, C>> Elements;
+                    public Union(IEnumerable<IToken<IEnumerable<T>, C>> elements) => Elements = elements;
+                    public IPacket<IEnumerable<T>> Evaluate(C context) => new Packet.Merge.Union<T>(this, Elements.Map(token => token.Evaluate(context)));
                 }
             }
             // our special friends
-            public sealed class Referable<T> : IToken<T, Data>
+            public sealed class Referable<T, C> : IToken<T, C> where C : Data
             {
-                public readonly IToken<T, Data> Value;
+                public readonly IToken<T, C> Value;
                 public readonly string Label;
                 private Option<Packet.Referable<T>> _evaluation;
-                public Referable(IToken<T, Data> value, string label)
+                public Referable(IToken<T, C> value, string label)
                 {
                     Label = label;
                     Value = value;
                     _evaluation = new Option<Packet.Referable<T>>.None();
                 }
-                public IPacket<T> Evaluate(Data context)
+                public IPacket<T> Evaluate(C context)
                 {
                     _evaluation = _evaluation switch
                     {
@@ -128,12 +128,13 @@ namespace Context
                 }
             }
             // i bet a foreach token is possible, but lets not for now yea.
-            public sealed class Reference<T> : IToken<T, Data>
+            public sealed class Reference<T, C> : IToken<T, C> where C : Data
             {
-                public readonly Referable<T> RefersTo;
-                public Reference(Referable<T> refersTo) => RefersTo = refersTo;
-                public IPacket<T> Evaluate(Data context) => RefersTo.Evaluate(context);
+                public readonly Referable<T, C> RefersTo;
+                public Reference(Referable<T, C> refersTo) => RefersTo = refersTo;
+                public IPacket<T> Evaluate(C context) => RefersTo.Evaluate(context);
             }
+            
         }
     }
     namespace Global

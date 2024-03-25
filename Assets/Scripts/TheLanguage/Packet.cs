@@ -110,7 +110,7 @@ namespace Packet
     {
         public readonly IPacket<T> Value;
         private Option<T> _resolution;
-        public Referable(Context.Any.Tokens.Referable<T> source, IPacket<T> value) : base(source)
+        public Referable(IDisplayable source, IPacket<T> value) : base(source)
         {
             Value = value;
             _resolution = new Option<T>.None();
@@ -128,7 +128,7 @@ namespace Packet
     public sealed class Reference<T> : TokenSourced<T>
     {
         public readonly Referable<T> RefersTo;
-        public Reference(Context.Any.Tokens.Reference<T> source, Referable<T> refersTo) : base(source) => RefersTo = refersTo;
+        public Reference(IDisplayable source, Referable<T> refersTo) : base(source) => RefersTo = refersTo;
         public override ITask<T> Resolve(Resolver resolver) => RefersTo.Resolve(resolver);
     }
 }
