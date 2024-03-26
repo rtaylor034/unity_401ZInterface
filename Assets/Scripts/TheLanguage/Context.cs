@@ -165,6 +165,13 @@ namespace Context
                 public Reference(Referable<T, C> refersTo) => RefersTo = refersTo;
                 public IPacket<T> Evaluate(C context) => RefersTo.Evaluate(context);
             }
+            public sealed class ForEach<TIn, TOut, C> : IToken<IEnumerable<TOut>, C> where C : IContextData
+            {
+                public IPacket<IEnumerable<TOut>> Evaluate(C context)
+                {
+
+                }
+            }
         }
     }
 }

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System;
 using Token;
 using GStructures;
+using Context;
 
 #nullable enable
 namespace Packet
@@ -130,5 +131,11 @@ namespace Packet
         public readonly Referable<T> RefersTo;
         public Reference(IDisplayable source, Referable<T> refersTo) : base(source) => RefersTo = refersTo;
         public override ITask<T> Resolve(Resolver resolver) => RefersTo.Resolve(resolver);
+    }
+    public sealed class Map<TIn, TOut, C> : TokenSourced<IEnumerable<TOut>> where C : IContextData
+    {
+        public readonly IToken<IEnumerable<TIn>, C> Enumerator;
+        private C _evalContext;
+
     }
 }
