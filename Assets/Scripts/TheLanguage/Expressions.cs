@@ -71,8 +71,9 @@ namespace Expressions
         {
             private Token.IToken<object> _evalToken;
             private object _thisResolution;
-            private bool _resolved;
+            private bool _resolved = false;
 
+            public Referable(Token.IToken<object> token) => _evalToken = token;
             public ITask<object> Resolve(IProvider scope)
             {
                 return _resolved switch

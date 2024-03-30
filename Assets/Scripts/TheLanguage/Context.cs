@@ -4,42 +4,37 @@ using System.Collections.Generic;
 using Token;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using Expressions.References.Identifier;
+using TypeID = Expressions.References.Identifier.Contextual;
 using Context.Global.Tokens;
 
+//bro I *SWEAR* this shit isnt as convoluted as it looks.
 namespace Context
 {
     public abstract class ContextReference<T> : Expressions.References.Token<T>
     {
-        protected ContextReference(Type typeId) : base(new Contextual(typeId)) { }
+        protected ContextReference(Type type) : base(new TypeID(type)) { }
     }
     namespace Global
     {
+        //whole lotta boilerplate :D
         public static class Data
         {
-            public readonly static Expressions.References.Map RefMap = new(new Expressions.References.IProvider.None(), new()
+            public readonly static Expressions.References.Map REFMAP = new(new Expressions.References.IProvider.None(), new()
             {
-                { new Contextual(typeof(AllUnits)), new Expressions.References.Referable() }
+                { new TypeID(typeof(AllUnits)), new Expressions.References.Referable() }
             });
         }
+        public sealed class Expression<T> : Expressions.Expression<T>
+        {
+            public Expression(IToken<T> token) : base(Data.REFMAP, token) { }
+        }
+
         namespace Tokens
         {
             public sealed class AllUnits : ContextReference<IEnumerable<Unit>>
             {
                 public AllUnits() : base(typeof(AllUnits)) { }
             }
-        }
-        public abstract class Expression<T> : Expressions.Expression<T>
-        {
-            public Expression(IToken<T> token) : base(Data.RefMap, token) { }
-        }
-    }
-
-    public static class Methods
-    {
-        public static string FormatIdentifier(string name)
-        {
-            return "#" + name.ToUpper();
         }
     }
 }
