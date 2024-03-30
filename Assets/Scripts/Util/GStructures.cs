@@ -10,6 +10,7 @@ namespace GStructures
 {
     public abstract class Option<T>
     {
+        private static Exception _unrecognizedException => new Exception("Unwrapped a class that extends 'Option', but isnt 'None' or 'Some' (why the fuck are we extending 'Option'?)");
         public sealed class None : Option<T> { }
         public sealed class Some : Option<T>
         {
@@ -19,14 +20,17 @@ namespace GStructures
                 Value = value;
             }
         }
-        public T Unwrap()
+        public T Unwrap() => this switch
         {
-            return this switch
-            {
-                Some value => value.Value,
-                None => throw new Exception("Unwrapped a 'None' Option."),
-                _ => throw new Exception("Unwrapped a class that extends 'Option', but isnt 'None' or 'Some' (why the fuck did you extend 'Option'?)")
-            };
-        }
+            Some value => value.Value,
+            None => throw new Exception("Unwrapped a 'None' Option."),
+            _ => throw _unrecognizedException
+        };
+        public T UnwrapOrElse(Func<T> evaluate) => this switch
+        {
+            Some value => value.Value,
+            None => evaluate(),
+            _ => throw _unrecognizedException
+        };
     }
 }
