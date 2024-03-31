@@ -10,4 +10,18 @@ namespace Token
     {
         public ITask<T> Resolve(Expressions.References.IProvider scope);
     }
+    public abstract class GameDataToken<T> : IToken<T>
+    {
+        public abstract T GetValue(GameState state);
+        public ITask<T> Resolve(Expressions.References.IProvider _) => GetValue()
+    }
+    //special tokens that are especially silly.
+    namespace GameData
+    {
+        
+        public sealed class AllUnits : IToken<IEnumerable<Unit>>
+        {
+
+        }
+    }
 }

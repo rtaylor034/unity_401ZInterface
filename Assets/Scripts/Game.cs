@@ -10,6 +10,8 @@ public class Game
     private GameWorld _world;
     private GameSettings _settings;
     private GameState _state;
+    //used by Token.GameData to grab gamedata
+    public GameState CurrentState => _state;
 
     //-- CLASS LOCATION TO BE DETERMINED --
     
