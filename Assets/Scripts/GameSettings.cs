@@ -1,37 +1,40 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Expressions.Reference;
 using UnityEngine;
+using DEFINE_TOKEN = Expressions.Reference.Identifier.Defined;
 
-// this shits bout to look worse than javascript on momma.
+// this shit makes javascript look reasonable.
 public class GameSettings
 {
-    public delegate Game.PathingFunction ImplementPathing(Game.EPathingSpecification pathingSpec);
+    public delegate Expressions.Expression<IEnumerable<GameActions.IResolution>> ImplementAbility(Ability.IAbility ability);
 
-    public ImplementPathing PathingImplementations;
+    public ImplementAbility AbilityImplementation;
 
     public GameSettings (
-        ImplementPathing PATHING_IMPLEMENTATIONS
-
+         ImplementAbility ABILITY_IMPLEMENTATION
         )
     {
-        PathingImplementations = PATHING_IMPLEMENTATIONS;
+        AbilityImplementation = ABILITY_IMPLEMENTATION;
     }
 
     //placeholder constant
     public static GameSettings STANDARD = new(
-        PATHING_IMPLEMENTATIONS: (pathingSpec) =>
+        // The way the gun just appeared in my mouth.
+        ABILITY_IMPLEMENTATION: (ability) =>
+        {
+            return ability switch
             {
-                throw new NotImplementedException();
-                switch (pathingSpec)
-                {
-                    case Game.EPathingSpecification.Standard info:
-                        break;
-                    case Game.EPathingSpecification.IgnoreWall info:
-                        break;
-                    default:
-                        break;
-                }
-            }
+                // hypothetically ~~ referring to another definition within a definition should be ok, it *should* evaluate when needed.
+                Ability.Attack.Data attack => new(
+                    new(
+                        (new DEFINE_TOKEN(typeof(Ability.Attack.DefinedTokens.Source)), Referable.Create(new Tokens.Gen.Select.One<Unit>(new Tokens.GameData.AllUnits()))),
+                        (new DEFINE_TOKEN(typeof(Ability.Attack.DefinedTokens.Target)), Referable.Create(new Ability.Attack.DefinedTokens.Source()))
+                    ),
+                    attack.ActionToken
+                )
+            };
+        }
         );
 }

@@ -4,31 +4,21 @@ using System.Collections.Generic;
 using Token;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using TypeID = Expressions.References.Identifier.Contextual;
-using Context.Global.Tokens;
+using TypeID = Expressions.Reference.Identifier.Defined;
 
 //bro I *SWEAR* this shit isnt as convoluted as it looks.
-
 // EVERYTHING SHOULD BE DEFINED IN GAMESETTINGS. AAAA
 namespace Context
 {
-    public abstract class ContextReference<T> : Expressions.References.Token<T>
+    public abstract class ContextReference<T> : Token.Reference<T>
     {
         protected ContextReference(Type type) : base(new TypeID(type)) { }
     }
     namespace AbilityUse
     {
-        //whole lotta boilerplate :D
-        public static class Data
+        public sealed class Expression : Expressions.Expression<IEnumerable<GameActions.IResolution>>
         {
-            public readonly static Expressions.References.Map REFMAP = new(new Expressions.References.IProvider.None(), new()
-            {
-                { new TypeID(typeof(Tokens.Source)), new Expressions.References.Referable() }
-            });
-        }
-        public sealed class Expression<T> : Expressions.Expression<T>
-        {
-            public Expression(IToken<T> token) : base(Data.REFMAP, token) { }
+            public Expression(IToken<IEnumerable<GameActions.IResolution>> token, Ability.IAbility ability) : base(Data.REFMAP, token) { }
         }
 
         namespace Tokens

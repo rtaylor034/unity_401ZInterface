@@ -36,6 +36,11 @@ public class TESTER : MonoBehaviour
         Out<BClass> outb = null;
         outa = outb;
         inb = ina;
+        var oo = new AClass()
+        {
+            A = 6,
+            
+        };
     }
 
     // Update is called once per frame
@@ -47,7 +52,8 @@ public class TESTER : MonoBehaviour
 
 public class AClass
 {
-
+    public int A;
+    public int B;
 }
 public class BClass : AClass
 {

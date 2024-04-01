@@ -7,20 +7,20 @@ using GStructures;
 using System.Threading.Tasks;
 namespace Expressions
 {
-    namespace References
+    namespace Reference
     {
         using Identifier;
         namespace Identifier
         {
             public interface IIdentifier { }
-            public sealed class Contextual : IIdentifier
+            public sealed class Defined : IIdentifier
             {
                 private readonly Type _tokenType;
-                public Contextual(Type tokenType)
+                public Defined(Type tokenType)
                 {
                     _tokenType = tokenType;
                 }
-                public override bool Equals(object obj) => obj is Contextual other && _tokenType.Equals(other._tokenType);
+                public override bool Equals(object obj) => obj is Defined other && _tokenType.Equals(other._tokenType);
                 public override int GetHashCode() => _tokenType.GetHashCode();
             }
             public sealed class Dynamic : IIdentifier
@@ -36,45 +36,39 @@ namespace Expressions
         }
         public interface IProvider
         {
-            public Option<Referable> GetReference(IIdentifier key);
+            public Referable GetReference(IIdentifier key);
             public sealed class None : IProvider
             {
-                public Option<Referable> GetReference(IIdentifier key) => throw new Exception($"IReference Provider supplied with undefined key: {key}");
+                public Referable GetReference(IIdentifier key) => throw new Exception($"IReference Provider supplied with undefined key: {key}");
             }
         }
-        public class Map : IProvider
+        public class Scope : IProvider
         {
             private IProvider _parent;
             private Dictionary<IIdentifier, Referable> _map;
-            public Map(IProvider parent, Dictionary<IIdentifier, Referable> map)
+            public Scope(IProvider parent, params (IIdentifier id, Referable refToken)[] references)
             {
                 _parent = parent;
-                _map = map;
+                // i KNOW there is an idiomatic way to do this that isnt retarded.
+                _map = new(references.Map(x => KeyValuePair.Create(x.id, x.refToken)));
             }
-            public Option<Referable> GetReference(IIdentifier key)
+            public Scope(params (IIdentifier id, Referable refToken)[] references) : this(new IProvider.None(), references) { }
+            public Referable GetReference(IIdentifier key)
             {
                 return _map.TryGetValue(key, out Referable referable)
-                    ? new Option<Referable>.Some(referable)
+                    ? referable
                     : _parent.GetReference(key);
             }
         }
-        public abstract class Token<T> : Token.IToken<T>
-        {
-            public IIdentifier Identifier;
-            protected Token(IIdentifier identifier) => Identifier = identifier;
-            public ITask<T> Resolve(IProvider scope)
-            {
-
-            }
-        }
+        
         public class Referable
         {
             private Token.IToken<object> _evalToken;
             private object _thisResolution;
             private bool _resolved = false;
 
-            public Referable(Token.IToken<object> token) => _evalToken = token;
-            public ITask<object> Resolve(IProvider scope)
+            private Referable(Token.IToken<object> token) => _evalToken = token;
+            public ITask<object> Resolve(Token.ResolutionContext scope)
             {
                 return _resolved switch
                 {
@@ -87,23 +81,21 @@ namespace Expressions
                 if (!_resolved) throw new System.Exception("Referable Reset() before being evaluated");
                 _resolved = false;
             }
+            public static Referable Create(Token.IToken<object> token) => new(token);
         }
     }
     
-    public abstract class Expression<T>
+    public class Expression<T>
     {
-        public References.Map References;
+        public Reference.Scope References;
         public Token.IToken<T> ResolutionToken;
 
-        protected Expression(References.Map references, Token.IToken<T> resolutionToken)
+        public Expression(Reference.Scope references, Token.IToken<T> resolutionToken)
         {
             References = references;
             ResolutionToken = resolutionToken;
         }
-        public ITask<T> Resolve()
-        {
-
-        }
+        public ITask<T> Resolve(Token.IResolver resolver) => ResolutionToken.Resolve(new Token.ResolutionContext { Resolver = resolver, Scope = References });
     }
     
     
