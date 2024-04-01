@@ -8,9 +8,13 @@ using UnityEngine;
 // yes, I will shamelessly halfass implement rust features because im just special like that.
 namespace GStructures
 {
+    public class NahException : System.NotSupportedException
+    {
+        public NahException() : base("NahException reached. It's literally over.") { }
+    }
     public abstract class Option<T>
     {
-        private static Exception _unrecognizedException => new Exception("Unwrapped a class that extends 'Option', but isnt 'None' or 'Some' (why the fuck are we extending 'Option'?)");
+        private static Exception _unrecognizedException => new NotSupportedException("Unwrapped a class that extends 'Option', but isnt 'None' or 'Some' (why the fuck are we extending 'Option'?)");
         public sealed class None : Option<T> { }
         public sealed class Some : Option<T>
         {
