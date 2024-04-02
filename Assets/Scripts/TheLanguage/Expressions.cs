@@ -22,6 +22,7 @@ namespace Expressions
                 }
                 public override bool Equals(object obj) => obj is Defined other && _tokenType.Equals(other._tokenType);
                 public override int GetHashCode() => _tokenType.GetHashCode();
+                public override string ToString() => $"DEFINED-{_tokenType.Name}";
             }
             public sealed class Dynamic : IIdentifier
             {
@@ -32,6 +33,7 @@ namespace Expressions
                 }
                 public override bool Equals(object obj) => obj is Dynamic other && _label.Equals(other._label);
                 public override int GetHashCode() => _label.GetHashCode();
+                public override string ToString() => $"DYNAMIC-'{_label}'";
             }
         }
         public interface IProvider
@@ -39,7 +41,7 @@ namespace Expressions
             public Referable GetReference(IIdentifier key);
             public sealed class None : IProvider
             {
-                public Referable GetReference(IIdentifier key) => throw new Exception($"IReference Provider supplied with undefined key: {key}");
+                public Referable GetReference(IIdentifier key) => throw new Exception($"IReference Provider supplied with undefined key: <{key}>");
             }
         }
         public class Scope : IProvider
