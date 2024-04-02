@@ -51,7 +51,7 @@ namespace Expressions
             public Scope(IProvider parent, params (IIdentifier id, Referable refToken)[] references)
             {
                 _parent = parent;
-                // i KNOW there is an idiomatic way to do this that isnt retarded.
+                // i KNOW there is an idiomatic way to do this that isnt this retarded.
                 _map = new(references.Map(x => KeyValuePair.Create(x.id, x.refToken)));
             }
             public Scope(params (IIdentifier id, Referable refToken)[] references) : this(new IProvider.None(), references) { }
