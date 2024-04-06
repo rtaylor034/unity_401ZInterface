@@ -1,13 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Data;
 using System.Threading.Tasks;
 using GExtensions;
-using JetBrains.Annotations;
 using Perfection;
-using Token;
-using UnityEngine.UIElements;
 
 
 #nullable enable
@@ -27,7 +23,7 @@ namespace Token
         public GameState State { get; init; }
         public IInputProvider InputProvider { get; init; }
         public Scope Scope { get; init; }
-        public List<Rule.Unsafe.IRule> Rules { get; init; }
+        public List<Rule.Unsafe.IProxy> Rules { get; init; }
     }
     public record Resolved<T>
     {
@@ -40,10 +36,6 @@ namespace Token
     public abstract record Token<T> : Unsafe.IToken
     {
         public abstract Task<Resolved<T>?> Resolve(Context context);
-        public Task<Resolved<T>?> ResolveWith(Context context)
-        {
-
-        }
         public async Task<Resolved<object>?> ResolveUnsafe(Context context)
         {
             return await Resolve(context) is Resolved<T> resolution
@@ -107,7 +99,6 @@ namespace Token
                 return new()
                 { Value = o, NewContext = contexts[^1] };
             }
-
         }
     }
     public abstract record Infallible<T> : Token<T>
@@ -144,40 +135,50 @@ namespace Token
         
     }
     #region Function<T>s
-    public abstract record Function<TIn1, TOut> : Unsafe.TokenFunction<TOut>, Rule.IArg1<TIn1>
+    /// <summary>
+    /// Tokens that inherit must have a constructor matching: <br></br>
+    /// <code>(Token&lt;<typeparamref name="TIn1"/>&gt;)</code>
+    /// </summary>
+    /// <typeparam name="TIn1"></typeparam>
+    public abstract record Function<TIn1, TOut> : Unsafe.TokenFunction<TOut>
     {
-        public Token<TIn1> ArgToken1 { get; private init; }
+
         protected Function(Token<TIn1> in1) : base(in1)
         {
-            ArgToken1 = in1;
+
         }
         protected abstract TOut Evaluate(TIn1 in1);
         protected override TOut TransformTokens(List<object> args) =>
             Evaluate((TIn1)args[0]);
     }
-    public abstract record Function<TIn1, TIn2, TOut> : Unsafe.TokenFunction<TOut>, Rule.IArg2<TIn1, TIn2>
+    /// <summary>
+    /// Tokens that inherit must have a constructor matching: <br></br>
+    /// <code>(Token&lt;<typeparamref name="TIn1"/>&gt;, Token&lt;<typeparamref name="TIn2"/>&gt;)</code>
+    /// </summary>
+    /// <typeparam name="TIn1"></typeparam>
+    /// <typeparam name="TIn2"></typeparam>
+    public abstract record Function<TIn1, TIn2, TOut> : Unsafe.TokenFunction<TOut>
     {
-        public Token<TIn1> ArgToken1 { get; private init; }
-        public Token<TIn2> ArgToken2 { get; private init; }
         protected Function(Token<TIn1> in1, Token<TIn2> in2) : base(in1, in2)
         {
-            ArgToken1 = in1;
-            ArgToken2 = in2;
+
         }
         protected abstract TOut Evaluate(TIn1 in1, TIn2 in2);
         protected override TOut TransformTokens(List<object> args) =>
             Evaluate((TIn1)args[0], (TIn2)args[1]);
     }
-    public abstract record Function<TIn1, TIn2, TIn3, TOut> : Unsafe.TokenFunction<TOut>, Rule.IArg3<TIn1, TIn2, TIn3>
+    /// <summary>
+    /// Tokens that inherit must have a constructor matching: <br></br>
+    /// <code>(Token&lt;<typeparamref name="TIn1"/>&gt;, Token&lt;<typeparamref name="TIn2"/>&gt;, Token&lt;<typeparamref name="TIn3"/>&gt;)</code>
+    /// </summary>
+    /// <typeparam name="TIn1"></typeparam>
+    /// <typeparam name="TIn2"></typeparam>
+    /// <typeparam name="TIn3"></typeparam>
+    public abstract record Function<TIn1, TIn2, TIn3, TOut> : Unsafe.TokenFunction<TOut>
     {
-        public Token<TIn1> ArgToken1 { get; private init; }
-        public Token<TIn2> ArgToken2 { get; private init; }
-        public Token<TIn3> ArgToken3 { get; private init; }
         protected Function(Token<TIn1> in1, Token<TIn2> in2, Token<TIn3> in3) : base(in1, in2, in3)
         {
-            ArgToken1 = in1;
-            ArgToken2 = in2;
-            ArgToken3 = in3;
+
         }
         protected abstract TOut Evaluate(TIn1 in1, TIn2 in2, TIn3 in3);
         protected override TOut TransformTokens(List<object> args) =>
@@ -199,47 +200,83 @@ namespace Tokens
 }
 namespace Rule
 {
+    using Token;
     namespace Unsafe
     {
-        public interface IRule
+        using Token.Unsafe;
+        using System.Linq;
+        public interface IProxy
         {
-            public Token.Unsafe.IToken ApplyUnsafe(Token.Unsafe.IToken original);
+            public IToken UnsafeRealize(IToken original);
+
         }
-        
-    }
-    public interface IArg1<T1>
-    {
-        public Token<T1> ArgToken1 { get; }
-    }
-    public interface IArg2<T1, T2> : IArg1<T1>
-    {
-        public Token<T2> ArgToken2 { get; }
-    }
-    public interface IArg3<T1, T2, T3> : IArg2<T1, T2>
-    {
-        public Token<T3> ArgToken3 { get; }
-    }
-    public record Rule<TToken, T> : Unsafe.IRule where TToken : Token.Unsafe.IToken
-    {
-        public Func<TToken, RuleToken<T>> RuleFunction { get; init; }
-        public Token.Unsafe.IToken ApplyUnsafe(Token.Unsafe.IToken original)
+        public abstract record FunctionProxy<T> : Proxy<T>
         {
-            return original switch
+            /// <summary>
+            /// Expected to be [ : ]<see cref="Token.Unsafe.TokenFunction{T}"/>
+            /// </summary>
+            protected Type TokenType { get; init; }
+            protected List<IProxy> ArgProxies { get; init; }
+            protected FunctionProxy(Type tokenType, params IProxy[] proxies)
             {
-                TToken token => RuleFunction(token)
-                _ => original
-            };
+                TokenType = tokenType;
+                ArgProxies = new(proxies);
+            }
+            protected FunctionProxy(Type tokenType, IEnumerable<IProxy> proxies)
+            {
+                TokenType = tokenType;
+                ArgProxies = new(proxies);
+            }
+            public FunctionProxy(FunctionProxy<T> original) : base(original)
+            {
+                TokenType = original.TokenType;
+                ArgProxies = new(original.ArgProxies);
+            }
+            protected virtual TokenFunction<T> RealizeArgs(List<IToken> tokens)
+            {
+                // SHAKY
+                //this is... silly...
+                return (TokenFunction<T>)TokenType.GetConstructor(tokens.Map(x => x.GetType()).ToArray())
+                    .Invoke(tokens.ToArray());
+            }
+            public override Token<T> Realize(Token<T> original) => RealizeArgs(MakeSubstitutions(original));
+            protected List<IToken> MakeSubstitutions(Token<T> original)
+            {
+                return new(ArgProxies.Map(x => x.UnsafeRealize(original)));
+            }
         }
     }
-    public abstract record RuleToken<T>
+    public abstract record Proxy<T> : Unsafe.IProxy
     {
-        public Token<T> Generate()
+        public abstract Token<T> Realize(Token<T> original);
+        public Token.Unsafe.IToken UnsafeRealize(Token.Unsafe.IToken original) => Realize((Token<T>)original);
+    }
+    #region Function<T>s
+    public abstract record Function<TToken, TIn1, TOut> : Unsafe.FunctionProxy<TOut>
+        where TToken : Token.Function<TIn1, TOut>
+    {
+        protected Function(Proxy<TIn1> in1) : base(typeof(TToken), in1) { }
+    }
+    public abstract record Function<TToken, TIn1, TIn2, TOut> : Unsafe.FunctionProxy<TOut>
+        where TToken : Token.Function<TIn1, TIn2, TOut>
+    {
+        protected Function(Proxy<TIn1> in1, Proxy<TIn2> in2) : base(typeof(TToken), in1, in2) { }
+    }
+    public abstract record Function<TToken, TIn1, TIn2, TIn3, TOut> : Unsafe.FunctionProxy<TOut>
+        where TToken : Token.Function<TIn1, TIn2, TIn3, TOut>
+    {
+        protected Function(Proxy<TIn1> in1, Proxy<TIn2> in2, Proxy<TIn2> in3) : base(typeof(TToken), in1, in2, in3) { }
+    }
+    #endregion
+    public abstract record Combiner<TToken, TIn, TOut> : Unsafe.FunctionProxy<TOut>
+        where TToken : Token.Combiner<TIn, TOut>
+    {
+        protected Combiner(IEnumerable<Proxy<TIn>> proxies) : base(typeof(TToken), proxies) { }
+        protected override Token.Unsafe.TokenFunction<TOut> RealizeArgs(List<Token.Unsafe.IToken> tokens)
         {
-
+            //SHAKY
+            return (Token.Unsafe.TokenFunction<TOut>)TokenType.GetConstructor(new Type[] { typeof(IEnumerable<Token<TIn>>) })
+                .Invoke(new object[] { tokens });
         }
-    }
-    public record FromFunction<TToken, TIn1, TIn2, TOut> : RuleToken<TOut> where TToken : Token.Function<TIn1, TIn2, TOut>
-    {
-
     }
 }

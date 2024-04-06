@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 // nothing in this namespace is validated; it assumes you use it perfectly.
@@ -100,6 +101,15 @@ namespace Perfection
         {
             int i = 0;
             foreach (var v in enumerable) yield return (i++, v);
+        }
+        public static IEnumerable<T> Generate<T>(this T startingValue, Func<T, T> function, Predicate<T> whileCondition)
+        {
+            T o = startingValue;
+            while (whileCondition(o))
+            {
+                yield return o;
+                o = function(o);
+            }
         }
     }
 }

@@ -13,7 +13,6 @@ public class Game
     public GameState CurrentState => _state;
 
     private GameWorld _world;
-    private GameSettings _settings;
     private GameState _state;
     
     
