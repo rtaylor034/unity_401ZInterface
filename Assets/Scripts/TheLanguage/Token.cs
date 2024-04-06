@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
@@ -6,8 +7,7 @@ using GExtensions;
 using JetBrains.Annotations;
 using Perfection;
 using Token;
-using Unity.VisualScripting;
-using UnityEngine;
+using UnityEngine.UIElements;
 
 
 #nullable enable
@@ -61,20 +61,20 @@ namespace Token
         {
             public Task<Resolved<object>?> ResolveUnsafe(Context context);
         }
-        public abstract record TokenWrapper<T> : Token<T>
+        public abstract record TokenFunction<T> : Token<T>
         {
-            public List<IToken> WrappedTokens { get; init; }
-            protected TokenWrapper(params IToken[] tokens)
+            protected List<IToken> ArgTokens { get; init; }
+            protected TokenFunction(params IToken[] tokens)
             {
-                WrappedTokens = new(tokens);
+                ArgTokens = new(tokens);
             }
-            protected TokenWrapper(IEnumerable<IToken> tokens)
+            protected TokenFunction(IEnumerable<IToken> tokens)
             {
-                WrappedTokens = new(tokens);
+                ArgTokens = new(tokens);
             }
-            public TokenWrapper(TokenWrapper<T> original) : base(original)
+            public TokenFunction(TokenFunction<T> original) : base(original)
             {
-                WrappedTokens = new(original.WrappedTokens);
+                ArgTokens = new(original.ArgTokens);
             }
             protected abstract T TransformTokens(List<object> tokens);
             public override async Task<Resolved<T>?> Resolve(Context context)
@@ -88,11 +88,11 @@ namespace Token
             }
             private async Task<Resolved<List<object>>?> GetTokenResults(Context context)
             {
-                List<object> o = new(WrappedTokens.Count);
-                List<Context> contexts = new(WrappedTokens.Count + 1) { context };
-                for (int i = 0; i < WrappedTokens.Count; i++)
+                List<object> o = new(ArgTokens.Count);
+                List<Context> contexts = new(ArgTokens.Count + 1) { context };
+                for (int i = 0; i < ArgTokens.Count; i++)
                 {
-                    switch (await WrappedTokens[i].ResolveUnsafe(contexts[i]))
+                    switch (await ArgTokens[i].ResolveUnsafe(contexts[i]))
                     {
                         case Resolved<object> resolution:
                             o[i] = resolution.Value;
@@ -143,28 +143,48 @@ namespace Token
         }
         
     }
-    public abstract record Function<TIn1, TOut> : Unsafe.TokenWrapper<TOut>
+    #region Function<T>s
+    public abstract record Function<TIn1, TOut> : Unsafe.TokenFunction<TOut>, Rule.IArg1<TIn1>
     {
-        protected Function(Token<TIn1> in1) : base(in1) { }
+        public Token<TIn1> ArgToken1 { get; private init; }
+        protected Function(Token<TIn1> in1) : base(in1)
+        {
+            ArgToken1 = in1;
+        }
         protected abstract TOut Evaluate(TIn1 in1);
         protected override TOut TransformTokens(List<object> args) =>
             Evaluate((TIn1)args[0]);
     }
-    public abstract record Function<TIn1, TIn2, TOut> : Unsafe.TokenWrapper<TOut>
+    public abstract record Function<TIn1, TIn2, TOut> : Unsafe.TokenFunction<TOut>, Rule.IArg2<TIn1, TIn2>
     {
-        protected Function(Token<TIn1> in1, Token<TIn2> in2) : base(in1, in2) { }
+        public Token<TIn1> ArgToken1 { get; private init; }
+        public Token<TIn2> ArgToken2 { get; private init; }
+        protected Function(Token<TIn1> in1, Token<TIn2> in2) : base(in1, in2)
+        {
+            ArgToken1 = in1;
+            ArgToken2 = in2;
+        }
         protected abstract TOut Evaluate(TIn1 in1, TIn2 in2);
         protected override TOut TransformTokens(List<object> args) =>
             Evaluate((TIn1)args[0], (TIn2)args[1]);
     }
-    public abstract record Function<TIn1, TIn2, TIn3, TOut> : Unsafe.TokenWrapper<TOut>
+    public abstract record Function<TIn1, TIn2, TIn3, TOut> : Unsafe.TokenFunction<TOut>, Rule.IArg3<TIn1, TIn2, TIn3>
     {
-        protected Function(Token<TIn1> in1, Token<TIn2> in2, Token<TIn3> in3) : base(in1, in2, in3) { }
+        public Token<TIn1> ArgToken1 { get; private init; }
+        public Token<TIn2> ArgToken2 { get; private init; }
+        public Token<TIn3> ArgToken3 { get; private init; }
+        protected Function(Token<TIn1> in1, Token<TIn2> in2, Token<TIn3> in3) : base(in1, in2, in3)
+        {
+            ArgToken1 = in1;
+            ArgToken2 = in2;
+            ArgToken3 = in3;
+        }
         protected abstract TOut Evaluate(TIn1 in1, TIn2 in2, TIn3 in3);
         protected override TOut TransformTokens(List<object> args) =>
             Evaluate((TIn1)args[0], (TIn2)args[1], (TIn3)args[2]);
     }
-    public abstract record Combiner<TIn, TOut> : Unsafe.TokenWrapper<TOut>
+    #endregion
+    public abstract record Combiner<TIn, TOut> : Unsafe.TokenFunction<TOut>
     {
         protected Combiner(IEnumerable<Token<TIn>> tokens) : base(tokens) { }
         protected Combiner(params Token<TIn>[] tokens) : base(tokens) { }
@@ -181,12 +201,44 @@ namespace Rule
 {
     namespace Unsafe
     {
-        public abstract record Rule
+        public interface IRule
         {
-            public System.Type TokenType;
+            public Token.Unsafe.IToken ApplyUnsafe(Token.Unsafe.IToken original);
+        }
+        
+    }
+    public interface IArg1<T1>
+    {
+        public Token<T1> ArgToken1 { get; }
+    }
+    public interface IArg2<T1, T2> : IArg1<T1>
+    {
+        public Token<T2> ArgToken2 { get; }
+    }
+    public interface IArg3<T1, T2, T3> : IArg2<T1, T2>
+    {
+        public Token<T3> ArgToken3 { get; }
+    }
+    public record Rule<TToken, T> : Unsafe.IRule where TToken : Token.Unsafe.IToken
+    {
+        public Func<TToken, RuleToken<T>> RuleFunction { get; init; }
+        public Token.Unsafe.IToken ApplyUnsafe(Token.Unsafe.IToken original)
+        {
+            return original switch
+            {
+                TToken token => RuleFunction(token)
+                _ => original
+            };
         }
     }
-    public record Rule<TToken, T> : Unsafe.Rule
+    public abstract record RuleToken<T>
+    {
+        public Token<T> Generate()
+        {
+
+        }
+    }
+    public record FromFunction<TToken, TIn1, TIn2, TOut> : RuleToken<TOut> where TToken : Token.Function<TIn1, TIn2, TOut>
     {
 
     }
