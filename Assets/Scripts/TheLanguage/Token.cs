@@ -1,87 +1,193 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
-using MorseCode.ITask;
+using System.Data;
 using System.Threading.Tasks;
+using GExtensions;
+using JetBrains.Annotations;
+using Perfection;
+using Token;
+using Unity.VisualScripting;
+using UnityEngine;
+
+
+#nullable enable
 namespace Token
 {
-    // GameWorld should really be the only IResolver.
-    // I just like making interfaces because im tarted.
-    public interface IResolver { }
-    public interface IToken<out T>
+    #region Structures
+#nullable disable
+    public interface IInputProvider { }
+    public interface IStateResolution { }
+    public record Scope
     {
-        public ITask<T> Resolve(ResolutionContext context);
+        public void Pop() { }
+        public void Add() { }
     }
-    public struct ResolutionContext
+    public record Context
     {
-        public IResolver Resolver { get; set; }
-        public Expressions.Reference.IProvider Scope { get; set; }
+        public GameState State { get; init; }
+        public IInputProvider InputProvider { get; init; }
+        public Scope Scope { get; init; }
+        public List<Rule.Unsafe.IRule> Rules { get; init; }
     }
-    public abstract class Reference<T> : IToken<T>
+    public record Resolved<T>
     {
-        public Expressions.Reference.Identifier.IIdentifier Identifier;
-        protected Reference(Expressions.Reference.Identifier.IIdentifier identifier) => Identifier = identifier;
-        public async ITask<T> Resolve(ResolutionContext context)
+        public T Value { get; init; }
+        public Context NewContext { get; init; }
+    }
+#nullable enable
+    #endregion
+
+    public abstract record Token<T> : Unsafe.IToken
+    {
+        public abstract Task<Resolved<T>?> Resolve(Context context);
+        public Task<Resolved<T>?> ResolveWith(Context context)
         {
-            // assumes you DONT mess up the type.
-            // this make me want to commit suicide but i cannot be bothered to find a better way.
-            return (T)(await context.Scope.GetReference(Identifier).Resolve(context));
+
+        }
+        public async Task<Resolved<object>?> ResolveUnsafe(Context context)
+        {
+            return await Resolve(context) is Resolved<T> resolution
+            ? new() {
+                Value = resolution.Value,
+                NewContext = resolution.NewContext
+            }
+            : null;
+        }
+        
+    }
+    namespace Unsafe
+    {
+        public interface IToken
+        {
+            public Task<Resolved<object>?> ResolveUnsafe(Context context);
+        }
+        public abstract record TokenWrapper<T> : Token<T>
+        {
+            public List<IToken> WrappedTokens { get; init; }
+            protected TokenWrapper(params IToken[] tokens)
+            {
+                WrappedTokens = new(tokens);
+            }
+            protected TokenWrapper(IEnumerable<IToken> tokens)
+            {
+                WrappedTokens = new(tokens);
+            }
+            public TokenWrapper(TokenWrapper<T> original) : base(original)
+            {
+                WrappedTokens = new(original.WrappedTokens);
+            }
+            protected abstract T TransformTokens(List<object> tokens);
+            public override async Task<Resolved<T>?> Resolve(Context context)
+            {
+                return await GetTokenResults(context) is Resolved<List<object>> success
+                ? new() {
+                    Value = TransformTokens(success.Value),
+                    NewContext = success.NewContext,
+                }
+                : null;
+            }
+            private async Task<Resolved<List<object>>?> GetTokenResults(Context context)
+            {
+                List<object> o = new(WrappedTokens.Count);
+                List<Context> contexts = new(WrappedTokens.Count + 1) { context };
+                for (int i = 0; i < WrappedTokens.Count; i++)
+                {
+                    switch (await WrappedTokens[i].ResolveUnsafe(contexts[i]))
+                    {
+                        case Resolved<object> resolution:
+                            o[i] = resolution.Value;
+                            o[i+1] = resolution.NewContext;
+                            continue;
+                        case null:
+                            if (i == 0) return null;
+                            i -= 2;
+                            continue;
+                    }
+                }
+                return new()
+                { Value = o, NewContext = contexts[^1] };
+            }
+
         }
     }
-    public abstract class DataToken<T> : IToken<T>
+    public abstract record Infallible<T> : Token<T>
     {
-        public ITask<T> Resolve(ResolutionContext context) => Task.FromResult(GetData(Game.CurrentGame.CurrentState)).AsITask();
-        protected abstract T GetData(GameState state);
+#pragma warning disable CS8619 // Nullability of reference types in value doesn't match target type.
+        public override Task<Resolved<T>?> Resolve(Context context) => Task.FromResult(InfallibleResolve(context));
+#pragma warning restore CS8619 // Nullability of reference types in value doesn't match target type.
+        protected abstract Resolved<T> InfallibleResolve(Context context);
     }
+    public abstract record NonMutating<T> : Token<T>
+    {
+        protected abstract Task<T?> NonMutatingResolve(Context context);
+        public override async Task<Resolved<T>?> Resolve(Context context)
+        {
+            return await NonMutatingResolve(context) is T value
+            ? new() {
+                Value = value,
+                NewContext = context,
+            }
+            : null;
+        }
+    }
+    public abstract record Pure<T> : Token<T>
+    {
+        protected abstract T PureResolve(Context context);
+        public override Task<Resolved<T>?> Resolve(Context context)
+        {
+            return Task.FromResult<Resolved<T>?>(new()
+            {
+                Value = PureResolve(context),
+                NewContext = context,
+            });
+        }
+        
+    }
+    public abstract record Function<TIn1, TOut> : Unsafe.TokenWrapper<TOut>
+    {
+        protected Function(Token<TIn1> in1) : base(in1) { }
+        protected abstract TOut Evaluate(TIn1 in1);
+        protected override TOut TransformTokens(List<object> args) =>
+            Evaluate((TIn1)args[0]);
+    }
+    public abstract record Function<TIn1, TIn2, TOut> : Unsafe.TokenWrapper<TOut>
+    {
+        protected Function(Token<TIn1> in1, Token<TIn2> in2) : base(in1, in2) { }
+        protected abstract TOut Evaluate(TIn1 in1, TIn2 in2);
+        protected override TOut TransformTokens(List<object> args) =>
+            Evaluate((TIn1)args[0], (TIn2)args[1]);
+    }
+    public abstract record Function<TIn1, TIn2, TIn3, TOut> : Unsafe.TokenWrapper<TOut>
+    {
+        protected Function(Token<TIn1> in1, Token<TIn2> in2, Token<TIn3> in3) : base(in1, in2, in3) { }
+        protected abstract TOut Evaluate(TIn1 in1, TIn2 in2, TIn3 in3);
+        protected override TOut TransformTokens(List<object> args) =>
+            Evaluate((TIn1)args[0], (TIn2)args[1], (TIn3)args[2]);
+    }
+    public abstract record Combiner<TIn, TOut> : Unsafe.TokenWrapper<TOut>
+    {
+        protected Combiner(IEnumerable<Token<TIn>> tokens) : base(tokens) { }
+        protected Combiner(params Token<TIn>[] tokens) : base(tokens) { }
+        protected abstract TOut Evaluate(IEnumerable<TIn> inputs);
+        protected override TOut TransformTokens(List<object> tokens) => Evaluate(tokens.Map(x => (TIn)x));
+    }
+
 }
 namespace Tokens
 {
-    using Token;
-    public sealed class DynamicReference<T> : Reference<T>
+
+}
+namespace Rule
+{
+    namespace Unsafe
     {
-        public DynamicReference(string key) : base(new Expressions.Reference.Identifier.Dynamic(key)) { }
-    }
-    
-    // special tokens that are especially silly.
-    namespace GameData
-    {
-        public sealed class AllUnits : DataToken<IEnumerable<Unit>>
+        public abstract record Rule
         {
-            protected override IEnumerable<Unit> GetData(GameState state) => state.Units;
+            public System.Type TokenType;
         }
     }
-    namespace Gen
+    public record Rule<TToken, T> : Unsafe.Rule
     {
-        namespace Select
-        {
-            public sealed class One<T> : IToken<T>
-            {
-                public IToken<IEnumerable<T>> From;
-                public One(IToken<IEnumerable<T>> from)
-                {
-                    From = from;
-                }
-                public ITask<T> Resolve(ResolutionContext context)
-                {
-                    throw new System.NotImplementedException();
-                }
-            }
-            public sealed class Multiple<T> : IToken<IEnumerable<T>>
-            {
-                public IToken<IEnumerable<T>> From;
-                // simple 'count' based system for now.
-                // would be cool if it was condition based. (like select until <x>)
-                public IToken<int> Count;
-                public Multiple(IToken<IEnumerable<T>> from, IToken<int> count)
-                {
-                    From = from;
-                    Count = count;
-                }
-                public ITask<IEnumerable<T>> Resolve(ResolutionContext context)
-                {
-                    throw new System.NotImplementedException();
-                }
-            }
-        }
+
     }
 }
