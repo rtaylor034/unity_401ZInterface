@@ -12,11 +12,17 @@ namespace Resolution
     using Token;
     public abstract record Resolution
     {
-        public abstract Context ApplyToContext(Context before);
+        /// <summary>
+        /// <i>Use <see cref="Context.WithResolution(Resolution)"/> instead.</i>
+        /// </summary>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        public Context _ChangeContext(Context context) => ChangeContext(context);
+        protected abstract Context ChangeContext(Context before);
     }
     public abstract record NonMutating : Resolution
     {
-        public override Context ApplyToContext(Context context) => context;
+        protected override Context ChangeContext(Context context) => context;
     }
 }
 namespace Token
@@ -38,7 +44,7 @@ namespace Token
         public IInputProvider InputProvider { get; init; }
         public Scope Scope { get; init; }
         public List<Rule.Unsafe.IProxy> Rules { get; init; }
-        public Context WithResolution(Resolution resolution) => resolution.ApplyToContext(this);
+        public Context WithResolution(Resolution resolution) => resolution._ChangeContext(this);
     }
 #nullable enable
     #endregion
@@ -102,9 +108,7 @@ namespace Token
     }
     public abstract record Infallible<R> : Token<R> where R : Resolution
     {
-#pragma warning disable CS8619 // Nullability of reference types in value doesn't match target type.
         public override Task<R?> Resolve(Context context) => Task.FromResult(InfallibleResolve(context));
-#pragma warning restore CS8619 // Nullability of reference types in value doesn't match target type.
         protected abstract R InfallibleResolve(Context context);
     }
     #region Function<R>s
@@ -117,7 +121,6 @@ namespace Token
         where TIn1 : Resolution
         where TOut : Resolution
     {
-
         protected Function(Token<TIn1> in1) : base(in1)
         {
 
