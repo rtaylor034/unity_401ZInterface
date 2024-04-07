@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Token;
+using Proxy;
 using UnityEngine;
 using System.Threading.Tasks;
 using MorseCode.ITask;
@@ -13,6 +14,12 @@ public class TESTER : MonoBehaviour
     // Start is called before the first frame update
     async void Start()
     {
+        Proxy<ValT1> in1 = null;
+        Proxy<ValT2> in2 = null;
+        var o = Proxy.OfToken<TokenFunc, ValT2>.Create().WithArgs(
+            in1,
+            in2);
+
         AClass aa = new AClass();
         AClass ab = new BClass();
         BClass bb = new BClass();
@@ -41,6 +48,16 @@ public class TESTER : MonoBehaviour
     }
 }
 
+public record ValT1 : Resolution.NonMutating { }
+public record ValT2 : Resolution.NonMutating { }
+public record TokenFunc : Token.Function<ValT1, ValT2, ValT2>
+{
+    protected override ValT2 Evaluate(ValT1 in1, ValT2 in2)
+    {
+        throw new NotImplementedException();
+    }
+    public TokenFunc(Token<ValT1> in1, Token<ValT2> in2) : base(in1, in2) { }
+}
 public class AClass
 {
     public virtual string TestA() => "A";
