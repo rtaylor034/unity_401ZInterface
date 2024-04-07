@@ -55,16 +55,20 @@ namespace Proxy
         public abstract Token<R> Realize(Token<R> original);
         public Token.Unsafe.IToken UnsafeRealize(Token.Unsafe.IToken original) => Realize((Token<R>)original);
     }
+
+    /// <summary>
+    /// provides syntax sugar when making proxies.
+    /// </summary>
     public static class Builder
     {
-        public static Proxies.Function<TToken, TIn1, R> WithArgs<R, TToken, TIn1>(this OfToken<TToken, R> _, Proxy<TIn1> in1)
+        public static Proxies.Function<TToken, TIn1, R> WithArgs<R, TToken, TIn1>(this OfType<TToken, R> _, Proxy<TIn1> in1)
             where TToken : Token.Function<TIn1, R>
             where TIn1 : Resolution.Resolution
             where R : Resolution.Resolution
         {
             return new(in1);
         }
-        public static Proxies.Function<TToken, TIn1, TIn2, R> WithArgs<R, TToken, TIn1, TIn2>(this OfToken<TToken, R> _, Proxy<TIn1> in1, Proxy<TIn2> in2)
+        public static Proxies.Function<TToken, TIn1, TIn2, R> WithArgs<R, TToken, TIn1, TIn2>(this OfType<TToken, R> _, Proxy<TIn1> in1, Proxy<TIn2> in2)
             where TToken : Token.Function<TIn1, TIn2, R>
             where TIn1 : Resolution.Resolution
             where TIn2 : Resolution.Resolution
@@ -72,7 +76,7 @@ namespace Proxy
         {
             return new(in1, in2);
         }
-        public static Proxies.Function<TToken, TIn1, TIn2, TIn3, R> WithArgs<R, TToken, TIn1, TIn2, TIn3>(this OfToken<TToken, R> _, Proxy<TIn1> in1, Proxy<TIn2> in2, Proxy<TIn2> in3)
+        public static Proxies.Function<TToken, TIn1, TIn2, TIn3, R> WithArgs<R, TToken, TIn1, TIn2, TIn3>(this OfType<TToken, R> _, Proxy<TIn1> in1, Proxy<TIn2> in2, Proxy<TIn2> in3)
             where TToken : Token.Function<TIn1, TIn2, TIn3, R>
             where TIn1 : Resolution.Resolution
             where TIn2 : Resolution.Resolution
@@ -81,7 +85,7 @@ namespace Proxy
         {
             return new(in1, in2, in3);
         }
-        public static Proxies.Combiner<TToken, TIn1, R> WithArgs<R, TToken, TIn1>(this OfToken<TToken, R> _, IEnumerable<Proxy<TIn1>> ins)
+        public static Proxies.Combiner<TToken, TIn1, R> WithArgs<R, TToken, TIn1>(this OfType<TToken, R> _, IEnumerable<Proxy<TIn1>> ins)
             where TToken : Token.Combiner<TIn1, R>
             where TIn1 : Resolution.Resolution
             where R : Resolution.Resolution
@@ -93,10 +97,7 @@ namespace Proxy
     /// exists solely for <see cref="Build"/>.
     /// </summary>
     /// <typeparam name="TToken"></typeparam>
-    public struct OfToken<TToken, R> where TToken : Token<R> where R : Resolution.Resolution
-    {
-        public static OfToken<TToken, R> Create() => new();
-    }
+    public struct OfType<TToken, R> where TToken : Token<R> where R : Resolution.Resolution { }
 }
 namespace Proxies
 {

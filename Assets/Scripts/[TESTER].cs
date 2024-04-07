@@ -16,9 +16,7 @@ public class TESTER : MonoBehaviour
     {
         Proxy<ValT1> in1 = null;
         Proxy<ValT2> in2 = null;
-        var o = Proxy.OfToken<TokenFunc, ValT2>.Create().WithArgs(
-            in1,
-            in2);
+        var o = new Proxy.OfType<TokenFunc, ValT2>().WithArgs(in1, in2);
 
         AClass aa = new AClass();
         AClass ab = new BClass();
