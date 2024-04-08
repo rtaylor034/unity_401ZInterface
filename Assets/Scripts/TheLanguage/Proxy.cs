@@ -65,33 +65,30 @@ namespace Proxy
             where TToken : Token.Function<TIn1, R>
             where TIn1 : Resolution.Resolution
             where R : Resolution.Resolution
-        {
-            return new(in1);
-        }
+            { return new(in1); }
         public static Proxies.Function<TToken, TIn1, TIn2, R> WithArgs<R, TToken, TIn1, TIn2>(this OfType<TToken, R> _, Proxy<TIn1> in1, Proxy<TIn2> in2)
             where TToken : Token.Function<TIn1, TIn2, R>
             where TIn1 : Resolution.Resolution
             where TIn2 : Resolution.Resolution
             where R : Resolution.Resolution
-        {
-            return new(in1, in2);
-        }
+            { return  new(in1, in2); }
         public static Proxies.Function<TToken, TIn1, TIn2, TIn3, R> WithArgs<R, TToken, TIn1, TIn2, TIn3>(this OfType<TToken, R> _, Proxy<TIn1> in1, Proxy<TIn2> in2, Proxy<TIn2> in3)
             where TToken : Token.Function<TIn1, TIn2, TIn3, R>
             where TIn1 : Resolution.Resolution
             where TIn2 : Resolution.Resolution
             where TIn3 : Resolution.Resolution
             where R : Resolution.Resolution
-        {
-            return new(in1, in2, in3);
-        }
+            { return new(in1, in2, in3); }
+
         public static Proxies.Combiner<TToken, TIn1, R> WithArgs<R, TToken, TIn1>(this OfType<TToken, R> _, IEnumerable<Proxy<TIn1>> ins)
             where TToken : Token.Combiner<TIn1, R>
             where TIn1 : Resolution.Resolution
             where R : Resolution.Resolution
-        {
-            return new(ins);
-        }
+            { return new(ins); }
+        public static Proxies.Direct<TToken, R> AsProxy<TToken, R>(this TToken token)
+            where TToken : Token<R>
+            where R : Resolution.Resolution
+            { return new(token); }
     }
     /// <summary>
     /// exists solely for <see cref="Build"/>.
@@ -142,5 +139,11 @@ namespace Proxies
             return (Token.Unsafe.TokenFunction<TOut>)TokenType.GetConstructor(new Type[] { typeof(IEnumerable<Token<TIn>>) })
                 .Invoke(new object[] { tokens });
         }
+    }
+    public sealed record Direct<TToken, R> : Proxy.Proxy<R> where TToken : Token.Token<R> where R : Resolution
+    {
+        private TToken _token { get; init; } 
+        public Direct(TToken token) => _token = token;
+        public override Token<R> Realize(Token<R> _) => _token;
     }
 }
