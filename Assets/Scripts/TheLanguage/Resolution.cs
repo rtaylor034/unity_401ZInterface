@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+#nullable enable
 namespace Resolution
 {
     using Token;
@@ -18,5 +19,13 @@ namespace Resolution
     public abstract record NonMutating : Resolution
     {
         protected override Context ChangeContext(Context context) => context;
+    }
+}
+namespace Resolutions
+{
+    using Resolution;
+    public sealed record Number : NonMutating
+    {
+        public int Value { get; init; }
     }
 }

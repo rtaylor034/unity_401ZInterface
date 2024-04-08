@@ -2,17 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Rule : MonoBehaviour
+#nullable enable
+namespace Rule
 {
-    // Start is called before the first frame update
-    void Start()
+    namespace Unsafe
     {
-        
-    }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
     }
 }

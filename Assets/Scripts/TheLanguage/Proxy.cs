@@ -4,6 +4,7 @@ using UnityEngine;
 using Perfection;
 using System;
 
+#nullable enable
 namespace Proxy
 {
     using Token;
@@ -101,7 +102,29 @@ namespace Proxies
     using Proxy;
     using Token;
     using Resolution;
+
+    public record Combiner<TToken, RIn, ROut> : Proxy.Unsafe.FunctionProxy<ROut>
+        where TToken : Token.Combiner<RIn, ROut>
+        where RIn : Resolution
+        where ROut : Resolution
+    {
+        public Combiner(IEnumerable<Proxy<RIn>> proxies) : base(typeof(TToken), proxies) { }
+        protected override Token.Unsafe.TokenFunction<ROut> RealizeArgs(List<Token.Unsafe.IToken> tokens)
+        {
+            //SHAKY
+            return (Token.Unsafe.TokenFunction<ROut>)TokenType.GetConstructor(new Type[] { typeof(IEnumerable<Token<RIn>>) })
+                .Invoke(new object[] { tokens });
+        }
+    }
+    public sealed record Direct<TToken, R> : Proxy.Proxy<R> where TToken : Token.Token<R> where R : Resolution
+    {
+        private TToken _token { get; init; } 
+        public Direct(TToken token) => _token = token;
+        public override Token<R> Realize(Token<R> _) => _token;
+    }
+
     #region Functions
+    // ---- [ Functions ] ----
     public record Function<TToken, RIn1, ROut> : Proxy.Unsafe.FunctionProxy<ROut>
         where TToken : Token.Function<RIn1, ROut>
         where RIn1 : Resolution
@@ -126,24 +149,7 @@ namespace Proxies
     {
         public Function(Proxy<RIn1> in1, Proxy<RIn2> in2, Proxy<RIn2> in3) : base(typeof(TToken), in1, in2, in3) { }
     }
+    // --------
     #endregion
-    public record Combiner<TToken, RIn, ROut> : Proxy.Unsafe.FunctionProxy<ROut>
-        where TToken : Token.Combiner<RIn, ROut>
-        where RIn : Resolution
-        where ROut : Resolution
-    {
-        public Combiner(IEnumerable<Proxy<RIn>> proxies) : base(typeof(TToken), proxies) { }
-        protected override Token.Unsafe.TokenFunction<ROut> RealizeArgs(List<Token.Unsafe.IToken> tokens)
-        {
-            //SHAKY
-            return (Token.Unsafe.TokenFunction<ROut>)TokenType.GetConstructor(new Type[] { typeof(IEnumerable<Token<RIn>>) })
-                .Invoke(new object[] { tokens });
-        }
-    }
-    public sealed record Direct<TToken, R> : Proxy.Proxy<R> where TToken : Token.Token<R> where R : Resolution
-    {
-        private TToken _token { get; init; } 
-        public Direct(TToken token) => _token = token;
-        public override Token<R> Realize(Token<R> _) => _token;
-    }
+
 }
