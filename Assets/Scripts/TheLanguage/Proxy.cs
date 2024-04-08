@@ -114,7 +114,7 @@ namespace Proxies
     }
     public sealed record Direct<TToken, R> : Proxy.Proxy<R> where TToken : Token.IToken<R> where R : Resolution
     {
-        private TToken _token { get; init; } 
+        private TToken _token { get; init; }
         public Direct(TToken token) => _token = token;
         public override IToken<R> Realize(IToken<R> _) => _token;
     }
