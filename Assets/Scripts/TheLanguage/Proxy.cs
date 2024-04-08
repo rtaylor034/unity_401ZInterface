@@ -61,28 +61,28 @@ namespace Proxy
     /// </summary>
     public static class Builder
     {
-        public static Proxies.Function<TToken, TIn1, R> WithArgs<R, TToken, TIn1>(this OfType<TToken, R> _, Proxy<TIn1> in1)
-            where TToken : Token.Function<TIn1, R>
-            where TIn1 : Resolution.Resolution
+        public static Proxies.Function<TToken, RIn1, R> WithArgs<R, TToken, RIn1>(this OfType<TToken, R> _, Proxy<RIn1> in1)
+            where TToken : Token.Function<RIn1, R>
+            where RIn1 : Resolution.Resolution
             where R : Resolution.Resolution
             { return new(in1); }
-        public static Proxies.Function<TToken, TIn1, TIn2, R> WithArgs<R, TToken, TIn1, TIn2>(this OfType<TToken, R> _, Proxy<TIn1> in1, Proxy<TIn2> in2)
-            where TToken : Token.Function<TIn1, TIn2, R>
-            where TIn1 : Resolution.Resolution
-            where TIn2 : Resolution.Resolution
+        public static Proxies.Function<TToken, RIn1, RIn2, R> WithArgs<R, TToken, RIn1, RIn2>(this OfType<TToken, R> _, Proxy<RIn1> in1, Proxy<RIn2> in2)
+            where TToken : Token.Function<RIn1, RIn2, R>
+            where RIn1 : Resolution.Resolution
+            where RIn2 : Resolution.Resolution
             where R : Resolution.Resolution
             { return  new(in1, in2); }
-        public static Proxies.Function<TToken, TIn1, TIn2, TIn3, R> WithArgs<R, TToken, TIn1, TIn2, TIn3>(this OfType<TToken, R> _, Proxy<TIn1> in1, Proxy<TIn2> in2, Proxy<TIn2> in3)
-            where TToken : Token.Function<TIn1, TIn2, TIn3, R>
-            where TIn1 : Resolution.Resolution
-            where TIn2 : Resolution.Resolution
-            where TIn3 : Resolution.Resolution
+        public static Proxies.Function<TToken, RIn1, RIn2, RIn3, R> WithArgs<R, TToken, RIn1, RIn2, RIn3>(this OfType<TToken, R> _, Proxy<RIn1> in1, Proxy<RIn2> in2, Proxy<RIn2> in3)
+            where TToken : Token.Function<RIn1, RIn2, RIn3, R>
+            where RIn1 : Resolution.Resolution
+            where RIn2 : Resolution.Resolution
+            where RIn3 : Resolution.Resolution
             where R : Resolution.Resolution
             { return new(in1, in2, in3); }
 
-        public static Proxies.Combiner<TToken, TIn1, R> WithArgs<R, TToken, TIn1>(this OfType<TToken, R> _, IEnumerable<Proxy<TIn1>> ins)
-            where TToken : Token.Combiner<TIn1, R>
-            where TIn1 : Resolution.Resolution
+        public static Proxies.Combiner<TToken, RIn1, R> WithArgs<R, TToken, RIn1>(this OfType<TToken, R> _, IEnumerable<Proxy<RIn1>> ins)
+            where TToken : Token.Combiner<RIn1, R>
+            where RIn1 : Resolution.Resolution
             where R : Resolution.Resolution
             { return new(ins); }
         public static Proxies.Direct<TToken, R> AsProxy<TToken, R>(this TToken token)
@@ -102,41 +102,41 @@ namespace Proxies
     using Token;
     using Resolution;
     #region Functions
-    public record Function<TToken, TIn1, TOut> : Proxy.Unsafe.FunctionProxy<TOut>
-        where TToken : Token.Function<TIn1, TOut>
-        where TIn1 : Resolution
-        where TOut : Resolution
+    public record Function<TToken, RIn1, ROut> : Proxy.Unsafe.FunctionProxy<ROut>
+        where TToken : Token.Function<RIn1, ROut>
+        where RIn1 : Resolution
+        where ROut : Resolution
     {
-        public Function(Proxy<TIn1> in1) : base(typeof(TToken), in1) { }
+        public Function(Proxy<RIn1> in1) : base(typeof(TToken), in1) { }
     }
-    public record Function<TToken, TIn1, TIn2, TOut> : Proxy.Unsafe.FunctionProxy<TOut>
-        where TToken : Token.Function<TIn1, TIn2, TOut>
-        where TIn1 : Resolution
-        where TIn2 : Resolution
-        where TOut : Resolution
+    public record Function<TToken, RIn1, RIn2, ROut> : Proxy.Unsafe.FunctionProxy<ROut>
+        where TToken : Token.Function<RIn1, RIn2, ROut>
+        where RIn1 : Resolution
+        where RIn2 : Resolution
+        where ROut : Resolution
     {
-        public Function(Proxy<TIn1> in1, Proxy<TIn2> in2) : base(typeof(TToken), in1, in2) { }
+        public Function(Proxy<RIn1> in1, Proxy<RIn2> in2) : base(typeof(TToken), in1, in2) { }
     }
-    public record Function<TToken, TIn1, TIn2, TIn3, TOut> : Proxy.Unsafe.FunctionProxy<TOut>
-        where TToken : Token.Function<TIn1, TIn2, TIn3, TOut>
-        where TIn1 : Resolution
-        where TIn2 : Resolution
-        where TIn3 : Resolution
-        where TOut : Resolution
+    public record Function<TToken, RIn1, RIn2, RIn3, ROut> : Proxy.Unsafe.FunctionProxy<ROut>
+        where TToken : Token.Function<RIn1, RIn2, RIn3, ROut>
+        where RIn1 : Resolution
+        where RIn2 : Resolution
+        where RIn3 : Resolution
+        where ROut : Resolution
     {
-        public Function(Proxy<TIn1> in1, Proxy<TIn2> in2, Proxy<TIn2> in3) : base(typeof(TToken), in1, in2, in3) { }
+        public Function(Proxy<RIn1> in1, Proxy<RIn2> in2, Proxy<RIn2> in3) : base(typeof(TToken), in1, in2, in3) { }
     }
     #endregion
-    public record Combiner<TToken, TIn, TOut> : Proxy.Unsafe.FunctionProxy<TOut>
-        where TToken : Token.Combiner<TIn, TOut>
-        where TIn : Resolution
-        where TOut : Resolution
+    public record Combiner<TToken, RIn, ROut> : Proxy.Unsafe.FunctionProxy<ROut>
+        where TToken : Token.Combiner<RIn, ROut>
+        where RIn : Resolution
+        where ROut : Resolution
     {
-        public Combiner(IEnumerable<Proxy<TIn>> proxies) : base(typeof(TToken), proxies) { }
-        protected override Token.Unsafe.TokenFunction<TOut> RealizeArgs(List<Token.Unsafe.IToken> tokens)
+        public Combiner(IEnumerable<Proxy<RIn>> proxies) : base(typeof(TToken), proxies) { }
+        protected override Token.Unsafe.TokenFunction<ROut> RealizeArgs(List<Token.Unsafe.IToken> tokens)
         {
             //SHAKY
-            return (Token.Unsafe.TokenFunction<TOut>)TokenType.GetConstructor(new Type[] { typeof(IEnumerable<Token<TIn>>) })
+            return (Token.Unsafe.TokenFunction<ROut>)TokenType.GetConstructor(new Type[] { typeof(IEnumerable<Token<RIn>>) })
                 .Invoke(new object[] { tokens });
         }
     }

@@ -97,61 +97,61 @@ namespace Token
     #region Functions
     /// <summary>
     /// Tokens that inherit must have a constructor matching: <br></br>
-    /// <code>(Token&lt;<typeparamref name="TIn1"/>&gt;)</code>
+    /// <code>(Token&lt;<typeparamref name="RIn1"/>&gt;)</code>
     /// </summary>
-    /// <typeparam name="TIn1"></typeparam>
-    public abstract record Function<TIn1, TOut> : Unsafe.TokenFunction<TOut>
-        where TIn1 : Resolution
-        where TOut : Resolution
+    /// <typeparam name="RIn1"></typeparam>
+    public abstract record Function<RIn1, ROut> : Unsafe.TokenFunction<ROut>
+        where RIn1 : Resolution
+        where ROut : Resolution
     {
-        protected Function(Token<TIn1> in1) : base(in1) { }
-        protected abstract TOut Evaluate(TIn1 in1);
-        protected override TOut TransformTokens(List<Resolution> args) =>
-            Evaluate((TIn1)args[0]);
+        protected Function(Token<RIn1> in1) : base(in1) { }
+        protected abstract ROut Evaluate(RIn1 in1);
+        protected override ROut TransformTokens(List<Resolution> args) =>
+            Evaluate((RIn1)args[0]);
     }
     /// <summary>
     /// Tokens that inherit must have a constructor matching: <br></br>
-    /// <code>(Token&lt;<typeparamref name="TIn1"/>&gt;, Token&lt;<typeparamref name="TIn2"/>&gt;)</code>
+    /// <code>(Token&lt;<typeparamref name="RIn1"/>&gt;, Token&lt;<typeparamref name="RIn2"/>&gt;)</code>
     /// </summary>
-    /// <typeparam name="TIn1"></typeparam>
-    /// <typeparam name="TIn2"></typeparam>
-    public abstract record Function<TIn1, TIn2, TOut> : Unsafe.TokenFunction<TOut>
-        where TIn1 : Resolution
-        where TIn2 : Resolution
-        where TOut : Resolution
+    /// <typeparam name="RIn1"></typeparam>
+    /// <typeparam name="RIn2"></typeparam>
+    public abstract record Function<RIn1, RIn2, ROut> : Unsafe.TokenFunction<ROut>
+        where RIn1 : Resolution
+        where RIn2 : Resolution
+        where ROut : Resolution
     {
-        protected Function(Token<TIn1> in1, Token<TIn2> in2) : base(in1, in2) { }
-        protected abstract TOut Evaluate(TIn1 in1, TIn2 in2);
-        protected override TOut TransformTokens(List<Resolution> args) =>
-            Evaluate((TIn1)args[0], (TIn2)args[1]);
+        protected Function(Token<RIn1> in1, Token<RIn2> in2) : base(in1, in2) { }
+        protected abstract ROut Evaluate(RIn1 in1, RIn2 in2);
+        protected override ROut TransformTokens(List<Resolution> args) =>
+            Evaluate((RIn1)args[0], (RIn2)args[1]);
     }
     /// <summary>
     /// Tokens that inherit must have a constructor matching: <br></br>
-    /// <code>(Token&lt;<typeparamref name="TIn1"/>&gt;, Token&lt;<typeparamref name="TIn2"/>&gt;, Token&lt;<typeparamref name="TIn3"/>&gt;)</code>
+    /// <code>(Token&lt;<typeparamref name="RIn1"/>&gt;, Token&lt;<typeparamref name="RIn2"/>&gt;, Token&lt;<typeparamref name="RIn3"/>&gt;)</code>
     /// </summary>
-    /// <typeparam name="TIn1"></typeparam>
-    /// <typeparam name="TIn2"></typeparam>
-    /// <typeparam name="TIn3"></typeparam>
-    public abstract record Function<TIn1, TIn2, TIn3, TOut> : Unsafe.TokenFunction<TOut>
-        where TIn1 : Resolution
-        where TIn2 : Resolution
-        where TIn3 : Resolution
-        where TOut : Resolution
+    /// <typeparam name="RIn1"></typeparam>
+    /// <typeparam name="RIn2"></typeparam>
+    /// <typeparam name="RIn3"></typeparam>
+    public abstract record Function<RIn1, RIn2, RIn3, ROut> : Unsafe.TokenFunction<ROut>
+        where RIn1 : Resolution
+        where RIn2 : Resolution
+        where RIn3 : Resolution
+        where ROut : Resolution
     {
-        protected Function(Token<TIn1> in1, Token<TIn2> in2, Token<TIn3> in3) : base(in1, in2, in3) { }
-        protected abstract TOut Evaluate(TIn1 in1, TIn2 in2, TIn3 in3);
-        protected override TOut TransformTokens(List<Resolution> args) =>
-            Evaluate((TIn1)args[0], (TIn2)args[1], (TIn3)args[2]);
+        protected Function(Token<RIn1> in1, Token<RIn2> in2, Token<RIn3> in3) : base(in1, in2, in3) { }
+        protected abstract ROut Evaluate(RIn1 in1, RIn2 in2, RIn3 in3);
+        protected override ROut TransformTokens(List<Resolution> args) =>
+            Evaluate((RIn1)args[0], (RIn2)args[1], (RIn3)args[2]);
     }
     #endregion
-    public abstract record Combiner<TIn, TOut> : Unsafe.TokenFunction<TOut>
-        where TIn : Resolution
-        where TOut : Resolution
+    public abstract record Combiner<RIn, ROut> : Unsafe.TokenFunction<ROut>
+        where RIn : Resolution
+        where ROut : Resolution
     {
-        protected Combiner(IEnumerable<Token<TIn>> tokens) : base(tokens) { }
-        protected Combiner(params Token<TIn>[] tokens) : base(tokens) { }
-        protected abstract TOut Evaluate(IEnumerable<TIn> inputs);
-        protected override TOut TransformTokens(List<Resolution> tokens) => Evaluate(tokens.Map(x => (TIn)x));
+        protected Combiner(IEnumerable<Token<RIn>> tokens) : base(tokens) { }
+        protected Combiner(params Token<RIn>[] tokens) : base(tokens) { }
+        protected abstract ROut Evaluate(IEnumerable<RIn> inputs);
+        protected override ROut TransformTokens(List<Resolution> tokens) => Evaluate(tokens.Map(x => (RIn)x));
     }
 
 }
