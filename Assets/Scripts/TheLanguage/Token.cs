@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Perfection;
+using MorseCode.ITask;
 
 
 #nullable enable
@@ -30,10 +31,14 @@ namespace Token
 #nullable enable
     #endregion
 
-    public abstract record Token<R> : Unsafe.IToken where R : Resolution
+    public interface IToken<out R> : Unsafe.IToken where R : Resolution
     {
-        public abstract Task<R?> Resolve(Context context);
-        public async Task<Resolution?> ResolveUnsafe(Context context)
+        public ITask<R?> Resolve(Context context);
+    }
+    public abstract record Token<R> : IToken<R> where R : Resolution
+    {
+        public abstract ITask<R?> Resolve(Context context);
+        public async ITask<Resolution?> ResolveUnsafe(Context context)
         {
             return await Resolve(context);
         }
@@ -42,7 +47,7 @@ namespace Token
     {
         public interface IToken
         {
-            public Task<Resolution?> ResolveUnsafe(Context context);
+            public ITask<Resolution?> ResolveUnsafe(Context context);
         }
         public abstract record TokenFunction<R> : Token<R> where R : Resolution
         {
@@ -60,12 +65,12 @@ namespace Token
                 ArgTokens = new(original.ArgTokens);
             }
             protected abstract R TransformTokens(List<Resolution> tokens);
-            public override async Task<R?> Resolve(Context context)
+            public override async ITask<R?> Resolve(Context context)
             {
                 var o = await GetTokenResults(context);
                 return o is not null ? TransformTokens(o) : null;
             }
-            private async Task<List<Resolution>?> GetTokenResults(Context context)
+            private async ITask<List<Resolution>?> GetTokenResults(Context context)
             {
                 List<Resolution> o = new(ArgTokens.Count);
                 List<Context> contexts = new(ArgTokens.Count + 1) { context };
@@ -90,56 +95,71 @@ namespace Token
     public abstract record Infallible<R> : Token<R> where R : Resolution
     {
 #pragma warning disable CS8619
-        public override Task<R?> Resolve(Context context) => Task.FromResult(InfallibleResolve(context));
+        public override ITask<R?> Resolve(Context context) => Task.FromResult(InfallibleResolve(context)).AsITask();
 #pragma warning restore CS8619
         protected abstract R InfallibleResolve(Context context);
     }
 
-    public abstract record Combiner<RIn, ROut> : Unsafe.TokenFunction<ROut>
+    /// <summary>
+    /// Tokens that inherit must have a constructor matching: <br></br>
+    /// <code>(IEnumerable&lt;IToken&lt;<typeparamref name="RIn1"/>&gt;>&gt;)</code>
+    /// </summary>
+    /// <typeparam name="RIn1"></typeparam>
+    public abstract record Combiner<RIn, ROut> : Unsafe.TokenFunction<ROut>, ICombiner<RIn, ROut>
         where RIn : Resolution
         where ROut : Resolution
     {
-        protected Combiner(IEnumerable<Token<RIn>> tokens) : base(tokens) { }
-        protected Combiner(params Token<RIn>[] tokens) : base(tokens) { }
+        public IEnumerable<IToken<RIn>> Args { get; private init; }
+        protected Combiner(IEnumerable<IToken<RIn>> tokens) : base(tokens)
+        {
+            Args = tokens;
+        }
+        protected Combiner(params IToken<RIn>[] tokens) : base(tokens)
+        {
+            Args = tokens;
+        }
         protected abstract ROut Evaluate(IEnumerable<RIn> inputs);
         protected override ROut TransformTokens(List<Resolution> tokens) => Evaluate(tokens.Map(x => (RIn)x));
     }
 
     #region Functions
     // ---- [ Functions ] ----
-    public interface I1Args<RIn1>
-        where RIn1 : Resolution
-    {
-        public Token<RIn1> Arg1 { get; }
-    }
-    public interface I2Args<RIn1, RIn2> : I1Args<RIn1>
-        where RIn1 : Resolution
-        where RIn2 : Resolution
-    {
-        public Token<RIn2> Arg2 { get; }
-    }
-    public interface I3Args<RIn1, RIn2, RIn3> : I2Args<RIn1, RIn2>
-        where RIn1 : Resolution
-        where RIn2 : Resolution
-        where RIn3 : Resolution
-    {
-        public Token<RIn3> Arg3 { get; }
-    }
-    public interface ICombineArgs<RIn> where RIn : Resolution
-    {
-        public IEnumerable<Token<RIn>> Args { get; }
-    }
-    /// <summary>
-    /// Tokens that inherit must have a constructor matching: <br></br>
-    /// <code>(Token&lt;<typeparamref name="RIn1"/>&gt;)</code>
-    /// </summary>
-    /// <typeparam name="RIn1"></typeparam>
-    public abstract record Function<RIn1, ROut> : Unsafe.TokenFunction<ROut>, I1Args<RIn1>
+    public interface IFunction<out RIn1, out ROut> : IToken<ROut>
         where RIn1 : Resolution
         where ROut : Resolution
     {
-        public Token<RIn1> Arg1 { get; private init; }
-        protected Function(Token<RIn1> in1) : base(in1)
+        public IToken<RIn1> Arg1 { get; }
+    }
+    public interface IFunction<out RIn1, out RIn2, out ROut> : IFunction<RIn1, ROut>
+        where RIn1 : Resolution
+        where RIn2 : Resolution
+        where ROut : Resolution
+    {
+        public IToken<RIn2> Arg2 { get; }
+    }
+    public interface IFunction<out RIn1, out RIn2, out RIn3, out ROut> : IFunction<RIn1, RIn2, ROut>
+        where RIn1 : Resolution
+        where RIn2 : Resolution
+        where RIn3 : Resolution
+        where ROut : Resolution
+    {
+        public IToken<RIn3> Arg3 { get; }
+    }
+    public interface ICombiner<out RIn, out ROut> : IToken<ROut> where RIn : Resolution where ROut : Resolution
+    {
+        public IEnumerable<IToken<RIn>> Args { get; }
+    }
+    /// <summary>
+    /// Tokens that inherit must have a constructor matching: <br></br>
+    /// <code>(IToken&lt;<typeparamref name="RIn1"/>&gt;)</code>
+    /// </summary>
+    /// <typeparam name="RIn1"></typeparam>
+    public abstract record Function<RIn1, ROut> : Unsafe.TokenFunction<ROut>, IFunction<RIn1, ROut>
+        where RIn1 : Resolution
+        where ROut : Resolution
+    {
+        public IToken<RIn1> Arg1 { get; private init; }
+        protected Function(IToken<RIn1> in1) : base(in1)
         {
             Arg1 = in1;
         }
@@ -149,18 +169,18 @@ namespace Token
     }
     /// <summary>
     /// Tokens that inherit must have a constructor matching: <br></br>
-    /// <code>(Token&lt;<typeparamref name="RIn1"/>&gt;, Token&lt;<typeparamref name="RIn2"/>&gt;)</code>
+    /// <code>(IToken&lt;<typeparamref name="RIn1"/>&gt;, IToken&lt;<typeparamref name="RIn2"/>&gt;)</code>
     /// </summary>
     /// <typeparam name="RIn1"></typeparam>
     /// <typeparam name="RIn2"></typeparam>
-    public abstract record Function<RIn1, RIn2, ROut> : Unsafe.TokenFunction<ROut>, I2Args<RIn1, RIn2>
+    public abstract record Function<RIn1, RIn2, ROut> : Unsafe.TokenFunction<ROut>, IFunction<RIn1, RIn2, ROut>
         where RIn1 : Resolution
         where RIn2 : Resolution
         where ROut : Resolution
     {
-        public Token<RIn1> Arg1 { get; private init; }
-        public Token<RIn2> Arg2 { get; private init; }
-        protected Function(Token<RIn1> in1, Token<RIn2> in2) : base(in1, in2)
+        public IToken<RIn1> Arg1 { get; private init; }
+        public IToken<RIn2> Arg2 { get; private init; }
+        protected Function(IToken<RIn1> in1, IToken<RIn2> in2) : base(in1, in2)
         {
             Arg1 = in1;
             Arg2 = in2;
@@ -171,21 +191,21 @@ namespace Token
     }
     /// <summary>
     /// Tokens that inherit must have a constructor matching: <br></br>
-    /// <code>(Token&lt;<typeparamref name="RIn1"/>&gt;, Token&lt;<typeparamref name="RIn2"/>&gt;, Token&lt;<typeparamref name="RIn3"/>&gt;)</code>
+    /// <code>(IToken&lt;<typeparamref name="RIn1"/>&gt;, IToken&lt;<typeparamref name="RIn2"/>&gt;, IToken&lt;<typeparamref name="RIn3"/>&gt;)</code>
     /// </summary>
     /// <typeparam name="RIn1"></typeparam>
     /// <typeparam name="RIn2"></typeparam>
     /// <typeparam name="RIn3"></typeparam>
-    public abstract record Function<RIn1, RIn2, RIn3, ROut> : Unsafe.TokenFunction<ROut>, I3Args<RIn1, RIn2, RIn3>
+    public abstract record Function<RIn1, RIn2, RIn3, ROut> : Unsafe.TokenFunction<ROut>, IFunction<RIn1, RIn2, RIn3, ROut>
         where RIn1 : Resolution
         where RIn2 : Resolution
         where RIn3 : Resolution
         where ROut : Resolution
     {
-        public Token<RIn1> Arg1 { get; private init; }
-        public Token<RIn2> Arg2 { get; private init; }
-        public Token<RIn3> Arg3 { get; private init; }
-        protected Function(Token<RIn1> in1, Token<RIn2> in2, Token<RIn3> in3) : base(in1, in2, in3)
+        public IToken<RIn1> Arg1 { get; private init; }
+        public IToken<RIn2> Arg2 { get; private init; }
+        public IToken<RIn3> Arg3 { get; private init; }
+        protected Function(IToken<RIn1> in1, IToken<RIn2> in2, IToken<RIn3> in3) : base(in1, in2, in3)
         {
             Arg1 = in1;
             Arg2 = in2;

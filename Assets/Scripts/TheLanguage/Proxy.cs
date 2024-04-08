@@ -38,14 +38,9 @@ namespace Proxy
                 TokenType = original.TokenType;
                 ArgProxies = new(original.ArgProxies);
             }
-            protected virtual TokenFunction<R> RealizeArgs(List<IToken> tokens)
-            {
-                // SHAKY
-                return (TokenFunction<R>)TokenType.GetConstructor(tokens.Map(x => x.GetType()).ToArray())
-                    .Invoke(tokens.ToArray());
-            }
-            public override Token<R> Realize(Token<R> original) => RealizeArgs(MakeSubstitutions(original));
-            protected List<IToken> MakeSubstitutions(Token<R> original)
+            protected abstract TokenFunction<R> ConstructFromArgs(List<IToken> tokens);
+            public override IToken<R> Realize(IToken<R> original) => ConstructFromArgs(MakeSubstitutions(original));
+            protected List<IToken> MakeSubstitutions(IToken<R> original)
             {
                 return new(ArgProxies.Map(x => x.UnsafeRealize(original)));
             }
@@ -53,8 +48,8 @@ namespace Proxy
     }
     public abstract record Proxy<R> : Unsafe.IProxy where R : Resolution.Resolution
     {
-        public abstract Token<R> Realize(Token<R> original);
-        public Token.Unsafe.IToken UnsafeRealize(Token.Unsafe.IToken original) => Realize((Token<R>)original);
+        public abstract IToken<R> Realize(IToken<R> original);
+        public Token.Unsafe.IToken UnsafeRealize(Token.Unsafe.IToken original) => Realize((IToken<R>)original);
     }
 
     /// <summary>
@@ -87,7 +82,7 @@ namespace Proxy
             where R : Resolution.Resolution
             { return new(ins); }
         public static Proxies.Direct<TToken, R> AsProxy<TToken, R>(this TToken token)
-            where TToken : Token<R>
+            where TToken : IToken<R>
             where R : Resolution.Resolution
             { return new(token); }
     }
@@ -95,13 +90,14 @@ namespace Proxy
     /// exists solely for <see cref="Build"/>.
     /// </summary>
     /// <typeparam name="TToken"></typeparam>
-    public struct OfType<TToken, R> where TToken : Token<R> where R : Resolution.Resolution { }
+    public struct OfType<TToken, R> where TToken : IToken<R> where R : Resolution.Resolution { }
 }
 namespace Proxies
 {
     using Proxy;
     using Token;
     using Resolution;
+    using Token.Unsafe;
 
     public record Combiner<TToken, RIn, ROut> : Proxy.Unsafe.FunctionProxy<ROut>
         where TToken : Token.Combiner<RIn, ROut>
@@ -109,18 +105,18 @@ namespace Proxies
         where ROut : Resolution
     {
         public Combiner(IEnumerable<Proxy<RIn>> proxies) : base(typeof(TToken), proxies) { }
-        protected override Token.Unsafe.TokenFunction<ROut> RealizeArgs(List<Token.Unsafe.IToken> tokens)
+        protected override Token.Unsafe.TokenFunction<ROut> ConstructFromArgs(List<Token.Unsafe.IToken> tokens)
         {
             //SHAKY
-            return (Token.Unsafe.TokenFunction<ROut>)TokenType.GetConstructor(new Type[] { typeof(IEnumerable<Token<RIn>>) })
+            return (Token.Unsafe.TokenFunction<ROut>)TokenType.GetConstructor(new Type[] { typeof(IEnumerable<IToken<RIn>>) })
                 .Invoke(new object[] { tokens });
         }
     }
-    public sealed record Direct<TToken, R> : Proxy.Proxy<R> where TToken : Token.Token<R> where R : Resolution
+    public sealed record Direct<TToken, R> : Proxy.Proxy<R> where TToken : Token.IToken<R> where R : Resolution
     {
         private TToken _token { get; init; } 
         public Direct(TToken token) => _token = token;
-        public override Token<R> Realize(Token<R> _) => _token;
+        public override IToken<R> Realize(IToken<R> _) => _token;
     }
 
     #region Functions
@@ -131,6 +127,12 @@ namespace Proxies
         where ROut : Resolution
     {
         public Function(Proxy<RIn1> in1) : base(typeof(TToken), in1) { }
+        protected override TokenFunction<ROut> ConstructFromArgs(List<IToken> tokens)
+        {
+            return (TokenFunction<ROut>)
+                TokenType.GetConstructor(new Type[] { typeof(IToken<RIn1>) })
+                .Invoke(tokens.ToArray());
+        }
     }
     public record Function<TToken, RIn1, RIn2, ROut> : Proxy.Unsafe.FunctionProxy<ROut>
         where TToken : Token.Function<RIn1, RIn2, ROut>
@@ -139,6 +141,12 @@ namespace Proxies
         where ROut : Resolution
     {
         public Function(Proxy<RIn1> in1, Proxy<RIn2> in2) : base(typeof(TToken), in1, in2) { }
+        protected override TokenFunction<ROut> ConstructFromArgs(List<IToken> tokens)
+        {
+            return (TokenFunction<ROut>)
+                TokenType.GetConstructor(new Type[] { typeof(IToken<RIn1>), typeof(IToken<RIn2>)})
+                .Invoke(tokens.ToArray());
+        }
     }
     public record Function<TToken, RIn1, RIn2, RIn3, ROut> : Proxy.Unsafe.FunctionProxy<ROut>
         where TToken : Token.Function<RIn1, RIn2, RIn3, ROut>
@@ -148,6 +156,12 @@ namespace Proxies
         where ROut : Resolution
     {
         public Function(Proxy<RIn1> in1, Proxy<RIn2> in2, Proxy<RIn2> in3) : base(typeof(TToken), in1, in2, in3) { }
+        protected override TokenFunction<ROut> ConstructFromArgs(List<IToken> tokens)
+        {
+            return (TokenFunction<ROut>)
+                TokenType.GetConstructor(new Type[] { typeof(IToken<RIn1>), typeof(IToken<RIn2>), typeof(IToken<RIn3>) })
+                .Invoke(tokens.ToArray());
+        }
     }
     // --------
     #endregion
