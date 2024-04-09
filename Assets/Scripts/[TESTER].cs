@@ -14,10 +14,6 @@ public class TESTER : MonoBehaviour
     // Start is called before the first frame update
     async void Start()
     {
-        Proxy<ValT1> in1 = null;
-        Proxy<ValT2> in2 = null;
-        var o = new Proxy.OfType<TokenFunc, ValT2>().WithArgs(in1, in2);
-
         AClass aa = new AClass();
         AClass ab = new BClass();
         BClass bb = new BClass();

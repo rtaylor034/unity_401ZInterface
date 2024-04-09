@@ -111,5 +111,23 @@ namespace Perfection
                 o = function(o);
             }
         }
+        public static T GenerateValue<T>(this T startingValue, Func<T, T> function, Predicate<T> whileCondition)
+        {
+            T o = startingValue;
+            while (whileCondition(o))
+            {
+                o = function(o);
+            }
+            return o;
+        }
+        public static T GenerateValueOver<T, I>(this T startingValue, IEnumerable<I> enumerable, Func<T, I, T> function)
+        {
+            T o = startingValue;
+            foreach (var v in enumerable)
+            {
+                o = function(o, v);
+            }
+            return o;
+        }
     }
 }
