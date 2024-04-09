@@ -4,17 +4,14 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Perfection;
 using MorseCode.ITask;
-
+using ResObj = Resolution.Resolution;
 
 #nullable enable
 namespace Token
 {
-    using Resolution;
     #region Structures
 #nullable disable
     public interface IInputProvider { }
-
-    
     public record Scope
     {
         public void Pop() { }
@@ -26,76 +23,24 @@ namespace Token
         public IInputProvider InputProvider { get; init; }
         public Scope Scope { get; init; }
         public List<Proxy.Unsafe.IProxy> Rules { get; init; }
-        public Context WithResolution(Resolution resolution) => resolution._ChangeContext(this);
+        public Context WithResObj(ResObj resolution) => resolution._ChangeContext(this);
     }
 #nullable enable
     #endregion
 
-    public interface IToken<out R> : Unsafe.IToken where R : Resolution
+    public interface IToken<out R> : Unsafe.IToken where R : ResObj
     {
         public ITask<R?> Resolve(Context context);
     }
-    public abstract record Token<R> : IToken<R> where R : Resolution
+    public abstract record Token<R> : IToken<R> where R : ResObj
     {
         public abstract ITask<R?> Resolve(Context context);
-        public async ITask<Resolution?> ResolveUnsafe(Context context)
+        public async ITask<ResObj?> ResolveUnsafe(Context context)
         {
             return await Resolve(context);
         }
     }
-    namespace Unsafe
-    {
-        public interface IToken
-        {
-            public ITask<Resolution?> ResolveUnsafe(Context context);
-        }
-        public abstract record TokenFunction<R> : Token<R> where R : Resolution
-        {
-            protected List<IToken> ArgTokens { get; init; }
-            protected TokenFunction(params IToken[] tokens)
-            {
-                ArgTokens = new(tokens);
-            }
-            protected TokenFunction(IEnumerable<IToken> tokens)
-            {
-                ArgTokens = new(tokens);
-            }
-            public TokenFunction(TokenFunction<R> original) : base(original)
-            {
-                ArgTokens = new(original.ArgTokens);
-            }
-            protected abstract R TransformTokens(List<Resolution> tokens);
-            public override async ITask<R?> Resolve(Context context)
-            {
-                var o = await GetTokenResults(context);
-                return o is not null ? TransformTokens(o) : null;
-            }
-            private async ITask<List<Resolution>?> GetTokenResults(Context context)
-            {
-                List<Resolution> o = new(ArgTokens.Count);
-                List<Context> contexts = new(ArgTokens.Count + 1) { context };
-                for (int i = 0; i < ArgTokens.Count; i++)
-                {
-                    switch (await ArgTokens[i].ResolveUnsafe(contexts[i]))
-                    {
-                        case Resolution resolution:
-                            o[i] = resolution;
-                            contexts[i + 1] = context.WithResolution(resolution);
-                            continue;
-                        case null:
-                            if (i == 0) return null;
-                            i -= 2;
-                            continue;
-                    }
-                }
-                return o;
-            }
-        }
-        public interface IHasArg1<out ROut> : Token.IToken<ROut> where ROut : Resolution { }
-        public interface IHasArg2<out ROut> : IHasArg1<ROut> where ROut : Resolution { }
-        public interface IHasArg3<out ROut> : IHasArg2<ROut> where ROut : Resolution { }
-    }
-    public abstract record Infallible<R> : Token<R> where R : Resolution
+    public abstract record Infallible<R> : Token<R> where R : ResObj
     {
 #pragma warning disable CS8619
         public override ITask<R?> Resolve(Context context) => Task.FromResult(InfallibleResolve(context)).AsITask();
@@ -109,8 +54,8 @@ namespace Token
     /// </summary>
     /// <typeparam name="RArg1"></typeparam>
     public abstract record Combiner<RArg, ROut> : Unsafe.TokenFunction<ROut>, IHasCombineArgs<RArg, ROut>
-        where RArg : Resolution
-        where ROut : Resolution
+        where RArg : ResObj
+        where ROut : ResObj
     {
         public IEnumerable<IToken<RArg>> Args { get; private init; }
         protected Combiner(IEnumerable<IToken<RArg>> tokens) : base(tokens)
@@ -122,25 +67,25 @@ namespace Token
             Args = tokens;
         }
         protected abstract ROut Evaluate(IEnumerable<RArg> inputs);
-        protected override ROut TransformTokens(List<Resolution> tokens) => Evaluate(tokens.Map(x => (RArg)x));
+        protected override ROut TransformTokens(List<ResObj> tokens) => Evaluate(tokens.Map(x => (RArg)x));
         
     }
 
     #region Functions
     // ---- [ Functions ] ----
     public interface IHasArg1<out RArg, out ROut> : Unsafe.IHasArg1<ROut>
-        where RArg : Resolution
-        where ROut : Resolution
+        where RArg : ResObj
+        where ROut : ResObj
     { public IToken<RArg> Arg1 { get; } }
     public interface IHasArg2<out RArg, out ROut> : Unsafe.IHasArg2<ROut>
-        where RArg : Resolution
-        where ROut : Resolution
+        where RArg : ResObj
+        where ROut : ResObj
     { public IToken<RArg> Arg2 { get; } }
     public interface IHasArg3<out RArg, out ROut> : Unsafe.IHasArg3<ROut>
-        where RArg : Resolution
-        where ROut : Resolution
+        where RArg : ResObj
+        where ROut : ResObj
     { public IToken<RArg> Arg3 { get; } }
-    public interface IHasCombineArgs<out RArgs, out ROut> : IToken<ROut> where RArgs : Resolution where ROut : Resolution
+    public interface IHasCombineArgs<out RArgs, out ROut> : IToken<ROut> where RArgs : ResObj where ROut : ResObj
     {
         public IEnumerable<IToken<RArgs>> Args { get; }
     }
@@ -151,8 +96,8 @@ namespace Token
     /// <typeparam name="RArg1"></typeparam>
     public abstract record Function<RArg1, ROut> : Unsafe.TokenFunction<ROut>,
         IHasArg1<RArg1, ROut>
-        where RArg1 : Resolution
-        where ROut : Resolution
+        where RArg1 : ResObj
+        where ROut : ResObj
     {
         public IToken<RArg1> Arg1 { get; private init; }
         protected Function(IToken<RArg1> in1) : base(in1)
@@ -160,7 +105,7 @@ namespace Token
             Arg1 = in1;
         }
         protected abstract ROut Evaluate(RArg1 in1);
-        protected override ROut TransformTokens(List<Resolution> args) =>
+        protected override ROut TransformTokens(List<ResObj> args) =>
             Evaluate((RArg1)args[0]);
     }
     /// <summary>
@@ -172,9 +117,9 @@ namespace Token
     public abstract record Function<RArg1, RArg2, ROut> : Unsafe.TokenFunction<ROut>,
         IHasArg1<RArg1, ROut>,
         IHasArg2<RArg2, ROut>
-        where RArg1 : Resolution
-        where RArg2 : Resolution
-        where ROut : Resolution
+        where RArg1 : ResObj
+        where RArg2 : ResObj
+        where ROut : ResObj
     {
         public IToken<RArg1> Arg1 { get; private init; }
         public IToken<RArg2> Arg2 { get; private init; }
@@ -184,7 +129,7 @@ namespace Token
             Arg2 = in2;
         }
         protected abstract ROut Evaluate(RArg1 in1, RArg2 in2);
-        protected override ROut TransformTokens(List<Resolution> args) =>
+        protected override ROut TransformTokens(List<ResObj> args) =>
             Evaluate((RArg1)args[0], (RArg2)args[1]);
     }
     /// <summary>
@@ -198,10 +143,10 @@ namespace Token
         IHasArg1<RArg1, ROut>,
         IHasArg2<RArg2, ROut>,
         IHasArg3<RArg3, ROut>
-        where RArg1 : Resolution
-        where RArg2 : Resolution
-        where RArg3 : Resolution
-        where ROut : Resolution
+        where RArg1 : ResObj
+        where RArg2 : ResObj
+        where RArg3 : ResObj
+        where ROut : ResObj
     {
         public IToken<RArg1> Arg1 { get; private init; }
         public IToken<RArg2> Arg2 { get; private init; }
@@ -213,12 +158,65 @@ namespace Token
             Arg3 = in3;
         }
         protected abstract ROut Evaluate(RArg1 in1, RArg2 in2, RArg3 in3);
-        protected override ROut TransformTokens(List<Resolution> args) =>
+        protected override ROut TransformTokens(List<ResObj> args) =>
             Evaluate((RArg1)args[0], (RArg2)args[1], (RArg3)args[2]);
     }
     // --------
     #endregion
 
+}
+namespace Token.Unsafe
+{
+    using Token;
+    public interface IToken
+    {
+        public ITask<ResObj?> ResolveUnsafe(Context context);
+    }
+    public abstract record TokenFunction<R> : Token<R> where R : ResObj
+    {
+        protected List<IToken> ArgTokens { get; init; }
+        protected TokenFunction(params IToken[] tokens)
+        {
+            ArgTokens = new(tokens);
+        }
+        protected TokenFunction(IEnumerable<IToken> tokens)
+        {
+            ArgTokens = new(tokens);
+        }
+        public TokenFunction(TokenFunction<R> original) : base(original)
+        {
+            ArgTokens = new(original.ArgTokens);
+        }
+        protected abstract R TransformTokens(List<ResObj> tokens);
+        public override async ITask<R?> Resolve(Context context)
+        {
+            var o = await GetTokenResults(context);
+            return o is not null ? TransformTokens(o) : null;
+        }
+        private async ITask<List<ResObj>?> GetTokenResults(Context context)
+        {
+            List<ResObj> o = new(ArgTokens.Count);
+            List<Context> contexts = new(ArgTokens.Count + 1) { context };
+            for (int i = 0; i < ArgTokens.Count; i++)
+            {
+                switch (await ArgTokens[i].ResolveUnsafe(contexts[i]))
+                {
+                    case ResObj resolution:
+                        o[i] = resolution;
+                        contexts[i + 1] = context.WithResObj(resolution);
+                        continue;
+                    case null:
+                        if (i == 0) return null;
+                        i -= 2;
+                        continue;
+                }
+            }
+            return o;
+        }
+    }
+    public interface IHasArg1<out ROut> : Token.IToken<ROut> where ROut : ResObj { }
+    public interface IHasArg2<out ROut> : IHasArg1<ROut> where ROut : ResObj { }
+    public interface IHasArg3<out ROut> : IHasArg2<ROut> where ROut : ResObj { }
 }
 namespace Tokens
 {

@@ -4,61 +4,12 @@ using UnityEngine;
 using Perfection;
 using System;
 using ResObj = Resolution.Resolution;
+using Token;
 
 #nullable enable
 namespace Proxy
 {
-    using Token;
-    namespace Unsafe
-    {
-        using Token.Unsafe;
-        public interface IProxy
-        {
-            public IToken UnsafeRealize(IToken original);
-        }
-        public interface IProxy<out R> : IProxy where R : ResObj
-        {
-            public abstract IToken<R> UnsafeTypedRealize(IToken original);
-        }
-        public interface IArgProxy<in TOrig, out R> : Unsafe.IProxy<R> where TOrig : IToken where R : ResObj
-        {
-            public IToken<R> Realize(TOrig original);
-        }
-        public abstract record ArgProxy<TOrig, R> : IArgProxy<TOrig, R> where TOrig : IToken where R : ResObj
-        {
-            public abstract IToken<R> Realize(TOrig original);
-            public IToken<R> UnsafeTypedRealize(IToken original) => Realize((TOrig)original);
-            public IToken UnsafeRealize(IToken original) => UnsafeTypedRealize(original);
-        }
-        public abstract record FunctionProxy<TOrig, R> : Proxy<TOrig, R>
-            where TOrig : IToken<R>
-            where R : ResObj
-        {
-            /// <summary>
-            /// Expected to be [ : ]<see cref="Token.Unsafe.TokenFunction{T}"/>
-            /// </summary>
-            protected List<IProxy> ArgProxies { get; init; }
-            protected FunctionProxy(params IProxy[] proxies)
-            {
-                ArgProxies = new(proxies);
-            }
-            protected FunctionProxy(IEnumerable<IProxy> proxies)
-            {
-                ArgProxies = new(proxies);
-            }
-            public FunctionProxy(FunctionProxy<TOrig, R> original) : base(original)
-            {
-                ArgProxies = new(original.ArgProxies);
-            }
-            protected abstract TokenFunction<R> ConstructFromArgs(List<IToken> tokens);
-            public override IToken<R> Realize(TOrig original) => ConstructFromArgs(MakeSubstitutions(original));
-            protected List<IToken> MakeSubstitutions(TOrig original)
-            {
-                return new(ArgProxies.Map(x => x.UnsafeRealize(original)));
-            }
-        }
-
-    }
+    
     public interface IProxy<in TOrig, out R> : Unsafe.IArgProxy<TOrig, R> where TOrig : IToken<R> where R : ResObj { }
     public abstract record Proxy<TOrig, R> : Unsafe.ArgProxy<TOrig, R>, IProxy<TOrig, R> where TOrig : IToken<R> where R : ResObj { }
     
@@ -67,6 +18,55 @@ namespace Proxy
         public static Proxies.Direct<IToken<R>, R> AsProxy<R>(this IToken<R> token) where R : ResObj
         {
             return new(token);
+        }
+    }
+}
+namespace Proxy.Unsafe
+{
+    using Token.Unsafe;
+    public interface IProxy
+    {
+        public IToken UnsafeRealize(IToken original);
+    }
+    public interface IProxy<out R> : IProxy where R : ResObj
+    {
+        public abstract IToken<R> UnsafeTypedRealize(IToken original);
+    }
+    public interface IArgProxy<in TOrig, out R> : Unsafe.IProxy<R> where TOrig : IToken where R : ResObj
+    {
+        public IToken<R> Realize(TOrig original);
+    }
+    public abstract record ArgProxy<TOrig, R> : IArgProxy<TOrig, R> where TOrig : IToken where R : ResObj
+    {
+        public abstract IToken<R> Realize(TOrig original);
+        public IToken<R> UnsafeTypedRealize(IToken original) => Realize((TOrig)original);
+        public IToken UnsafeRealize(IToken original) => UnsafeTypedRealize(original);
+    }
+    public abstract record FunctionProxy<TOrig, R> : Proxy<TOrig, R>
+        where TOrig : IToken<R>
+        where R : ResObj
+    {
+        /// <summary>
+        /// Expected to be [ : ]<see cref="Token.Unsafe.TokenFunction{T}"/>
+        /// </summary>
+        protected List<IProxy> ArgProxies { get; init; }
+        protected FunctionProxy(params IProxy[] proxies)
+        {
+            ArgProxies = new(proxies);
+        }
+        protected FunctionProxy(IEnumerable<IProxy> proxies)
+        {
+            ArgProxies = new(proxies);
+        }
+        public FunctionProxy(FunctionProxy<TOrig, R> original) : base(original)
+        {
+            ArgProxies = new(original.ArgProxies);
+        }
+        protected abstract TokenFunction<R> ConstructFromArgs(List<IToken> tokens);
+        public override IToken<R> Realize(TOrig original) => ConstructFromArgs(MakeSubstitutions(original));
+        protected List<IToken> MakeSubstitutions(TOrig original)
+        {
+            return new(ArgProxies.Map(x => x.UnsafeRealize(original)));
         }
     }
 }
