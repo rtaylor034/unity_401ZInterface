@@ -105,7 +105,7 @@ namespace Token
     /// <code>(IEnumerable&lt;IToken&lt;<typeparamref name="RIn1"/>&gt;>&gt;)</code>
     /// </summary>
     /// <typeparam name="RIn1"></typeparam>
-    public abstract record Combiner<RIn, ROut> : Unsafe.TokenFunction<ROut>, IFromManyComponents<RIn, ROut>
+    public abstract record Combiner<RIn, ROut> : Unsafe.TokenFunction<ROut>, Proxy.ITokenCombinerOf<RIn, ROut>
         where RIn : Resolution
         where ROut : Resolution
     {
@@ -124,37 +124,13 @@ namespace Token
 
     #region Functions
     // ---- [ Functions ] ----
-    public interface IFromComponents<RIn1, out ROut> : IToken<ROut>
-        where RIn1 : Resolution
-        where ROut : Resolution
-    {
-        public IToken<RIn1> Arg1 { get; }
-    }
-    public interface IFromComponents<RIn1, RIn2, out ROut> : IFromComponents<RIn1, ROut>
-        where RIn1 : Resolution
-        where RIn2 : Resolution
-        where ROut : Resolution
-    {
-        public IToken<RIn2> Arg2 { get; }
-    }
-    public interface IFromComponents<RIn1, RIn2, RIn3, out ROut> : IFromComponents<RIn1, RIn2, ROut>
-        where RIn1 : Resolution
-        where RIn2 : Resolution
-        where RIn3 : Resolution
-        where ROut : Resolution
-    {
-        public IToken<RIn3> Arg3 { get; }
-    }
-    public interface IFromManyComponents<RIn, out ROut> : IToken<ROut> where RIn : Resolution where ROut : Resolution
-    {
-        public IEnumerable<IToken<RIn>> Args { get; }
-    }
+    
     /// <summary>
     /// Tokens that inherit must have a constructor matching: <br></br>
     /// <code>(IToken&lt;<typeparamref name="RIn1"/>&gt;)</code>
     /// </summary>
     /// <typeparam name="RIn1"></typeparam>
-    public abstract record Function<RIn1, ROut> : Unsafe.TokenFunction<ROut>, IFromComponents<RIn1, ROut>
+    public abstract record Function<RIn1, ROut> : Unsafe.TokenFunction<ROut>, Proxy.ITokenFunctionOf<RIn1, ROut>
         where RIn1 : Resolution
         where ROut : Resolution
     {
@@ -173,7 +149,7 @@ namespace Token
     /// </summary>
     /// <typeparam name="RIn1"></typeparam>
     /// <typeparam name="RIn2"></typeparam>
-    public abstract record Function<RIn1, RIn2, ROut> : Unsafe.TokenFunction<ROut>, IFromComponents<RIn1, RIn2, ROut>
+    public abstract record Function<RIn1, RIn2, ROut> : Unsafe.TokenFunction<ROut>, Proxy.ITokenFunctionOf<RIn1, RIn2, ROut>
         where RIn1 : Resolution
         where RIn2 : Resolution
         where ROut : Resolution
@@ -196,7 +172,7 @@ namespace Token
     /// <typeparam name="RIn1"></typeparam>
     /// <typeparam name="RIn2"></typeparam>
     /// <typeparam name="RIn3"></typeparam>
-    public abstract record Function<RIn1, RIn2, RIn3, ROut> : Unsafe.TokenFunction<ROut>, IFromComponents<RIn1, RIn2, RIn3, ROut>
+    public abstract record Function<RIn1, RIn2, RIn3, ROut> : Unsafe.TokenFunction<ROut>, Proxy.ITokenFunctionOf<RIn1, RIn2, RIn3, ROut>
         where RIn1 : Resolution
         where RIn2 : Resolution
         where RIn3 : Resolution
