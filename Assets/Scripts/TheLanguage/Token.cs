@@ -102,24 +102,24 @@ namespace Token
 
     /// <summary>
     /// Tokens that inherit must have a constructor matching: <br></br>
-    /// <code>(IEnumerable&lt;IToken&lt;<typeparamref name="RIn1"/>&gt;>&gt;)</code>
+    /// <code>(IEnumerable&lt;IToken&lt;<typeparamref name="RArg1"/>&gt;>&gt;)</code>
     /// </summary>
-    /// <typeparam name="RIn1"></typeparam>
-    public abstract record Combiner<RIn, ROut> : Unsafe.TokenFunction<ROut>, Proxy.ITokenCombinerOf<RIn, ROut>
-        where RIn : Resolution
+    /// <typeparam name="RArg1"></typeparam>
+    public abstract record Combiner<RArg, ROut> : Unsafe.TokenFunction<ROut>, Proxy.IHasCombineArgs<RArg, ROut>
+        where RArg : Resolution
         where ROut : Resolution
     {
-        public IEnumerable<IToken<RIn>> Args { get; private init; }
-        protected Combiner(IEnumerable<IToken<RIn>> tokens) : base(tokens)
+        public IEnumerable<IToken<RArg>> Args { get; private init; }
+        protected Combiner(IEnumerable<IToken<RArg>> tokens) : base(tokens)
         {
             Args = tokens;
         }
-        protected Combiner(params IToken<RIn>[] tokens) : base(tokens)
+        protected Combiner(params IToken<RArg>[] tokens) : base(tokens)
         {
             Args = tokens;
         }
-        protected abstract ROut Evaluate(IEnumerable<RIn> inputs);
-        protected override ROut TransformTokens(List<Resolution> tokens) => Evaluate(tokens.Map(x => (RIn)x));
+        protected abstract ROut Evaluate(IEnumerable<RArg> inputs);
+        protected override ROut TransformTokens(List<Resolution> tokens) => Evaluate(tokens.Map(x => (RArg)x));
     }
 
     #region Functions
@@ -127,69 +127,75 @@ namespace Token
     
     /// <summary>
     /// Tokens that inherit must have a constructor matching: <br></br>
-    /// <code>(IToken&lt;<typeparamref name="RIn1"/>&gt;)</code>
+    /// <code>(IToken&lt;<typeparamref name="RArg1"/>&gt;)</code>
     /// </summary>
-    /// <typeparam name="RIn1"></typeparam>
-    public abstract record Function<RIn1, ROut> : Unsafe.TokenFunction<ROut>, Proxy.ITokenFunctionOf<RIn1, ROut>
-        where RIn1 : Resolution
+    /// <typeparam name="RArg1"></typeparam>
+    public abstract record Function<RArg1, ROut> : Unsafe.TokenFunction<ROut>,
+        Proxy.IHasArg1<RArg1, ROut>
+        where RArg1 : Resolution
         where ROut : Resolution
     {
-        public IToken<RIn1> Arg1 { get; private init; }
-        protected Function(IToken<RIn1> in1) : base(in1)
+        public IToken<RArg1> Arg1 { get; private init; }
+        protected Function(IToken<RArg1> in1) : base(in1)
         {
             Arg1 = in1;
         }
-        protected abstract ROut Evaluate(RIn1 in1);
+        protected abstract ROut Evaluate(RArg1 in1);
         protected override ROut TransformTokens(List<Resolution> args) =>
-            Evaluate((RIn1)args[0]);
+            Evaluate((RArg1)args[0]);
     }
     /// <summary>
     /// Tokens that inherit must have a constructor matching: <br></br>
-    /// <code>(IToken&lt;<typeparamref name="RIn1"/>&gt;, IToken&lt;<typeparamref name="RIn2"/>&gt;)</code>
+    /// <code>(IToken&lt;<typeparamref name="RArg1"/>&gt;, IToken&lt;<typeparamref name="RArg2"/>&gt;)</code>
     /// </summary>
-    /// <typeparam name="RIn1"></typeparam>
-    /// <typeparam name="RIn2"></typeparam>
-    public abstract record Function<RIn1, RIn2, ROut> : Unsafe.TokenFunction<ROut>, Proxy.ITokenFunctionOf<RIn1, RIn2, ROut>
-        where RIn1 : Resolution
-        where RIn2 : Resolution
+    /// <typeparam name="RArg1"></typeparam>
+    /// <typeparam name="RArg2"></typeparam>
+    public abstract record Function<RArg1, RArg2, ROut> : Unsafe.TokenFunction<ROut>,
+        Proxy.IHasArg1<RArg1, ROut>,
+        Proxy.IHasArg2<RArg2, ROut>
+        where RArg1 : Resolution
+        where RArg2 : Resolution
         where ROut : Resolution
     {
-        public IToken<RIn1> Arg1 { get; private init; }
-        public IToken<RIn2> Arg2 { get; private init; }
-        protected Function(IToken<RIn1> in1, IToken<RIn2> in2) : base(in1, in2)
+        public IToken<RArg1> Arg1 { get; private init; }
+        public IToken<RArg2> Arg2 { get; private init; }
+        protected Function(IToken<RArg1> in1, IToken<RArg2> in2) : base(in1, in2)
         {
             Arg1 = in1;
             Arg2 = in2;
         }
-        protected abstract ROut Evaluate(RIn1 in1, RIn2 in2);
+        protected abstract ROut Evaluate(RArg1 in1, RArg2 in2);
         protected override ROut TransformTokens(List<Resolution> args) =>
-            Evaluate((RIn1)args[0], (RIn2)args[1]);
+            Evaluate((RArg1)args[0], (RArg2)args[1]);
     }
     /// <summary>
     /// Tokens that inherit must have a constructor matching: <br></br>
-    /// <code>(IToken&lt;<typeparamref name="RIn1"/>&gt;, IToken&lt;<typeparamref name="RIn2"/>&gt;, IToken&lt;<typeparamref name="RIn3"/>&gt;)</code>
+    /// <code>(IToken&lt;<typeparamref name="RArg1"/>&gt;, IToken&lt;<typeparamref name="RArg2"/>&gt;, IToken&lt;<typeparamref name="RArg3"/>&gt;)</code>
     /// </summary>
-    /// <typeparam name="RIn1"></typeparam>
-    /// <typeparam name="RIn2"></typeparam>
-    /// <typeparam name="RIn3"></typeparam>
-    public abstract record Function<RIn1, RIn2, RIn3, ROut> : Unsafe.TokenFunction<ROut>, Proxy.ITokenFunctionOf<RIn1, RIn2, RIn3, ROut>
-        where RIn1 : Resolution
-        where RIn2 : Resolution
-        where RIn3 : Resolution
+    /// <typeparam name="RArg1"></typeparam>
+    /// <typeparam name="RArg2"></typeparam>
+    /// <typeparam name="RArg3"></typeparam>
+    public abstract record Function<RArg1, RArg2, RArg3, ROut> : Unsafe.TokenFunction<ROut>,
+        Proxy.IHasArg1<RArg1, ROut>,
+        Proxy.IHasArg2<RArg2, ROut>,
+        Proxy.IHasArg3<RArg3, ROut>
+        where RArg1 : Resolution
+        where RArg2 : Resolution
+        where RArg3 : Resolution
         where ROut : Resolution
     {
-        public IToken<RIn1> Arg1 { get; private init; }
-        public IToken<RIn2> Arg2 { get; private init; }
-        public IToken<RIn3> Arg3 { get; private init; }
-        protected Function(IToken<RIn1> in1, IToken<RIn2> in2, IToken<RIn3> in3) : base(in1, in2, in3)
+        public IToken<RArg1> Arg1 { get; private init; }
+        public IToken<RArg2> Arg2 { get; private init; }
+        public IToken<RArg3> Arg3 { get; private init; }
+        protected Function(IToken<RArg1> in1, IToken<RArg2> in2, IToken<RArg3> in3) : base(in1, in2, in3)
         {
             Arg1 = in1;
             Arg2 = in2;
             Arg3 = in3;
         }
-        protected abstract ROut Evaluate(RIn1 in1, RIn2 in2, RIn3 in3);
+        protected abstract ROut Evaluate(RArg1 in1, RArg2 in2, RArg3 in3);
         protected override ROut TransformTokens(List<Resolution> args) =>
-            Evaluate((RIn1)args[0], (RIn2)args[1], (RIn3)args[2]);
+            Evaluate((RArg1)args[0], (RArg2)args[1], (RArg3)args[2]);
     }
     // --------
     #endregion
