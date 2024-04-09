@@ -91,6 +91,9 @@ namespace Token
                 return o;
             }
         }
+        public interface IHasArg1<out ROut> : Token.IToken<ROut> where ROut : Resolution { }
+        public interface IHasArg2<out ROut> : IHasArg1<ROut> where ROut : Resolution { }
+        public interface IHasArg3<out ROut> : IHasArg2<ROut> where ROut : Resolution { }
     }
     public abstract record Infallible<R> : Token<R> where R : Resolution
     {
@@ -105,7 +108,7 @@ namespace Token
     /// <code>(IEnumerable&lt;IToken&lt;<typeparamref name="RArg1"/>&gt;>&gt;)</code>
     /// </summary>
     /// <typeparam name="RArg1"></typeparam>
-    public abstract record Combiner<RArg, ROut> : Unsafe.TokenFunction<ROut>, Proxy.IHasCombineArgs<RArg, ROut>
+    public abstract record Combiner<RArg, ROut> : Unsafe.TokenFunction<ROut>, IHasCombineArgs<RArg, ROut>
         where RArg : Resolution
         where ROut : Resolution
     {
@@ -120,18 +123,34 @@ namespace Token
         }
         protected abstract ROut Evaluate(IEnumerable<RArg> inputs);
         protected override ROut TransformTokens(List<Resolution> tokens) => Evaluate(tokens.Map(x => (RArg)x));
+        
     }
 
     #region Functions
     // ---- [ Functions ] ----
-    
+    public interface IHasArg1<out RArg, out ROut> : Unsafe.IHasArg1<ROut>
+        where RArg : Resolution
+        where ROut : Resolution
+    { public IToken<RArg> Arg1 { get; } }
+    public interface IHasArg2<out RArg, out ROut> : Unsafe.IHasArg2<ROut>
+        where RArg : Resolution
+        where ROut : Resolution
+    { public IToken<RArg> Arg2 { get; } }
+    public interface IHasArg3<out RArg, out ROut> : Unsafe.IHasArg3<ROut>
+        where RArg : Resolution
+        where ROut : Resolution
+    { public IToken<RArg> Arg3 { get; } }
+    public interface IHasCombineArgs<out RArgs, out ROut> : IToken<ROut> where RArgs : Resolution where ROut : Resolution
+    {
+        public IEnumerable<IToken<RArgs>> Args { get; }
+    }
     /// <summary>
     /// Tokens that inherit must have a constructor matching: <br></br>
     /// <code>(IToken&lt;<typeparamref name="RArg1"/>&gt;)</code>
     /// </summary>
     /// <typeparam name="RArg1"></typeparam>
     public abstract record Function<RArg1, ROut> : Unsafe.TokenFunction<ROut>,
-        Proxy.IHasArg1<RArg1, ROut>
+        IHasArg1<RArg1, ROut>
         where RArg1 : Resolution
         where ROut : Resolution
     {
@@ -151,8 +170,8 @@ namespace Token
     /// <typeparam name="RArg1"></typeparam>
     /// <typeparam name="RArg2"></typeparam>
     public abstract record Function<RArg1, RArg2, ROut> : Unsafe.TokenFunction<ROut>,
-        Proxy.IHasArg1<RArg1, ROut>,
-        Proxy.IHasArg2<RArg2, ROut>
+        IHasArg1<RArg1, ROut>,
+        IHasArg2<RArg2, ROut>
         where RArg1 : Resolution
         where RArg2 : Resolution
         where ROut : Resolution
@@ -176,9 +195,9 @@ namespace Token
     /// <typeparam name="RArg2"></typeparam>
     /// <typeparam name="RArg3"></typeparam>
     public abstract record Function<RArg1, RArg2, RArg3, ROut> : Unsafe.TokenFunction<ROut>,
-        Proxy.IHasArg1<RArg1, ROut>,
-        Proxy.IHasArg2<RArg2, ROut>,
-        Proxy.IHasArg3<RArg3, ROut>
+        IHasArg1<RArg1, ROut>,
+        IHasArg2<RArg2, ROut>,
+        IHasArg3<RArg3, ROut>
         where RArg1 : Resolution
         where RArg2 : Resolution
         where RArg3 : Resolution

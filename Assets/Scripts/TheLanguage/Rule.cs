@@ -30,11 +30,7 @@ namespace Rule
             return (original is TFor matchingToken) ? Apply(matchingToken) : original;
         }
     }
-    namespace Extensions
-    {
-        
-    }
-    namespace Builder
+    public static class Create
     {
 
     }

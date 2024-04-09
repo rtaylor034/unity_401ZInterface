@@ -57,27 +57,17 @@ namespace Proxy
                 return new(ArgProxies.Map(x => x.UnsafeRealize(original)));
             }
         }
-        public interface IHasArg1<out ROut> : Token.IToken<ROut> where ROut : ResObj { }
-        public interface IHasArg2<out ROut> : IHasArg1<ROut> where ROut : ResObj { }
-        public interface IHasArg3<out ROut> : IHasArg2<ROut> where ROut : ResObj { }
+
     }
     public interface IProxy<in TOrig, out R> : Unsafe.IArgProxy<TOrig, R> where TOrig : IToken<R> where R : ResObj { }
-    public abstract record Proxy<TOrig, R> : Unsafe.ArgProxy<TOrig, R> where TOrig : IToken<R> where R : ResObj { }
-    public interface IHasArg1<out RArg, out ROut> : Unsafe.IHasArg1<ROut>
-        where RArg : ResObj
-        where ROut : ResObj
-    { public IToken<RArg> Arg1 { get; } }
-    public interface IHasArg2<out RArg, out ROut> : Unsafe.IHasArg2<ROut>
-        where RArg : ResObj
-        where ROut : ResObj
-    { public IToken<RArg> Arg2 { get; } }
-    public interface IHasArg3<out RArg, out ROut> : Unsafe.IHasArg3<ROut>
-        where RArg : ResObj
-        where ROut : ResObj
-    { public IToken<RArg> Arg3 { get; } }
-    public interface IHasCombineArgs<out RArgs, out ROut> : IToken<ROut> where RArgs : ResObj where ROut : ResObj
+    public abstract record Proxy<TOrig, R> : Unsafe.ArgProxy<TOrig, R>, IProxy<TOrig, R> where TOrig : IToken<R> where R : ResObj { }
+    
+    public static class Extensions
     {
-        public IEnumerable<IToken<RArgs>> Args { get; }
+        public static Proxies.Direct<IToken<R>, R> AsProxy<R>(this IToken<R> token) where R : ResObj
+        {
+            return new(token);
+        }
     }
 }
 namespace Proxies
@@ -87,24 +77,14 @@ namespace Proxies
     using Token.Unsafe;
     using Proxy.Unsafe;
 
-    public sealed record Direct<TOrig, R> : Proxy<TOrig, R> where TOrig : Token.IToken<R> where R : ResObj
+    public record Direct<TOrig, R> : Proxy<TOrig, R> where TOrig : IToken<R> where R : ResObj
     {
-        private IToken<R> _token { get; init; }
-        public Direct(IToken<R> token) => _token = token;
-        public override IToken<R> Realize(TOrig _) => _token;
+        protected IToken<R> Token { get; init; }
+        public override IToken<R> Realize(TOrig _) => Token;
+        public Direct(IToken<R> token) => Token = token;
+        public Direct<TTo, R> Fix<TTo>() where TTo : IToken<R> => new(Token);
     }
-    public sealed record OriginalArg1<RArg, ROut> : ArgProxy<IHasArg1<RArg, ROut>, RArg> where RArg : ResObj where ROut : ResObj
-    {
-        public override IToken<RArg> Realize(IHasArg1<RArg, ROut> original) => original.Arg1;
-    }
-    public sealed record OriginalArg2<RArg, ROut> : ArgProxy<IHasArg2<RArg, ROut>, RArg> where RArg : ResObj where ROut : ResObj
-    {
-        public override IToken<RArg> Realize(IHasArg2<RArg, ROut> original) => original.Arg2;
-    }
-    public sealed record OriginalArg3<RArg, ROut> : ArgProxy<IHasArg3<RArg, ROut>, RArg> where RArg : ResObj where ROut : ResObj
-    {
-        public override IToken<RArg> Realize(IHasArg3<RArg, ROut> original) => original.Arg3;
-    }
+
     public sealed record CombinerTransform<TNew, RArg, ROut> : ArgProxy<IHasCombineArgs<RArg, ROut>, RArg>
         where TNew : Token.Combiner<RArg, ROut>
         where RArg : ResObj
@@ -130,7 +110,22 @@ namespace Proxies
                 .Invoke(new object[] { tokens });
         }
     }
-
+    #region OriginalArgs
+    // ---- [ OriginalArgs ] ----
+    public sealed record OriginalArg1<RArg, ROut> : ArgProxy<IHasArg1<RArg, ROut>, RArg> where RArg : ResObj where ROut : ResObj
+    {
+        public override IToken<RArg> Realize(IHasArg1<RArg, ROut> original) => original.Arg1;
+    }
+    public sealed record OriginalArg2<RArg, ROut> : ArgProxy<IHasArg2<RArg, ROut>, RArg> where RArg : ResObj where ROut : ResObj
+    {
+        public override IToken<RArg> Realize(IHasArg2<RArg, ROut> original) => original.Arg2;
+    }
+    public sealed record OriginalArg3<RArg, ROut> : ArgProxy<IHasArg3<RArg, ROut>, RArg> where RArg : ResObj where ROut : ResObj
+    {
+        public override IToken<RArg> Realize(IHasArg3<RArg, ROut> original) => original.Arg3;
+    }
+    // --------
+    #endregion
     #region Functions
     // ---- [ Functions ] ----
     public record Function<TNew, TOrig, RArg1, ROut> : FunctionProxy<TOrig, ROut>

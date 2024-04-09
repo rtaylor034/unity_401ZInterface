@@ -8,12 +8,16 @@ using UnityEngine;
 using System.Threading.Tasks;
 using MorseCode.ITask;
 using GStructures;
+using Res = Resolutions;
 
 public class TESTER : MonoBehaviour
 {
     // Start is called before the first frame update
     async void Start()
     {
+        Proxy.IProxy<Token.IHasArg1<Res.Number, Res.Number>, Res.Number> o = null;
+        var e = new Tokens.Number.Constant(2).AsProxy();
+        o = e.Fix<Token.IHasArg1<Res.Number, Res.Number>>();
         AClass aa = new AClass();
         AClass ab = new BClass();
         BClass bb = new BClass();
