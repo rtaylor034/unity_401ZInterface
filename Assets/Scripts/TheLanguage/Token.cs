@@ -53,7 +53,7 @@ namespace Token
     /// <code>(IEnumerable&lt;IToken&lt;<typeparamref name="RArg1"/>&gt;>&gt;)</code>
     /// </summary>
     /// <typeparam name="RArg1"></typeparam>
-    public abstract record Combiner<RArg, ROut> : Unsafe.TokenFunction<ROut>, IHasCombineArgs<RArg, ROut>
+    public abstract record Combiner<RArg, ROut> : Unsafe.TokenFunction<ROut>, IHasCombineArgs<RArg>
         where RArg : ResObj
         where ROut : ResObj
     {
@@ -73,19 +73,13 @@ namespace Token
 
     #region Functions
     // ---- [ Functions ] ----
-    public interface IHasArg1<out RArg, out ROut> : Unsafe.IHasArg1<ROut>
-        where RArg : ResObj
-        where ROut : ResObj
+    public interface IHasArg1<out RArg> : Unsafe.IHasArg1 where RArg : ResObj
     { public IToken<RArg> Arg1 { get; } }
-    public interface IHasArg2<out RArg, out ROut> : Unsafe.IHasArg2<ROut>
-        where RArg : ResObj
-        where ROut : ResObj
+    public interface IHasArg2<out RArg> : Unsafe.IHasArg2 where RArg : ResObj
     { public IToken<RArg> Arg2 { get; } }
-    public interface IHasArg3<out RArg, out ROut> : Unsafe.IHasArg3<ROut>
-        where RArg : ResObj
-        where ROut : ResObj
+    public interface IHasArg3<out RArg> : Unsafe.IHasArg3 where RArg : ResObj
     { public IToken<RArg> Arg3 { get; } }
-    public interface IHasCombineArgs<out RArgs, out ROut> : IToken<ROut> where RArgs : ResObj where ROut : ResObj
+    public interface IHasCombineArgs<out RArgs> : Unsafe.IToken where RArgs : ResObj
     {
         public IEnumerable<IToken<RArgs>> Args { get; }
     }
@@ -95,7 +89,7 @@ namespace Token
     /// </summary>
     /// <typeparam name="RArg1"></typeparam>
     public abstract record Function<RArg1, ROut> : Unsafe.TokenFunction<ROut>,
-        IHasArg1<RArg1, ROut>
+        IHasArg1<RArg1>
         where RArg1 : ResObj
         where ROut : ResObj
     {
@@ -115,8 +109,8 @@ namespace Token
     /// <typeparam name="RArg1"></typeparam>
     /// <typeparam name="RArg2"></typeparam>
     public abstract record Function<RArg1, RArg2, ROut> : Unsafe.TokenFunction<ROut>,
-        IHasArg1<RArg1, ROut>,
-        IHasArg2<RArg2, ROut>
+        IHasArg1<RArg1>,
+        IHasArg2<RArg2>
         where RArg1 : ResObj
         where RArg2 : ResObj
         where ROut : ResObj
@@ -140,9 +134,9 @@ namespace Token
     /// <typeparam name="RArg2"></typeparam>
     /// <typeparam name="RArg3"></typeparam>
     public abstract record Function<RArg1, RArg2, RArg3, ROut> : Unsafe.TokenFunction<ROut>,
-        IHasArg1<RArg1, ROut>,
-        IHasArg2<RArg2, ROut>,
-        IHasArg3<RArg3, ROut>
+        IHasArg1<RArg1>,
+        IHasArg2<RArg2>,
+        IHasArg3<RArg3>
         where RArg1 : ResObj
         where RArg2 : ResObj
         where RArg3 : ResObj
@@ -214,9 +208,9 @@ namespace Token.Unsafe
             return o;
         }
     }
-    public interface IHasArg1<out ROut> : Token.IToken<ROut> where ROut : ResObj { }
-    public interface IHasArg2<out ROut> : IHasArg1<ROut> where ROut : ResObj { }
-    public interface IHasArg3<out ROut> : IHasArg2<ROut> where ROut : ResObj { }
+    public interface IHasArg1 : IToken { }
+    public interface IHasArg2 : IHasArg1 { }
+    public interface IHasArg3 : IHasArg2 { }
 }
 namespace Tokens
 {

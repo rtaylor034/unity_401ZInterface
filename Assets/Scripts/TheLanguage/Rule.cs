@@ -4,6 +4,7 @@ using System;
 // A 'Rule' is just a wrapper around a proxy that can 'try' to apply it.
 namespace Rule
 {
+    using Proxy;
     using ResObj = Resolution.Resolution;
     
     public interface IRule
@@ -12,8 +13,8 @@ namespace Rule
         }
     public record Rule<TFor, R> : IRule where TFor : Token.IToken<R> where R : ResObj
     {
-        private Proxy.Proxy<TFor, R> _proxy { get; init; }
-        public Rule(Proxy.Proxy<TFor, R> proxy)
+        private IProxy<TFor, R> _proxy { get; init; }
+        public Rule(IProxy<TFor, R> proxy)
         {
             _proxy = proxy;
         }
@@ -30,7 +31,7 @@ namespace Rule
     }
     public static class Create
     {
-        public static Rule<TFor, R> For<TFor, R>(Func<Creator.Base<TFor, R>, Proxy.Proxy<TFor, R>> createStatement) where TFor : Token.IToken<R> where R : ResObj
+        public static Rule<TFor, R> For<TFor, R>(Func<Creator.Base<TFor, R>, IProxy<TFor, R>> createStatement) where TFor : Token.IToken<R> where R : ResObj
         {
             return new(createStatement(new Creator.Base<TFor, R>()));
         }
@@ -39,9 +40,8 @@ namespace Rule
     namespace Creator
     {
         using Token.Unsafe;
-        using Proxy.Unsafe;
         using Token;
-        using UnityEngine.UIElements;
+        using System.Runtime;
 
         public interface IBase<out TFor, out R> where TFor : IToken<R> where R : ResObj { }
         public struct Base<TFor, R> : IBase<TFor, R> where TFor : IToken<R> where R : ResObj
@@ -55,7 +55,7 @@ namespace Rule
         public static class Extensions
         {
             public static Proxies.Function<TNew, TOrig, RArg1, RArg2, ROut> WithArgs<TNew, TOrig, RArg1, RArg2, ROut>
-                (this Base<TOrig, ROut>.Function<TNew> _, ArgProxy<TOrig, RArg1> arg1, ArgProxy<TOrig, RArg2> arg2)
+                (this Base<TOrig, ROut>.Function<TNew> _, IProxy<TOrig, RArg1> arg1, IProxy<TOrig, RArg2> arg2)
                 where TNew : Token.Function<RArg1, RArg2, ROut>
                 where TOrig : IToken<ROut>
                 where RArg1 : ResObj
@@ -63,17 +63,8 @@ namespace Rule
                 where ROut : ResObj
             { return new(arg1, arg2); }
 
-            public static Proxies.OriginalArg1<RArg, ROut> OriginalArg1<RArg, ROut>(this IBase<Token.IHasArg1<RArg, ROut>, ROut> _)
-                where RArg : ResObj
-                where ROut : ResObj
-            { return new(); }
-            public static Proxies.OriginalArg2<RArg, ROut> OriginalArg2<TOrig, RArg, ROut>(this IBase<TOrig, ROut> _)
-                where TOrig : Token.IHasArg2<RArg, ROut>
-                where RArg : ResObj
-                where ROut : ResObj
-            { return new(); }
-            public static Proxies.OriginalArg3<RArg, ROut> OriginalArg3<TOrig, RArg, ROut>(this IBase<TOrig, ROut> _)
-                where TOrig : Token.IHasArg3<RArg, ROut>
+            public static Proxies.OriginalArg1<TOrig, RArg> OriginalArg1<TOrig, RArg, ROut>(this IBase<TOrig, ROut> _)
+                where TOrig : IToken<ROut>, Token.IHasArg1<RArg>
                 where RArg : ResObj
                 where ROut : ResObj
             { return new(); }
