@@ -39,15 +39,14 @@ namespace Rule
     }
     namespace Creator
     {
-        using Token.Unsafe;
         using Token;
-        using System.Runtime;
 
-        public interface IBase<out TFor, out R> where TFor : IToken<R> where R : ResObj { }
+        // SHAKY: should technically be 'TFor : Token<ROut>', but OriginalArg type inference wont work.
+        public interface IBase<out TFor, out R> where TFor : Token.Unsafe.IToken where R : ResObj { }
         public struct Base<TFor, R> : IBase<TFor, R> where TFor : IToken<R> where R : ResObj
         {
             public readonly Proxies.Direct<TFor, R> AsIs(IToken<R> token) => new(token);
-            public readonly Function<TNew> TokenFunction<TNew>() where TNew : TokenFunction<R>
+            public readonly Function<TNew> TokenFunction<TNew>() where TNew : Token.Unsafe.TokenFunction<R>
             { return new(); }
             public struct Function<TNew> { }
         }
@@ -63,8 +62,16 @@ namespace Rule
                 where ROut : ResObj
             { return new(arg1, arg2); }
 
-            public static Proxies.OriginalArg1<TOrig, RArg> OriginalArg1<TOrig, RArg, ROut>(this IBase<TOrig, ROut> _)
-                where TOrig : IToken<ROut>, Token.IHasArg1<RArg>
+            // SHAKY
+            public static Proxies.OriginalArg1<Token.IHasArg1<RArg>, RArg> OriginalArg1<RArg, ROut>(this IBase<Token.IHasArg1<RArg>, ROut> _)
+                where RArg : ResObj
+                where ROut : ResObj
+            { return new(); }
+            public static Proxies.OriginalArg2<Token.IHasArg2<RArg>, RArg> OriginalArg2<RArg, ROut>(this IBase<Token.IHasArg2<RArg>, ROut> _)
+                where RArg : ResObj
+                where ROut : ResObj
+            { return new(); }
+            public static Proxies.OriginalArg3<Token.IHasArg3<RArg>, RArg> OriginalArg3<RArg, ROut>(this IBase<Token.IHasArg3<RArg>, ROut> _)
                 where RArg : ResObj
                 where ROut : ResObj
             { return new(); }
