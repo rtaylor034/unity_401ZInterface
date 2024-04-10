@@ -21,7 +21,7 @@ namespace Rule
         }
         public Token.IToken<R> Apply(TFor original)
         {
-            return _proxy.Realize(original);
+            return _proxy.Realize(original, this);
         }
         public Token.Unsafe.IToken? TryApply(Token.Unsafe.IToken original)
         {

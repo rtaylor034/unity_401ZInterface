@@ -5,8 +5,6 @@ using System.Threading.Tasks;
 using Perfection;
 using MorseCode.ITask;
 using ResObj = Resolution.Resolution;
-using System.ComponentModel.Design;
-using System.Runtime.InteropServices.WindowsRuntime;
 using GExtensions;
 
 #nullable enable
