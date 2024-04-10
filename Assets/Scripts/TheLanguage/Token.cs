@@ -230,5 +230,13 @@ namespace Tokens
             public Constant(int value) => _value = value;
             protected override a.Number InfallibleResolve(Context context) => new() { Value = _value };
         }
+        public sealed record Add_EX : Function<a.Number, a.Number, a.Number>
+        {
+            public Add_EX(IToken<a.Number> in1, IToken<a.Number> in2) : base(in1, in2) { }
+            protected override a.Number Evaluate(a.Number in1, a.Number in2)
+            {
+                return new() { Value = in1.Value + in2.Value };
+            }
+        }
     }
 }
