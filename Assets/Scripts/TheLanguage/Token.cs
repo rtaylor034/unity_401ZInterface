@@ -7,6 +7,7 @@ using MorseCode.ITask;
 using ResObj = Resolution.Resolution;
 using System.ComponentModel.Design;
 using System.Runtime.InteropServices.WindowsRuntime;
+using GExtensions;
 
 #nullable enable
 namespace Token
@@ -180,6 +181,8 @@ namespace Token
             }
             return o;
         }
+        public static IToken<R> ApplyRule<R>(this IToken<R> token, Rule.IRule rule) where R : ResObj
+            => token.ApplyRules(rule.Wrapped());
     }
 }
 namespace Token.Unsafe
