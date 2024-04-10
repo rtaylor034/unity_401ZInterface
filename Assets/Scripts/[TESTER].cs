@@ -19,10 +19,10 @@ public class TESTER : MonoBehaviour
         Rule.Create.For<Tokens.Number.Add_EX, Res.Number>(PROXY =>
         {
             return PROXY.TokenFunction<Tokens.Number.Add_EX>()
-            .WithArgs(
-            PROXY.TokenFunction<Tokens.Number.Add_EX>()
-            .WithArgs(PROXY.OriginalArg1(), PROXY.AsIs(new Tokens.Number.Constant(4)))
-            , PROXY.OriginalArg2());
+                .WithArgs(
+                    PROXY.TokenFunction<Tokens.Number.Add_EX>()
+                        .WithArgs(PROXY.OriginalArg1(), PROXY.AsIs(new Tokens.Number.Constant(4))),
+                    PROXY.OriginalArg2());
         });
         AClass aa = new AClass();
         AClass ab = new BClass();
