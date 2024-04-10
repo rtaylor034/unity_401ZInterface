@@ -9,7 +9,8 @@ namespace Rule
     
     public interface IRule
     {
-        public Token.IToken<R>? TryApply<R>(Token.IToken<R> original) where R : ResObj;
+        public Token.IToken<R>? TryApplyTyped<R>(Token.IToken<R> original) where R : ResObj;
+        public Token.Unsafe.IToken? TryApply(Token.Unsafe.IToken original);
     }
     public record Rule<TFor, R> : IRule where TFor : Token.IToken<R> where R : ResObj
     {
@@ -22,7 +23,11 @@ namespace Rule
         {
             return _proxy.Realize(original);
         }
-        public Token.IToken<ROut>? TryApply<ROut>(Token.IToken<ROut> original) where ROut : ResObj
+        public Token.Unsafe.IToken? TryApply(Token.Unsafe.IToken original)
+        {
+            return (original is TFor match) ? Apply(match) : null;
+        }
+        public Token.IToken<ROut>? TryApplyTyped<ROut>(Token.IToken<ROut> original) where ROut : ResObj
         {
             return (original is TFor match) ? (Token.IToken<ROut>)Apply(match) : null;
         }

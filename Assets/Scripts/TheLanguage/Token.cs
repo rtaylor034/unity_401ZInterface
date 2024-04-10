@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using Perfection;
 using MorseCode.ITask;
 using ResObj = Resolution.Resolution;
+using System.ComponentModel.Design;
+using System.Runtime.InteropServices.WindowsRuntime;
 
 #nullable enable
 namespace Token
@@ -30,14 +32,24 @@ namespace Token
 
     public interface IToken<out R> : Unsafe.IToken where R : ResObj
     {
+        public ITask<R?> ResolveWithRules(Context context);
         public ITask<R?> Resolve(Context context);
     }
     public abstract record Token<R> : IToken<R> where R : ResObj
     {
         public abstract ITask<R?> Resolve(Context context);
+
+        public async ITask<R?> ResolveWithRules(Context context)
+        {
+            return await this.ApplyRules(context.Rules).Resolve(context);
+        }
         public async ITask<ResObj?> ResolveUnsafe(Context context)
         {
             return await Resolve(context);
+        }
+        public async ITask<ResObj?> ResolveWithRulesUnsafe(Context context)
+        {
+            return await ResolveWithRules(context);
         }
     }
     public abstract record Infallible<R> : Token<R> where R : ResObj
@@ -157,13 +169,25 @@ namespace Token
     }
     // --------
     #endregion
-
+    public static class Extensions
+    {
+        public static IToken<R> ApplyRules<R>(this IToken<R> token, IEnumerable<Rule.IRule> rules) where R : ResObj
+        {
+            var o = token;
+            foreach (var rule in rules)
+            {
+                if (rule.TryApplyTyped(o) is IToken<R> newToken) o = newToken;
+            }
+            return o;
+        }
+    }
 }
 namespace Token.Unsafe
 {
     using Token;
     public interface IToken
     {
+        public ITask<ResObj?> ResolveWithRulesUnsafe(Context context);
         public ITask<ResObj?> ResolveUnsafe(Context context);
     }
     public abstract record TokenFunction<R> : Token<R> where R : ResObj
