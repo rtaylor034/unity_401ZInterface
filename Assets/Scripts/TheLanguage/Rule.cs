@@ -8,9 +8,9 @@ namespace Rule
     using ResObj = Resolution.Resolution;
     
     public interface IRule
-        {
-            public Token.Unsafe.IToken TryApply(Token.Unsafe.IToken original, out bool matched);
-        }
+    {
+        public Token.IToken<R>? TryApply<R>(Token.IToken<R> original) where R : ResObj;
+    }
     public record Rule<TFor, R> : IRule where TFor : Token.IToken<R> where R : ResObj
     {
         private IProxy<TFor, R> _proxy { get; init; }
@@ -22,11 +22,9 @@ namespace Rule
         {
             return _proxy.Realize(original);
         }
-        public Token.Unsafe.IToken TryApply(Token.Unsafe.IToken original, out bool matched)
+        public Token.IToken<ROut>? TryApply<ROut>(Token.IToken<ROut> original) where ROut : ResObj
         {
-            //theres gotta be a way to make this 1 line.
-            matched = (original is TFor);
-            return (original is TFor matchingToken) ? Apply(matchingToken) : original;
+            return (original is TFor match) ? (Token.IToken<ROut>)Apply(match) : null;
         }
     }
     public static class Create

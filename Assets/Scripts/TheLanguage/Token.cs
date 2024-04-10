@@ -22,8 +22,8 @@ namespace Token
         public GameState State { get; init; }
         public IInputProvider InputProvider { get; init; }
         public Scope Scope { get; init; }
-        public List<Proxy.Unsafe.IProxy> Rules { get; init; }
-        public Context WithResObj(ResObj resolution) => resolution._ChangeContext(this);
+        public List<Rule.IRule> Rules { get; init; }
+        public Context WithResolution(ResObj resolution) => resolution._ChangeContext(this);
     }
 #nullable enable
     #endregion
@@ -197,7 +197,7 @@ namespace Token.Unsafe
                 {
                     case ResObj resolution:
                         o[i] = resolution;
-                        contexts[i + 1] = context.WithResObj(resolution);
+                        contexts[i + 1] = context.WithResolution(resolution);
                         continue;
                     case null:
                         if (i == 0) return null;
