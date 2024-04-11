@@ -7,6 +7,18 @@ using UnityEngine;
 // nothing in this namespace is validated; it assumes you use it perfectly.
 namespace Perfection
 {
+    public struct Empty<T> : IEnumerable<T>
+    {
+        public readonly IEnumerator<T> GetEnumerator()
+        {
+            yield break;
+        }
+
+        readonly IEnumerator IEnumerable.GetEnumerator()
+        {
+            yield break;
+        }
+    }
     public class PBiMap<T1, T2> : IEnumerable<KeyValuePair<T1, T2>>
     {
         private Dictionary<T1, T2> _forward;
@@ -128,6 +140,11 @@ namespace Perfection
                 o = function(o, v);
             }
             return o;
+        }
+        public static IEnumerable<T> Flatten<T>(this IEnumerable<IEnumerable<T>> enumerable)
+        {
+            foreach (var list in enumerable)
+                foreach (var e in list) yield return e;
         }
     }
 }

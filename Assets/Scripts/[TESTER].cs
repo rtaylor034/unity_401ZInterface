@@ -16,7 +16,7 @@ public class TESTER : MonoBehaviour
     // Start is called before the first frame update
     async void Start()
     {
-        Rule.Create.For<Tokens.Number.Add_EX, Res.Number>(PROXY =>
+        Rule.Create.For<Tokens, Res.Number>(PROXY =>
         {
             return PROXY.TokenFunction<Tokens.Number.Add_EX>()
                 .WithArgs(

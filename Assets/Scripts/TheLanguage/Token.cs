@@ -11,24 +11,63 @@ using GExtensions;
 namespace Tokens
 {
     using Token;
-    using a = Resolutions;
+    using Res = Resolutions;
     namespace Number
     {
-        public sealed record Constant : Infallible<a.Number>
+        public sealed record Constant : Infallible<Res.Number>
         {
             private int _value { get; init; }
             public Constant(int value) => _value = value;
-            protected override a.Number InfallibleResolve(Context context) => new() { Value = _value };
+            protected override Res.Number InfallibleResolve(Context context) => new() { Value = _value };
         }
-        public sealed record Add_EX : Function<a.Number, a.Number, a.Number>
+        public sealed record BinaryOperation : Function<Res.Number, Res.Number, Res.Number>
         {
-            public Add_EX(IToken<a.Number> in1, IToken<a.Number> in2) : base(in1, in2) { }
-            protected override a.Number Evaluate(a.Number in1, a.Number in2)
+            public enum EOp { Add, Subtract, Multiply, FloorDivide }
+            public EOp Operation { get; init; }
+            public BinaryOperation(IToken<Res.Number> operand1, IToken<Res.Number> operand2) : base(operand1, operand2) { }
+
+            protected override Res.Number Evaluate(Res.Number a, Res.Number b) => new()
             {
-                return new() { Value = in1.Value + in2.Value };
-            }
+                Value = Operation switch
+                {
+                    EOp.Add => a.Value + b.Value,
+                    EOp.Subtract => a.Value - b.Value,
+                    EOp.Multiply => a.Value * b.Value,
+                    EOp.FloorDivide => a.Value / b.Value
+                }
+            };
+        }
+        public sealed record UnaryOperation : Function<Res.Number, Res.Number>
+        {
+            public enum EOp { Negate }
+            public EOp Operation { get; init; }
+            public UnaryOperation(IToken<Res.Number> operand) : base(operand) { }
+            protected override Res.Number Evaluate(Res.Number operand) => new()
+            {
+                Value = Operation switch
+                {
+                    EOp.Negate => - operand.Value
+                }
+            };
         }
     }
+    namespace Multi
+    {
+        public sealed record Union<R> : Combiner<Res.Multi<R>, Res.Multi<R>> where R : class, ResObj
+        {
+            protected override Res.Multi<R> Evaluate(IEnumerable<Res.Multi<R>> inputs)
+            {
+                return new() { Values = inputs.Map(multi => multi.Values).Flatten() };
+            }
+        }
+        public sealed record Yield<R> : Infallible<Res.Multi<R>> where R : class, ResObj
+        {
+            private R _value { get; init; }
+            public Yield(R value) => _value = value;
+            protected override Res.Multi<R> InfallibleResolve(Context context) => new() { Values = _value.Wrapped() };
+        }
+    }
+    
 }
 namespace Token
 {
@@ -83,9 +122,9 @@ namespace Token
 
     /// <summary>
     /// Tokens that inherit must have a constructor matching: <br></br>
-    /// <code>(IEnumerable&lt;IToken&lt;<typeparamref name="RArg1"/>&gt;>&gt;)</code>
+    /// <code>(IEnumerable&lt;IToken&lt;<typeparamref name="RArg"/>&gt;>&gt;)</code>
     /// </summary>
-    /// <typeparam name="RArg1"></typeparam>
+    /// <typeparam name="RArg"></typeparam>
     public abstract record Combiner<RArg, ROut> : Unsafe.TokenFunction<ROut>, IHasCombineArgs<RArg>
         where RArg : class, ResObj
         where ROut : class, ResObj
@@ -247,8 +286,8 @@ namespace Token.Unsafe
                         contexts[i + 1] = context.WithResolution(resolution);
                         continue;
                     case null:
-                        if (i == 0) return null;
                         i -= 2;
+                        if (i < 0) return null;
                         continue;
                 }
             }
