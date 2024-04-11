@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Perfection;
 using MorseCode.ITask;
-using ResObj = Resolution.Resolution;
+using ResObj = Resolution.IResolution;
 using GExtensions;
 
 #nullable enable
@@ -24,17 +24,17 @@ namespace Token
         public IInputProvider InputProvider { get; init; }
         public Scope Scope { get; init; }
         public List<Rule.IRule> Rules { get; init; }
-        public Context WithResolution(ResObj resolution) => resolution._ChangeContext(this);
+        public Context WithResolution(ResObj resolution) => resolution.ChangeContext(this);
     }
 #nullable enable
     #endregion
 
-    public interface IToken<out R> : Unsafe.IToken where R : ResObj
+    public interface IToken<out R> : Unsafe.IToken where R : class, ResObj
     {
         public ITask<R?> ResolveWithRules(Context context);
         public ITask<R?> Resolve(Context context);
     }
-    public abstract record Token<R> : IToken<R> where R : ResObj
+    public abstract record Token<R> : IToken<R> where R : class, ResObj
     {
         public abstract ITask<R?> Resolve(Context context);
 
@@ -51,7 +51,7 @@ namespace Token
             return await ResolveWithRules(context);
         }
     }
-    public abstract record Infallible<R> : Token<R> where R : ResObj
+    public abstract record Infallible<R> : Token<R> where R : class, ResObj
     {
 #pragma warning disable CS8619
         public override ITask<R?> Resolve(Context context) => Task.FromResult(InfallibleResolve(context)).AsITask();
@@ -65,8 +65,8 @@ namespace Token
     /// </summary>
     /// <typeparam name="RArg1"></typeparam>
     public abstract record Combiner<RArg, ROut> : Unsafe.TokenFunction<ROut>, IHasCombineArgs<RArg>
-        where RArg : ResObj
-        where ROut : ResObj
+        where RArg : class, ResObj
+        where ROut : class, ResObj
     {
         public IEnumerable<IToken<RArg>> Args { get; private init; }
         protected Combiner(IEnumerable<IToken<RArg>> tokens) : base(tokens)
@@ -84,13 +84,13 @@ namespace Token
 
     #region Functions
     // ---- [ Functions ] ----
-    public interface IHasArg1<out RArg> : Unsafe.IHasArg1 where RArg : ResObj
+    public interface IHasArg1<out RArg> : Unsafe.IHasArg1 where RArg : class, ResObj
     { public IToken<RArg> Arg1 { get; } }
-    public interface IHasArg2<out RArg> : Unsafe.IHasArg2 where RArg : ResObj
+    public interface IHasArg2<out RArg> : Unsafe.IHasArg2 where RArg : class, ResObj
     { public IToken<RArg> Arg2 { get; } }
-    public interface IHasArg3<out RArg> : Unsafe.IHasArg3 where RArg : ResObj
+    public interface IHasArg3<out RArg> : Unsafe.IHasArg3 where RArg : class, ResObj
     { public IToken<RArg> Arg3 { get; } }
-    public interface IHasCombineArgs<out RArgs> : Unsafe.IToken where RArgs : ResObj
+    public interface IHasCombineArgs<out RArgs> : Unsafe.IToken where RArgs : class, ResObj
     {
         public IEnumerable<IToken<RArgs>> Args { get; }
     }
@@ -101,8 +101,8 @@ namespace Token
     /// <typeparam name="RArg1"></typeparam>
     public abstract record Function<RArg1, ROut> : Unsafe.TokenFunction<ROut>,
         IHasArg1<RArg1>
-        where RArg1 : ResObj
-        where ROut : ResObj
+        where RArg1 : class, ResObj
+        where ROut : class, ResObj
     {
         public IToken<RArg1> Arg1 { get; private init; }
         protected Function(IToken<RArg1> in1) : base(in1)
@@ -122,9 +122,9 @@ namespace Token
     public abstract record Function<RArg1, RArg2, ROut> : Unsafe.TokenFunction<ROut>,
         IHasArg1<RArg1>,
         IHasArg2<RArg2>
-        where RArg1 : ResObj
-        where RArg2 : ResObj
-        where ROut : ResObj
+        where RArg1 : class, ResObj
+        where RArg2 : class, ResObj
+        where ROut : class, ResObj
     {
         public IToken<RArg1> Arg1 { get; private init; }
         public IToken<RArg2> Arg2 { get; private init; }
@@ -148,10 +148,10 @@ namespace Token
         IHasArg1<RArg1>,
         IHasArg2<RArg2>,
         IHasArg3<RArg3>
-        where RArg1 : ResObj
-        where RArg2 : ResObj
-        where RArg3 : ResObj
-        where ROut : ResObj
+        where RArg1 : class, ResObj
+        where RArg2 : class, ResObj
+        where RArg3 : class, ResObj
+        where ROut : class, ResObj
     {
         public IToken<RArg1> Arg1 { get; private init; }
         public IToken<RArg2> Arg2 { get; private init; }
@@ -170,7 +170,7 @@ namespace Token
     #endregion
     public static class Extensions
     {
-        public static IToken<R> ApplyRules<R>(this IToken<R> token, IEnumerable<Rule.IRule> rules) where R : ResObj
+        public static IToken<R> ApplyRules<R>(this IToken<R> token, IEnumerable<Rule.IRule> rules) where R : class, ResObj
         {
             var o = token;
             foreach (var rule in rules)
@@ -179,7 +179,7 @@ namespace Token
             }
             return o;
         }
-        public static IToken<R> ApplyRule<R>(this IToken<R> token, Rule.IRule rule) where R : ResObj
+        public static IToken<R> ApplyRule<R>(this IToken<R> token, Rule.IRule rule) where R : class, ResObj
             => token.ApplyRules(rule.Wrapped());
     }
 }
@@ -191,7 +191,7 @@ namespace Token.Unsafe
         public ITask<ResObj?> ResolveWithRulesUnsafe(Context context);
         public ITask<ResObj?> ResolveUnsafe(Context context);
     }
-    public abstract record TokenFunction<R> : Token<R> where R : ResObj
+    public abstract record TokenFunction<R> : Token<R> where R : class, ResObj
     {
         protected List<IToken> ArgTokens { get; init; }
         protected TokenFunction(params IToken[] tokens)

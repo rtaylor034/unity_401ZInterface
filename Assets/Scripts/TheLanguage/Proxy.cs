@@ -3,18 +3,18 @@ using System.Collections.Generic;
 using UnityEngine;
 using Perfection;
 using System;
-using ResObj = Resolution.Resolution;
+using ResObj = Resolution.IResolution;
 using Token;
 
 #nullable enable
 namespace Proxy
 {
     using Token.Unsafe;
-    public interface IProxy<in TOrig, out R> : Unsafe.IProxy<R> where TOrig : IToken where R : ResObj
+    public interface IProxy<in TOrig, out R> : Unsafe.IProxy<R> where TOrig : IToken where R : class, ResObj
     {
         public IToken<R> Realize(TOrig original, Rule.IRule realizingRule);
     }
-    public abstract record Proxy<TOrig, R> : IProxy<TOrig, R> where TOrig : IToken where R : ResObj
+    public abstract record Proxy<TOrig, R> : IProxy<TOrig, R> where TOrig : IToken where R : class, ResObj
     {
         public abstract IToken<R> Realize(TOrig original, Rule.IRule realizingRule);
         public IToken<R> UnsafeTypedRealize(IToken original, Rule.IRule rule) => Realize((TOrig)original, rule);
@@ -23,7 +23,7 @@ namespace Proxy
 
     public static class Extensions
     {
-        public static Proxies.Direct<IToken<R>, R> AsProxy<R>(this IToken<R> token) where R : ResObj
+        public static Proxies.Direct<IToken<R>, R> AsProxy<R>(this IToken<R> token) where R : class, ResObj
         {
             return new(token);
         }
@@ -36,14 +36,14 @@ namespace Proxy.Unsafe
     {
         public IToken UnsafeRealize(IToken original, Rule.IRule rule);
     }
-    public interface IProxy<out R> : IProxy where R : ResObj
+    public interface IProxy<out R> : IProxy where R : class, ResObj
     {
         public abstract IToken<R> UnsafeTypedRealize(IToken original, Rule.IRule rule);
     }
 
     public abstract record FunctionProxy<TOrig, R> : Proxy<TOrig, R>
         where TOrig : IToken<R>
-        where R : ResObj
+        where R : class, ResObj
     {
         /// <summary>
         /// Expected to be [ : ]<see cref="Token.Unsafe.TokenFunction{T}"/>
@@ -77,7 +77,7 @@ namespace Proxies
     using Proxy.Unsafe;
     using GExtensions;
 
-    public record Direct<TOrig, R> : Proxy<TOrig, R> where TOrig : IToken<R> where R : ResObj
+    public record Direct<TOrig, R> : Proxy<TOrig, R> where TOrig : IToken<R> where R : class, ResObj
     {
         protected IToken<R> Token { get; init; }
         public override IToken<R> Realize(TOrig _, Rule.IRule __) => Token;
@@ -88,8 +88,8 @@ namespace Proxies
     public sealed record CombinerTransform<TNew, TOrig, RArg, ROut> : Proxy<TOrig, ROut>
         where TOrig : Token.IHasCombineArgs<RArg>
         where TNew : Token.Combiner<RArg, ROut>
-        where RArg : ResObj
-        where ROut : ResObj
+        where RArg : class, ResObj
+        where ROut : class, ResObj
     {
         public override IToken<ROut> Realize(TOrig original, Rule.IRule rule)
         {
@@ -101,8 +101,8 @@ namespace Proxies
     public record Combiner<TNew, TOrig, RArg, ROut> : FunctionProxy<TOrig, ROut>
         where TNew : Token.Combiner<RArg, ROut>
         where TOrig : IToken<ROut>
-        where RArg : ResObj
-        where ROut : ResObj
+        where RArg : class, ResObj
+        where ROut : class, ResObj
     {
         public Combiner(IEnumerable<IProxy<TOrig, RArg>> proxies) : base(proxies) { }
         protected override TokenFunction<ROut> ConstructFromArgs(List<IToken> tokens)
@@ -114,15 +114,15 @@ namespace Proxies
     }
     #region OriginalArgs
     // ---- [ OriginalArgs ] ----
-    public sealed record OriginalArg1<TOrig, RArg> : Proxy<TOrig, RArg> where TOrig : Token.IHasArg1<RArg> where RArg : ResObj
+    public sealed record OriginalArg1<TOrig, RArg> : Proxy<TOrig, RArg> where TOrig : Token.IHasArg1<RArg> where RArg : class, ResObj
     {
         public override IToken<RArg> Realize(TOrig original, Rule.IRule rule) => original.Arg1.ApplyRule(rule);
     }
-    public sealed record OriginalArg2<TOrig, RArg> : Proxy<TOrig, RArg> where TOrig : Token.IHasArg2<RArg> where RArg : ResObj
+    public sealed record OriginalArg2<TOrig, RArg> : Proxy<TOrig, RArg> where TOrig : Token.IHasArg2<RArg> where RArg : class, ResObj
     {
         public override IToken<RArg> Realize(TOrig original, Rule.IRule rule) => original.Arg2.ApplyRule(rule);
     }
-    public sealed record OriginalArg3<TOrig, RArg> : Proxy<TOrig, RArg> where TOrig : Token.IHasArg3<RArg> where RArg : ResObj
+    public sealed record OriginalArg3<TOrig, RArg> : Proxy<TOrig, RArg> where TOrig : Token.IHasArg3<RArg> where RArg : class, ResObj
     {
         public override IToken<RArg> Realize(TOrig original, Rule.IRule rule) => original.Arg3.ApplyRule(rule);
     }
@@ -133,8 +133,8 @@ namespace Proxies
     public record Function<TNew, TOrig, RArg1, ROut> : FunctionProxy<TOrig, ROut>
         where TOrig : IToken<ROut>
         where TNew : Token.Function<RArg1, ROut>
-        where RArg1 : ResObj
-        where ROut : ResObj
+        where RArg1 : class, ResObj
+        where ROut : class, ResObj
     {
         public Function(IProxy<TOrig, RArg1> in1) : base(in1) { }
         protected override TokenFunction<ROut> ConstructFromArgs(List<IToken> tokens)
@@ -147,9 +147,9 @@ namespace Proxies
     public record Function<TNew, TOrig, RArg1, RArg2, ROut> : FunctionProxy<TOrig, ROut>
         where TOrig : IToken<ROut>
         where TNew : Token.Function<RArg1, RArg2, ROut>
-        where RArg1 : ResObj
-        where RArg2 : ResObj
-        where ROut : ResObj
+        where RArg1 : class, ResObj
+        where RArg2 : class, ResObj
+        where ROut : class, ResObj
     {
         public Function(IProxy<TOrig, RArg1> in1, IProxy<TOrig, RArg2> in2) : base(in1, in2) { }
         protected override TokenFunction<ROut> ConstructFromArgs(List<IToken> tokens)
@@ -162,10 +162,10 @@ namespace Proxies
     public record Function<TNew, TOrig, RArg1, RArg2, RArg3, ROut> : FunctionProxy<TOrig, ROut>
         where TOrig : IToken<ROut>
         where TNew : Token.Function<RArg1, RArg2, RArg3, ROut>
-        where RArg1 : ResObj
-        where RArg2 : ResObj
-        where RArg3 : ResObj
-        where ROut : ResObj
+        where RArg1 : class, ResObj
+        where RArg2 : class, ResObj
+        where RArg3 : class, ResObj
+        where ROut : class, ResObj
     {
         public Function(IProxy<TOrig, RArg1> in1, IProxy<TOrig, RArg2> in2, IProxy<TOrig, RArg2> in3) : base(in1, in2, in3) { }
         protected override TokenFunction<ROut> ConstructFromArgs(List<IToken> tokens)
