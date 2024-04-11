@@ -102,7 +102,7 @@ namespace Perfection
             int i = 0;
             foreach (var v in enumerable) yield return (i++, v);
         }
-        public static IEnumerable<T> Generate<T>(this T startingValue, Func<T, T> function, Predicate<T> whileCondition)
+        public static IEnumerable<T> GenerateSequence<T>(this T startingValue, Func<T, T> function, Predicate<T> whileCondition)
         {
             T o = startingValue;
             while (whileCondition(o))
