@@ -1,27 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using Token;
 
-#nullable disable
-namespace Resolutions
-{
-    using Perfection;
-    using Resolution;
-    public sealed record Number : NonMutating
-    {
-        public int Value { get; init; }
-    }
-    public sealed record Multi<R> : Resolution where R : IResolution
-    {
-        private List<R> _elements { get; init; }
-        public IEnumerable<R> Values { get => _elements; init { _elements = new(value); } }
-        public override Context ChangeContext(Context before)
-        {
-            return _elements.GenerateValueOver(before, (prev, e) => prev.WithResolution(e));
-        }
-    }
-}
 #nullable enable
 namespace Resolution
 {

@@ -129,7 +129,7 @@ namespace Perfection
                 o = function(o);
             }
         }
-        public static TResult Fold<TIn, TResult>(this IEnumerable<TIn> enumerable, TResult startingValue, Func<TResult, TIn, TResult> function)
+        public static TResult AccumulateInto<TIn, TResult>(this IEnumerable<TIn> enumerable, TResult startingValue, Func<TResult, TIn, TResult> function)
         {
             TResult o = startingValue;
             foreach (var v in enumerable)
