@@ -97,10 +97,12 @@ namespace Perfection
     {
         public static IEnumerable<TResult> Map<TIn, TResult>(this IEnumerable<TIn> enumerable, Func<TIn, TResult> mapFunction)
         {
-            foreach (var e in enumerable)
-            {
-                yield return mapFunction(e);
-            }
+            foreach (var e in enumerable) yield return mapFunction(e);
+        }
+        public static IEnumerable<(int index, T value)> Indexed<T>(this IEnumerable<T> enumerable)
+        {
+            int i = 0;
+            foreach (var e in enumerable) yield return (i++, e);
         }
         public static IEnumerable<T> Also<T>(this IEnumerable<T> enumerable, IEnumerable<T> also)
         {
