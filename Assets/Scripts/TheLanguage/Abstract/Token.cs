@@ -216,49 +216,50 @@ namespace Token.Unsafe
         protected TokenFunction(IEnumerable<IToken> tokens)
         {
             ArgTokens = new(tokens);
-            _state = new(ArgTokens.Count + 1);
+            _state = new(ArgTokens.Count);
         }
         public TokenFunction(TokenFunction<R> original) : base(original)
         {
             ArgTokens = new(original.ArgTokens);
-            _state = new(ArgTokens.Count + 1);
+            _state = new(ArgTokens.Count);
         }
         protected abstract ITask<R?> TransformTokens(List<ResObj> tokens);
         public sealed override async ITask<R?> Resolve(Context context)
         {
-            ResObj? o = null;
-            List<IToken> tokens = new(ArgTokens.Also(this.Yield()));
             _state.Contexts[_state.Index] = context;
-            for (int i = _state.Index; i < tokens.Count; i++)
+            while (_state.Index >= 0) 
             {
-                switch (await tokens[i].ResolveUnsafe(_state.Contexts[i]))
+                if (_state.Index == ArgTokens.Count)
+                {
+                    if (await TransformTokens(_state.Inputs) is R o) return o;
+                    _state.Index--;
+                }
+                switch (await ArgTokens[_state.Index].ResolveUnsafe(_state.Contexts[_state.Index]))
                 {
                     case ResObj resolution:
-                        o = resolution;
-                        _state.Contexts[i + 1] = context.WithResolution(resolution);
+                        _state.Inputs[_state.Index] = resolution;
+                        _state.Contexts[_state.Index + 1] = context.WithResolution(resolution);
+                        _state.Index++;
                         continue;
                     case null:
-                        if (i <= 0)
-                        {
-                            _state.Index = 0;
-                            return null;
-                        }
-                        i -= 2;
+                        _state.Index--;
                         continue;
                 }
             }
-            _state.Index = tokens.Count - 1;
-            return (R?)o;
+            _state.Index = 0;
+            return null;
         }
-        // I dont want this to exist, but im not sure how else to have full backward cancellability.
+        // I dont want this to exist, but im not sure how else to have full backward cancel traversability.
         private class State
         {
             public int Index { get; set; }
             public List<Context> Contexts { get; set; }
-            public State(int initialCapacity)
+            public List<ResObj> Inputs { get; set; }
+            public State(int argCount)
             {
                 Index = 0;
-                Contexts = new(initialCapacity);
+                Contexts = new(argCount + 1);
+                Inputs = new(argCount);
             }
         }
     }
