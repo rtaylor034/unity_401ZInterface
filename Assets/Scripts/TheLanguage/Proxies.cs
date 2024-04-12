@@ -29,7 +29,7 @@ namespace Proxies
     {
         public override IToken<ROut> Realize(TOrig original, Rule.IRule rule)
         {
-            var remapped = original.Args.Map(x => x.ApplyRules(rule.Wrapped()));
+            var remapped = original.Args.Map(x => x.ApplyRules(rule.Yield()));
             return (TNew)typeof(TNew).GetConstructor(new Type[] { typeof(IEnumerable<IToken<RArg>>) })
                 .Invoke(new object[] { remapped });
         }

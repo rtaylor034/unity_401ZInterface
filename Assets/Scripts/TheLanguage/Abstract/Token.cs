@@ -59,30 +59,6 @@ namespace Token
 #pragma warning restore CS8619
         protected abstract R InfallibleResolve(Context context);
     }
-
-    /// <summary>
-    /// Tokens that inherit must have a constructor matching: <br></br>
-    /// <code>(IEnumerable&lt;IToken&lt;<typeparamref name="RArg"/>&gt;>&gt;)</code>
-    /// </summary>
-    /// <typeparam name="RArg"></typeparam>
-    public abstract record Combiner<RArg, ROut> : Unsafe.TokenFunction<ROut>, IHasCombineArgs<RArg>
-        where RArg : class, ResObj
-        where ROut : class, ResObj
-    {
-        public IEnumerable<IToken<RArg>> Args { get; private init; }
-        protected Combiner(IEnumerable<IToken<RArg>> tokens) : base(tokens)
-        {
-            Args = tokens;
-        }
-        protected Combiner(params IToken<RArg>[] tokens) : base(tokens)
-        {
-            Args = tokens;
-        }
-        protected abstract ROut Evaluate(IEnumerable<RArg> inputs);
-        protected override ROut TransformTokens(List<ResObj> tokens) => Evaluate(tokens.Map(x => (RArg)x));
-        
-    }
-
     #region Functions
     // ---- [ Functions ] ----
     public interface IHasArg1<out RArg> : Unsafe.IHasArg1 where RArg : class, ResObj
@@ -110,8 +86,8 @@ namespace Token
         {
             Arg1 = in1;
         }
-        protected abstract ROut Evaluate(RArg1 in1);
-        protected override ROut TransformTokens(List<ResObj> args) =>
+        protected abstract ITask<ROut?> Evaluate(RArg1 in1);
+        protected override ITask<ROut?> TransformTokens(List<ResObj> args) =>
             Evaluate((RArg1)args[0]);
     }
     /// <summary>
@@ -134,8 +110,8 @@ namespace Token
             Arg1 = in1;
             Arg2 = in2;
         }
-        protected abstract ROut Evaluate(RArg1 in1, RArg2 in2);
-        protected override ROut TransformTokens(List<ResObj> args) =>
+        protected abstract ITask<ROut?> Evaluate(RArg1 in1, RArg2 in2);
+        protected override ITask<ROut?> TransformTokens(List<ResObj> args) =>
             Evaluate((RArg1)args[0], (RArg2)args[1]);
     }
     /// <summary>
@@ -163,12 +139,47 @@ namespace Token
             Arg2 = in2;
             Arg3 = in3;
         }
-        protected abstract ROut Evaluate(RArg1 in1, RArg2 in2, RArg3 in3);
-        protected override ROut TransformTokens(List<ResObj> args) =>
+        protected abstract ITask<ROut?> Evaluate(RArg1 in1, RArg2 in2, RArg3 in3);
+        protected override ITask<ROut?> TransformTokens(List<ResObj> args) =>
             Evaluate((RArg1)args[0], (RArg2)args[1], (RArg3)args[2]);
     }
+    #region Pure Functions
+    // -- [ Pure Functions ] --
+    public abstract record PureFunction<RArg1, ROut> : Function<RArg1, ROut>
+        where RArg1 : class, ResObj
+        where ROut : class, ResObj
+    {
+        protected PureFunction(IToken<RArg1> in1) : base(in1) { }
+        protected abstract ROut EvaluatePure(RArg1 in1);
+    }
+
+    // ----
+    #endregion
     // --------
     #endregion
+
+    /// <summary>
+    /// Tokens that inherit must have a constructor matching: <br></br>
+    /// <code>(IEnumerable&lt;IToken&lt;<typeparamref name="RArg"/>&gt;>&gt;)</code>
+    /// </summary>
+    /// <typeparam name="RArg"></typeparam>
+    public abstract record Combiner<RArg, ROut> : Unsafe.TokenFunction<ROut>, IHasCombineArgs<RArg>
+        where RArg : class, ResObj
+        where ROut : class, ResObj
+    {
+        public IEnumerable<IToken<RArg>> Args { get; private init; }
+        protected Combiner(IEnumerable<IToken<RArg>> tokens) : base(tokens)
+        {
+            Args = tokens;
+        }
+        protected Combiner(params IToken<RArg>[] tokens) : base(tokens)
+        {
+            Args = tokens;
+        }
+        protected abstract ITask<ROut?> Evaluate(IEnumerable<RArg> inputs);
+        protected override ITask<ROut?> TransformTokens(List<ResObj> tokens) => Evaluate(tokens.Map(x => (RArg)x));
+
+    }
     public static class Extensions
     {
         public static IToken<R> ApplyRules<R>(this IToken<R> token, IEnumerable<Rule.IRule> rules) where R : class, ResObj
@@ -181,7 +192,8 @@ namespace Token
             return o;
         }
         public static IToken<R> ApplyRule<R>(this IToken<R> token, Rule.IRule rule) where R : class, ResObj
-            => token.ApplyRules(rule.Wrapped());
+            => token.ApplyRules(rule.Yield());
+
     }
 }
 namespace Token.Unsafe
@@ -195,45 +207,59 @@ namespace Token.Unsafe
     }
     public abstract record TokenFunction<R> : Token<R> where R : class, ResObj
     {
-        public override bool IsFallible => ArgTokens.Map(x => x.IsFallible).HasMatch(x => x == true);
+        //abstract and move this definition to pure
+        public sealed override bool IsFallible => IsFallibleFunction || ArgTokens.Map(x => x.IsFallible).HasMatch(x => x == true);
+        public abstract bool IsFallibleFunction { get; }
         protected List<IToken> ArgTokens { get; init; }
-        protected TokenFunction(params IToken[] tokens)
-        {
-            ArgTokens = new(tokens);
-        }
+        private State _state { get; set; }
+        protected TokenFunction(params IToken[] tokens) : this(tokens as IEnumerable<IToken>) { }
         protected TokenFunction(IEnumerable<IToken> tokens)
         {
             ArgTokens = new(tokens);
+            _state = new(ArgTokens.Count + 1);
         }
         public TokenFunction(TokenFunction<R> original) : base(original)
         {
             ArgTokens = new(original.ArgTokens);
+            _state = new(ArgTokens.Count + 1);
         }
-        protected abstract R TransformTokens(List<ResObj> tokens);
-        public override async ITask<R?> Resolve(Context context)
+        protected abstract ITask<R?> TransformTokens(List<ResObj> tokens);
+        public sealed override async ITask<R?> Resolve(Context context)
         {
-            var o = await GetTokenResults(context);
-            return o is not null ? TransformTokens(o) : null;
-        }
-        private async ITask<List<ResObj>?> GetTokenResults(Context context)
-        {
-            List<ResObj> o = new(ArgTokens.Count);
-            List<Context> contexts = new(ArgTokens.Count + 1) { context };
-            for (int i = 0; i < ArgTokens.Count; i++)
+            ResObj? o = null;
+            List<IToken> tokens = new(ArgTokens.Also(this.Yield()));
+            _state.Contexts[_state.Index] = context;
+            for (int i = _state.Index; i < tokens.Count; i++)
             {
-                switch (await ArgTokens[i].ResolveUnsafe(contexts[i]))
+                switch (await tokens[i].ResolveUnsafe(_state.Contexts[i]))
                 {
                     case ResObj resolution:
-                        o[i] = resolution;
-                        contexts[i + 1] = context.WithResolution(resolution);
+                        o = resolution;
+                        _state.Contexts[i + 1] = context.WithResolution(resolution);
                         continue;
                     case null:
-                        if (i <= 0) return null;
+                        if (i <= 0)
+                        {
+                            _state.Index = 0;
+                            return null;
+                        }
                         i -= 2;
                         continue;
                 }
             }
-            return o;
+            _state.Index = tokens.Count - 1;
+            return (R?)o;
+        }
+        // I dont want this to exist, but im not sure how else to have full backward cancellability.
+        private class State
+        {
+            public int Index { get; set; }
+            public List<Context> Contexts { get; set; }
+            public State(int initialCapacity)
+            {
+                Index = 0;
+                Contexts = new(initialCapacity);
+            }
         }
     }
     public interface IHasArg1 : IToken { }

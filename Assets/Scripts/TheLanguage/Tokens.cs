@@ -65,8 +65,18 @@ namespace Tokens
         {
             private R _value { get; init; }
             public Yield(R value) => _value = value;
-            protected override Res.Multi<R> InfallibleResolve(Context context) => new() { Values = _value.Wrapped() };
+            protected override Res.Multi<R> InfallibleResolve(Context context) => new() { Values = _value.Yield() };
         }
     }
-
+    namespace Select
+    {
+        public sealed record One<R> : Token<R> where R : class, ResObj
+        {
+            public override bool IsFallible => throw new NotImplementedException();
+            public override ITask<R?> Resolve(Context context)
+            {
+                throw new NotImplementedException();
+            }
+        }
+    }
 }

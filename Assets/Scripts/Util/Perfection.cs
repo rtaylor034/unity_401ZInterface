@@ -156,5 +156,6 @@ namespace Perfection
             foreach (var v in enumerable) if (matchCondition(v)) return true;
             return false;
         }
+        public static IEnumerable<T> Yield<T>(this T value) { yield return value; }
     }
 }
