@@ -10,20 +10,16 @@ using MorseCode.ITask;
 using GStructures;
 using Res = Resolutions;
 using Rule.Creator;
-
+using Perfection;
 public class TESTER : MonoBehaviour
 {
     // Start is called before the first frame update
     async void Start()
     {
-        Rule.Create.For<Tokens, Res.Number>(PROXY =>
+        foreach (var e in (0, 1).GenerateSequence(x => (x.Item2, x.Item1 + x.Item2)).Map(x => x.Item2).Until(x => x > 100))
         {
-            return PROXY.TokenFunction<Tokens.Number.Add_EX>()
-                .WithArgs(
-                    PROXY.TokenFunction<Tokens.Number.Add_EX>()
-                        .WithArgs(PROXY.OriginalArg1(), PROXY.AsIs(new Tokens.Number.Constant(4))),
-                    PROXY.OriginalArg2());
-        });
+            Debug.Log(e);
+        }
         AClass aa = new AClass();
         AClass ab = new BClass();
         BClass bb = new BClass();

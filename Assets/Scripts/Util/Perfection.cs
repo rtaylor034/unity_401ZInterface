@@ -1,8 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
-using UnityEngine;
 
 // nothing in this namespace is validated; it assumes you use it perfectly.
 namespace Perfection
@@ -94,11 +92,15 @@ namespace Perfection
             return ((IEnumerable)_list).GetEnumerator();
         }
     }
+    // me when i rewrite System.Linq but worse and with rust names
     public static class Extensions
     {
         public static IEnumerable<TResult> Map<TIn, TResult>(this IEnumerable<TIn> enumerable, Func<TIn, TResult> mapFunction)
         {
-            foreach (var e in enumerable) yield return mapFunction(e);
+            foreach (var e in enumerable)
+            {
+                yield return mapFunction(e);
+            }
         }
         public static IEnumerable<T> Also<T>(this IEnumerable<T> enumerable, IEnumerable<T> also)
         {
@@ -114,37 +116,45 @@ namespace Perfection
             int i = 0;
             foreach (var v in enumerable) yield return (i++, v);
         }
-        public static IEnumerable<T> GenerateSequence<T>(this T startingValue, Func<T, T> function, Predicate<T> whileCondition)
+        /// <summary>
+        /// WARNING: generates INFINITE iterator. meant to be used with <see cref="Until{T}(IEnumerable{T}, Predicate{T})"/>
+        /// </summary>
+        /// <returns></returns>
+        public static IEnumerable<T> GenerateSequence<T>(this T startingValue, Func<T, T> function)
         {
             T o = startingValue;
-            while (whileCondition(o))
+            while (true)
             {
                 yield return o;
                 o = function(o);
             }
         }
-        public static T GenerateValue<T>(this T startingValue, Func<T, T> function, Predicate<T> whileCondition)
+        public static TResult Fold<TIn, TResult>(this IEnumerable<TIn> enumerable, TResult startingValue, Func<TResult, TIn, TResult> function)
         {
-            T o = startingValue;
-            while (whileCondition(o))
-            {
-                o = function(o);
-            }
-            return o;
-        }
-        public static T GenerateValueOver<T, I>(this T startingValue, IEnumerable<I> enumerable, Func<T, I, T> function)
-        {
-            T o = startingValue;
+            TResult o = startingValue;
             foreach (var v in enumerable)
             {
                 o = function(o, v);
             }
             return o;
         }
+        public static IEnumerable<T> Until<T>(this IEnumerable<T> enumerable, Predicate<T> breakCondition)
+        {
+            foreach (var v in enumerable)
+            {
+                if (breakCondition(v)) yield break;
+                yield return v;
+            }
+        }
         public static IEnumerable<T> Flatten<T>(this IEnumerable<IEnumerable<T>> enumerable)
         {
             foreach (var list in enumerable)
                 foreach (var e in list) yield return e;
+        }
+        public static bool HasMatch<T>(this IEnumerable<T> enumerable, Predicate<T> matchCondition)
+        {
+            foreach (var v in enumerable) if (matchCondition(v)) return true;
+            return false;
         }
     }
 }

@@ -97,6 +97,7 @@ namespace Token
     }
     public abstract record Token<R> : IToken<R> where R : class, ResObj
     {
+        public abstract bool CanCancel { get; }
         public abstract ITask<R?> Resolve(Context context);
 
         public async ITask<R?> ResolveWithRules(Context context)
@@ -114,6 +115,7 @@ namespace Token
     }
     public abstract record Infallible<R> : Token<R> where R : class, ResObj
     {
+        public override bool CanCancel => false;
 #pragma warning disable CS8619
         public override ITask<R?> Resolve(Context context) => Task.FromResult(InfallibleResolve(context)).AsITask();
 #pragma warning restore CS8619
@@ -247,13 +249,16 @@ namespace Token
 namespace Token.Unsafe
 {
     using Token;
+    using System.Linq;
     public interface IToken
     {
+        public bool CanCancel { get; }
         public ITask<ResObj?> ResolveWithRulesUnsafe(Context context);
         public ITask<ResObj?> ResolveUnsafe(Context context);
     }
     public abstract record TokenFunction<R> : Token<R> where R : class, ResObj
     {
+        public override bool CanCancel => ArgTokens.Map(x => x.CanCancel).HasMatch(x => x == true);
         protected List<IToken> ArgTokens { get; init; }
         protected TokenFunction(params IToken[] tokens)
         {
@@ -286,8 +291,8 @@ namespace Token.Unsafe
                         contexts[i + 1] = context.WithResolution(resolution);
                         continue;
                     case null:
+                        if (i <= 0) return null;
                         i -= 2;
-                        if (i < 0) return null;
                         continue;
                 }
             }
