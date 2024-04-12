@@ -149,10 +149,32 @@ namespace Token
         where RArg1 : class, ResObj
         where ROut : class, ResObj
     {
+        public sealed override bool IsFallibleFunction => false;
         protected PureFunction(IToken<RArg1> in1) : base(in1) { }
         protected abstract ROut EvaluatePure(RArg1 in1);
+        protected sealed override ITask<ROut?> Evaluate(RArg1 in1) => Task.FromResult(EvaluatePure(in1)).AsITask();
     }
-
+    public abstract record PureFunction<RArg1, RArg2, ROut> : Function<RArg1, RArg2, ROut>
+        where RArg1 : class, ResObj
+        where RArg2 : class, ResObj
+        where ROut : class, ResObj
+    {
+        public sealed override bool IsFallibleFunction => false;
+        protected PureFunction(IToken<RArg1> in1, IToken<RArg2> in2) : base(in1, in2) { }
+        protected abstract ROut EvaluatePure(RArg1 in1, RArg2 in2);
+        protected sealed override ITask<ROut?> Evaluate(RArg1 in1, RArg2 in2) => Task.FromResult(EvaluatePure(in1, in2)).AsITask();
+    }
+    public abstract record PureFunction<RArg1, RArg2, RArg3, ROut> : Function<RArg1, RArg2, RArg3, ROut>
+        where RArg1 : class, ResObj
+        where RArg2 : class, ResObj
+        where RArg3 : class, ResObj
+        where ROut : class, ResObj
+    {
+        public sealed override bool IsFallibleFunction => false;
+        protected PureFunction(IToken<RArg1> in1, IToken<RArg2> in2, IToken<RArg3> in3) : base(in1, in2, in3) { }
+        protected abstract ROut EvaluatePure(RArg1 in1, RArg2 in2, RArg3 in3);
+        protected sealed override ITask<ROut?> Evaluate(RArg1 in1, RArg2 in2, RArg3 in3) => Task.FromResult(EvaluatePure(in1, in2, in3)).AsITask();
+    }
     // ----
     #endregion
     // --------
@@ -177,7 +199,18 @@ namespace Token
             Args = tokens;
         }
         protected abstract ITask<ROut?> Evaluate(IEnumerable<RArg> inputs);
-        protected override ITask<ROut?> TransformTokens(List<ResObj> tokens) => Evaluate(tokens.Map(x => (RArg)x));
+        protected sealed override ITask<ROut?> TransformTokens(List<ResObj> tokens) => Evaluate(tokens.Map(x => (RArg)x));
+
+    }
+    public abstract record PureCombiner<RArg, ROut> : Combiner<RArg, ROut>
+        where RArg : class, ResObj
+        where ROut : class, ResObj
+    {
+        public sealed override bool IsFallibleFunction => false;
+        protected PureCombiner(params IToken<RArg>[] tokens) : this(tokens as IEnumerable<IToken<RArg>>) { }
+        protected PureCombiner(IEnumerable<IToken<RArg>> tokens) : base(tokens) { }
+        protected abstract ROut EvaluatePure(IEnumerable<RArg> inputs);
+        protected sealed override ITask<ROut?> Evaluate(IEnumerable<RArg> inputs) => Task.FromResult(EvaluatePure(inputs)).AsITask();
 
     }
     public static class Extensions
