@@ -18,22 +18,20 @@ public class TESTER : MonoBehaviour
     // Start is called before the first frame update
     async void Start()
     {
-        var token = new Subtract(
-            new Multiply(
-                new Constant(8),
-                new Constant(4)),
-            new Constant(6));
-        var rule = Rule.Create.For<Subtract, Res.Number>(P =>
+        var token = new Multiply(
+            new Add(
+                new Constant(10),
+                new Constant(5)),
+            new Constant(2));
+        var rule = Rule.Create.For<Add, Res.Number>(P =>
         {
-            return P.TokenFunction<Subtract>().WithArgs(P.OriginalArg1(), P.AsIs(new Constant(8)));
+            return P.TokenFunction<Subtract>().WithArgs(P.OriginalArg1(), P.OriginalArg2());
         });
-        var rule2 = Rule.Create.For<Multiply, Res.Number>(P =>
+        var rule2 = Rule.Create.For<Subtract, Res.Number>(P =>
         {
-            return P.AsIs(new Constant(1));
+            return P.TokenFunction<Multiply>().WithArgs(P.OriginalArg1(), P.AsIs(new Constant(100)));
         });
-        Debug.Log(rule);
-        Debug.Log(token);
-        Debug.Log(await token.ResolveWithRules(new Context { InputProvider = null, Rules = new() { rule }, Scope = null, State = null}));
+        Debug.Log(await token.ResolveWithRules(new Context { InputProvider = null, Rules = new() { rule, rule2 }, Scope = null, State = null}));
     }
 
     // Update is called once per frame

@@ -92,6 +92,7 @@ namespace Perfection
             return ((IEnumerable)_list).GetEnumerator();
         }
     }
+#nullable enable
     // me when i rewrite System.Linq but worse and with rust names
     public static class Extensions
     {
@@ -175,6 +176,17 @@ namespace Perfection
             var iter = enumerable.GetEnumerator();
             for (int i = -1; i < amount; i++) iter.MoveNext();
             while (iter.MoveNext()) yield return iter.Current;
+        }
+        public static T? First<T>(this IEnumerable<T> enumerable) where T : class
+        {
+            var iter = enumerable.GetEnumerator();
+            return iter.MoveNext() ? iter.Current : null;
+        }
+        public static List<T> Reversed<T>(this List<T> list)
+        {
+            List<T> o = new(list);
+            o.Reverse();
+            return o;
         }
     }
 }

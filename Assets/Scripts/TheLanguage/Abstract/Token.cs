@@ -19,10 +19,10 @@ namespace Token
     }
     public record Context
     {
-        public GameState State { get; init; }
-        public IInputProvider InputProvider { get; init; }
-        public Scope Scope { get; init; }
-        public List<Rule.IRule> Rules { get; init; }
+        public GameState State { get; set; }
+        public IInputProvider InputProvider { get; set; }
+        public Scope Scope { get; set; }
+        public List<Rule.IRule> Rules { get; set; }
         public Context WithResolution(ResObj resolution) => resolution.ChangeContext(this);
     }
 #nullable enable
@@ -40,7 +40,12 @@ namespace Token
 
         public async ITask<R?> ResolveWithRules(Context context)
         {
-            return await this.ApplyRules(context.Rules).Resolve(context);
+            return context.Rules.Count == 0
+                ? await Resolve(context)
+                : await this.ApplyRules(context.Rules, out var applied).Resolve(context with
+                {
+                    Rules = new(context.Rules.Filter(x => !applied.HasMatch(y => ReferenceEquals(x, y))))
+                });
         }
         public async ITask<ResObj?> ResolveUnsafe(Context context)
         {
@@ -215,19 +220,22 @@ namespace Token
     }
     public static class Extensions
     {
-        public static IToken<R> ApplyRules<R>(this IToken<R> token, IEnumerable<Rule.IRule> rules) where R : class, ResObj
+        public static IToken<R> ApplyRules<R>(this IToken<R> token, IEnumerable<Rule.IRule> rules, out List<Rule.IRule> appliedRules) where R : class, ResObj
         {
             var o = token;
-            UnityEngine.Debug.Log($"T: {o.GetType()}");
+            appliedRules = new();
             foreach (var rule in rules)
             {
-                UnityEngine.Debug.Log($"R: {rule.GetType()}");
-                if (rule.TryApplyTyped(o) is IToken<R> newToken) o = newToken;
+                if (rule.TryApplyTyped(o) is IToken<R> newToken)
+                {
+                    o = newToken;
+                    appliedRules.Add(rule);
+                }
             }
             return o;
         }
         public static IToken<R> ApplyRule<R>(this IToken<R> token, Rule.IRule rule) where R : class, ResObj
-            => token.ApplyRules(rule.Yield());
+            => token.ApplyRules(rule.Yield(), out var _);
 
     }
 }
@@ -269,7 +277,7 @@ namespace Token.Unsafe
                     if (await TransformTokens(_state.Contexts[_state.Index], _state.Inputs) is R o) return o;
                     _state.Index--;
                 }
-                switch (await ArgTokens[_state.Index].ResolveUnsafe(_state.Contexts[_state.Index]))
+                switch (await ArgTokens[_state.Index].ResolveWithRulesUnsafe(_state.Contexts[_state.Index]))
                 {
                     case ResObj resolution:
                         _state.Inputs[_state.Index] = resolution;
