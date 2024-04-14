@@ -42,7 +42,7 @@ namespace Rule
     }
     namespace Creator
     {
-        // these objects exist only to aide in the process of creating proxies.
+        // these objects exist only to aide in the process of creating proxies for rules.
         // it provides a system that allows C# to make type inferences all the way down; without it, creating proxies is generic-type specification hell.
         // i do not condone the terroristic acts committed in this namespace, but the token/proxy/rule system itself is air-tight, so if something is wrong, you should know.
 
