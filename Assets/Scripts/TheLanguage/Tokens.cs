@@ -14,12 +14,9 @@ namespace Tokens
 
     namespace Scope
     {
-        public sealed record New<R> : Token.Unsafe.TokenFunction<R> where R : class, ResObj
+        public sealed record Environment<R> : SubEnvironment<R> where R : class, ResObj
         {
-            public IToken<R> SubToken { get; init; }
-            public New(params IToken<Res.Referable>[] referables) : base(referables) { }
-            public override bool IsFallibleFunction => SubToken.IsFallible;
-            protected override ITask<R?> TransformTokens(Context context, List<ResObj> _) => SubToken.ResolveWithRules(context);
+            public Environment(params IToken<Res.Referable>[] variables) : base(variables) { }
         }
         public sealed record Reference<R> : Infallible<R> where R : class, ResObj
         {
