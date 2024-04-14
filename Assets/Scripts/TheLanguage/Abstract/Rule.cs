@@ -65,6 +65,14 @@ namespace Rule
                 where RArg1 : class, ResObj
                 where ROut : class, ResObj
             { return new(arg1); }
+            public static Proxies.Function<TNew, TOrig, RArg1, RArg2, ROut> WithArgs<TNew, TOrig, RArg1, RArg2, ROut>
+                (this Base<TOrig, ROut>.IFunction<Token.Function<RArg1, RArg2, ROut>, TNew> _, IProxy<TOrig, RArg1> arg1, IProxy<TOrig, RArg2> arg2)
+                where TNew : Token.Function<RArg1, RArg2, ROut>
+                where TOrig : Token.IToken<ROut>
+                where RArg1 : class, ResObj
+                where RArg2 : class, ResObj
+                where ROut : class, ResObj
+            { return new(arg1, arg2); }
             public static Proxies.Function<TNew, TOrig, RArg1, RArg2, RArg3, ROut> WithArgs<TNew, TOrig, RArg1, RArg2, RArg3, ROut>
                 (this Base<TOrig, ROut>.IFunction<Token.Function<RArg1, RArg2, RArg3, ROut>, TNew> _, IProxy<TOrig, RArg1> arg1, IProxy<TOrig, RArg2> arg2, IProxy<TOrig, RArg2> arg3)
                 where TNew : Token.Function<RArg1, RArg2, RArg3, ROut>
@@ -74,14 +82,7 @@ namespace Rule
                 where RArg3 : class, ResObj
                 where ROut : class, ResObj
             { return new(arg1, arg2, arg3); }
-            public static Proxies.Function<TNew, TOrig, RArg1, RArg2, ROut> WithArgs<TNew, TOrig, RArg1, RArg2, ROut>
-                (this Base<TOrig, ROut>.IFunction<Token.Function<RArg1, RArg2, ROut>, TNew> _, IProxy<TOrig, RArg1> arg1, IProxy<TOrig, RArg2> arg2)
-                where TNew : Token.Function<RArg1, RArg2, ROut>
-                where TOrig : Token.IToken<ROut>
-                where RArg1 : class, ResObj
-                where RArg2 : class, ResObj
-                where ROut : class, ResObj
-            { return new(arg1, arg2); }
+
 
             // SHAKY
             public static Proxies.OriginalArg1<TOrig, RArg> OriginalArg1<TOrig, RArg, ROut>(this IBase<TOrig, Token.IHasArg1<RArg>, ROut> _)
