@@ -50,9 +50,9 @@ public class TESTER : MonoBehaviour
 
 public record ValT1 : Resolution.NonMutating { }
 public record ValT2 : Resolution.NonMutating { }
-public record TokenFunc : Token.Function<ValT1, ValT2, ValT2>
+public record TokenFunc : Token.PureFunction<ValT1, ValT2, ValT2>
 {
-    protected override ValT2 Evaluate(ValT1 in1, ValT2 in2)
+    protected override ValT2 EvaluatePure(ValT1 in1, ValT2 in2)
     {
         throw new NotImplementedException();
     }

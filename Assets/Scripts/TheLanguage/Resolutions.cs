@@ -17,7 +17,7 @@ namespace Resolutions
         public IEnumerable<R> Values { get => _elements; init { _elements = new(value); } }
         public override Context ChangeContext(Context before)
         {
-            return _elements.AccumulateInto(before, (prevContext, x) => prevContext.WithResolution(x));
+            return _elements.AccumulateInto(before, (p, x) => p.WithResolution(x));
         }
     }
 }
