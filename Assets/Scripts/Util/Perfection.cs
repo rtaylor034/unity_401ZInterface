@@ -99,11 +99,6 @@ namespace Perfection
         {
             foreach (var e in enumerable) yield return mapFunction(e);
         }
-        public static IEnumerable<(int index, T value)> Indexed<T>(this IEnumerable<T> enumerable)
-        {
-            int i = 0;
-            foreach (var e in enumerable) yield return (i++, e);
-        }
         public static IEnumerable<T> Also<T>(this IEnumerable<T> enumerable, IEnumerable<T> also)
         {
             foreach (var v in enumerable) yield return v;
