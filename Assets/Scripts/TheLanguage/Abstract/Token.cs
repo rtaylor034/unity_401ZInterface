@@ -218,8 +218,10 @@ namespace Token
         public static IToken<R> ApplyRules<R>(this IToken<R> token, IEnumerable<Rule.IRule> rules) where R : class, ResObj
         {
             var o = token;
+            UnityEngine.Debug.Log($"T: {o.GetType()}");
             foreach (var rule in rules)
             {
+                UnityEngine.Debug.Log($"R: {rule.GetType()}");
                 if (rule.TryApplyTyped(o) is IToken<R> newToken) o = newToken;
             }
             return o;
@@ -291,8 +293,8 @@ namespace Token.Unsafe
             public State(int argCount)
             {
                 Index = 0;
-                Contexts = new(argCount + 1);
-                Inputs = new(argCount);
+                Contexts = new((null as Context).GenerateSequence(_ => null).Take(argCount + 1));
+                Inputs = new((null as ResObj).GenerateSequence(_ => null).Take(argCount));
             }
         }
     }

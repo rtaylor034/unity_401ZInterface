@@ -52,7 +52,13 @@ namespace Proxies
     // ---- [ OriginalArgs ] ----
     public sealed record OriginalArg1<TOrig, RArg> : Proxy<TOrig, RArg> where TOrig : Token.IHasArg1<RArg> where RArg : class, ResObj
     {
-        public override IToken<RArg> Realize(TOrig original, Rule.IRule rule) => original.Arg1.ApplyRule(rule);
+        public override IToken<RArg> Realize(TOrig original, Rule.IRule rule)
+        {
+            UnityEngine.Debug.Log("bruh");
+            UnityEngine.Debug.Log(original.Arg1);
+            UnityEngine.Debug.Log(original.Arg1.ApplyRule(rule));
+            return original.Arg1.ApplyRule(rule);
+        }
     }
     public sealed record OriginalArg2<TOrig, RArg> : Proxy<TOrig, RArg> where TOrig : Token.IHasArg2<RArg> where RArg : class, ResObj
     {

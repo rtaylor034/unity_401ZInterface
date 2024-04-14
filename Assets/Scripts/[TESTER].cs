@@ -11,36 +11,31 @@ using GStructures;
 using Res = Resolutions;
 using Rule.Creator;
 using Perfection;
+using Tokens;
+using Tokens.Number;
 public class TESTER : MonoBehaviour
 {
     // Start is called before the first frame update
     async void Start()
     {
-        foreach (var e in (0, 1).GenerateSequence(x => (x.Item2, x.Item1 + x.Item2)).Map(x => x.Item2).Until(x => x > 100))
+        var token = new Subtract(
+            new Multiply(
+                new Constant(8),
+                new Constant(4)),
+            new Constant(6));
+        var rule = Rule.Create.For<Subtract, Res.Number>(P =>
         {
-            Debug.Log(e);
-        }
-        AClass aa = new AClass();
-        AClass ab = new BClass();
-        BClass bb = new BClass();
-        Debug.Log(aa.Test());
-        Debug.Log(ab.Test());
-        Debug.Log(bb.Test());
-        var task = new ControlledTask<int>();
-        Perform(task);
-        await Print(task);
+            return P.TokenFunction<Subtract>().WithArgs(P.OriginalArg1(), P.AsIs(new Constant(8)));
+        });
+        var rule2 = Rule.Create.For<Multiply, Res.Number>(P =>
+        {
+            return P.AsIs(new Constant(1));
+        });
+        Debug.Log(rule);
+        Debug.Log(token);
+        Debug.Log(await token.ResolveWithRules(new Context { InputProvider = null, Rules = new() { rule }, Scope = null, State = null}));
     }
-    async Task Perform(ControlledTask<int> task)
-    {
-        await Task.Delay(2000);
-        task.Resolve(7);
-    }
-    async Task Print(ITask<int> task)
-    {
-        int o = await task;
-        Debug.Log(o);
-    }
-    
+
     // Update is called once per frame
     void Update()
     {

@@ -21,35 +21,29 @@ namespace Tokens
             public Constant(int value) => _value = value;
             protected override Res.Number InfallibleResolve(Context context) => new() { Value = _value };
         }
-        public sealed record BinaryOperation : PureFunction<Res.Number, Res.Number, Res.Number>
+        public sealed record Add : PureFunction<Res.Number, Res.Number, Res.Number>
         {
-            public enum EOp { Add, Subtract, Multiply, FloorDivide }
-            public EOp Operation { get; init; }
-            public BinaryOperation(IToken<Res.Number> operand1, IToken<Res.Number> operand2) : base(operand1, operand2) { }
+            public Add(IToken<Res.Number> operand1, IToken<Res.Number> operand2) : base(operand1, operand2) { }
 
-            protected override Res.Number EvaluatePure(Res.Number a, Res.Number b) => new()
-            {
-                Value = Operation switch
-                {
-                    EOp.Add => a.Value + b.Value,
-                    EOp.Subtract => a.Value - b.Value,
-                    EOp.Multiply => a.Value * b.Value,
-                    EOp.FloorDivide => a.Value / b.Value
-                }
-            };
+            protected override Res.Number EvaluatePure(Res.Number a, Res.Number b) => new() { Value = a.Value + b.Value };
         }
-        public sealed record UnaryOperation : PureFunction<Res.Number, Res.Number>
+        public sealed record Subtract : PureFunction<Res.Number, Res.Number, Res.Number>
         {
-            public enum EOp { Negate }
-            public EOp Operation { get; init; }
-            public UnaryOperation(IToken<Res.Number> operand) : base(operand) { }
-            protected override Res.Number EvaluatePure(Res.Number operand) => new()
-            {
-                Value = Operation switch
-                {
-                    EOp.Negate => -operand.Value
-                }
-            };
+            public Subtract(IToken<Res.Number> operand1, IToken<Res.Number> operand2) : base(operand1, operand2) { }
+
+            protected override Res.Number EvaluatePure(Res.Number a, Res.Number b) => new() { Value = a.Value - b.Value };
+        }
+        public sealed record Multiply : PureFunction<Res.Number, Res.Number, Res.Number>
+        {
+            public Multiply(IToken<Res.Number> operand1, IToken<Res.Number> operand2) : base(operand1, operand2) { }
+
+            protected override Res.Number EvaluatePure(Res.Number a, Res.Number b) => new() { Value = a.Value * b.Value };
+        }
+        public sealed record Negate : PureFunction<Res.Number, Res.Number>
+        {
+            public Negate(IToken<Res.Number> operand) : base(operand) { }
+
+            protected override Res.Number EvaluatePure(Res.Number operand) => new() { Value = -operand.Value };
         }
     }
     namespace Multi
