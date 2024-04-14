@@ -275,7 +275,7 @@ namespace Token.Unsafe
                         _state.Index++;
                         continue;
                     case null:
-                        _state.Index--;
+                        while (--_state.Index >= 0 && !ArgTokens[_state.Index].IsFallible) { }
                         continue;
                 }
             }
