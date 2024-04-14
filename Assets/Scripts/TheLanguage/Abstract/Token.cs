@@ -9,12 +9,15 @@ using ResObj = Resolution.IResolution;
 namespace Token
 {
     #region Structures
-#nullable disable
+#nullable enable
     public interface IInputProvider { }
+#pragma warning disable CS8618
+
     public record Scope
     {
-        public void Pop() { }
-        public void Add() { }
+        public IEnumerable<KeyValuePair<string, ResObj>> Variables { get => _dict; init => _dict = new(value); }
+        private Dictionary<string, ResObj> _dict { get; init; }
+        public ResObj? Get(string key) => _dict.TryGetValue(key, out ResObj val) ? val : null;
     }
     public record Context
     {
@@ -24,7 +27,6 @@ namespace Token
         public List<Rule.IRule> Rules { get; init; }
         public Context WithResolution(ResObj resolution) => resolution.ChangeContext(this);
     }
-#nullable enable
     #endregion
 
     public interface IToken<out R> : Unsafe.IToken where R : class, ResObj

@@ -12,6 +12,46 @@ using Res = Resolutions;
 namespace Tokens
 {
 
+    namespace Scope
+    {
+        public sealed record New<R> : Token.Unsafe.TokenFunction<R> where R : class, ResObj
+        {
+            public IToken<R> SubToken { get; init; }
+            public New(params IToken<Res.Referable>[] referables) : base(referables) { }
+            public override bool IsFallibleFunction => SubToken.IsFallible;
+            protected override ITask<R?> TransformTokens(Context context, List<ResObj> _) => SubToken.ResolveWithRules(context);
+        }
+        public sealed record Reference<R> : Infallible<R> where R : class, ResObj
+        {
+            public string ToLabel { get; private init; }
+            public Reference(string toLabel) => ToLabel = toLabel;
+            protected override R InfallibleResolve(Context context)
+            {
+                return (context.Scope.Get(ToLabel) is R val) ? val :
+                    throw new Exception($"Reference token resolved to non-existant or wrongly-typed object.\n" +
+                    $"Label: {ToLabel}\n" +
+                    $"Expected: {typeof(R).Name}\n" +
+                    $"Recieved: {context.Scope.Get(ToLabel)?.GetType().Name}\n" +
+                    $"Current Scope:\n" +
+                    $"{context.Scope.Variables.AccumulateInto("", (msg, x) => msg + $"> {x.Key} :{x.Value}")}");
+            }
+        }
+        public sealed record Variable : Token<Res.Referable>
+        {
+            public override bool IsFallible => ObjectToken.IsFallible;
+            public Token.Unsafe.IToken ObjectToken { get; private init; }
+            public string Label { get; private init; }
+            public Variable(string label, Token.Unsafe.IToken token)
+            {
+                ObjectToken = token;
+                Label = label;
+            }
+            public override async ITask<Res.Referable?> Resolve(Context context)
+            {
+                return new() { Label = Label, Object = await ObjectToken.ResolveUnsafe(context) };
+            }
+        }
+    }
     namespace Number
     {
         public sealed record Constant : Infallible<Res.Number>
