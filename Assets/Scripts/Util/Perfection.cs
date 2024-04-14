@@ -148,6 +148,12 @@ namespace Perfection
                 yield return v;
             }
         }
+        public static IEnumerable<T> After<T>(this IEnumerable<T> enumerable, Predicate<T> startCondition)
+        {
+            var iter = enumerable.GetEnumerator();
+            while (iter.MoveNext() && !startCondition(iter.Current)) { }
+            while (iter.MoveNext()) yield return iter.Current;
+        }
         public static IEnumerable<T> Flatten<T>(this IEnumerable<IEnumerable<T>> enumerable)
         {
             foreach (var list in enumerable)
@@ -159,5 +165,21 @@ namespace Perfection
             return false;
         }
         public static IEnumerable<T> Yield<T>(this T value) { yield return value; }
+        public static IEnumerable<T> Take<T>(this IEnumerable<T> enumerable, int amount)
+        {
+            int i = 0;
+            foreach (var v in enumerable)
+            {
+                if (i >= amount) yield break;
+                yield return v;
+                i++;
+            } 
+        }
+        public static IEnumerable<T> Skip<T>(this IEnumerable<T> enumerable, int amount)
+        {
+            var iter = enumerable.GetEnumerator();
+            for (int i = -1; i < amount; i++) iter.MoveNext();
+            while (iter.MoveNext()) yield return iter.Current;
+        }
     }
 }

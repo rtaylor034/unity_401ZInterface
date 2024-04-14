@@ -21,13 +21,13 @@ namespace Tokens
             public Constant(int value) => _value = value;
             protected override Res.Number InfallibleResolve(Context context) => new() { Value = _value };
         }
-        public sealed record BinaryOperation : Function<Res.Number, Res.Number, Res.Number>
+        public sealed record BinaryOperation : PureFunction<Res.Number, Res.Number, Res.Number>
         {
             public enum EOp { Add, Subtract, Multiply, FloorDivide }
             public EOp Operation { get; init; }
             public BinaryOperation(IToken<Res.Number> operand1, IToken<Res.Number> operand2) : base(operand1, operand2) { }
 
-            protected override Res.Number Evaluate(Res.Number a, Res.Number b) => new()
+            protected override Res.Number EvaluatePure(Res.Number a, Res.Number b) => new()
             {
                 Value = Operation switch
                 {
@@ -38,12 +38,12 @@ namespace Tokens
                 }
             };
         }
-        public sealed record UnaryOperation : Function<Res.Number, Res.Number>
+        public sealed record UnaryOperation : PureFunction<Res.Number, Res.Number>
         {
             public enum EOp { Negate }
             public EOp Operation { get; init; }
             public UnaryOperation(IToken<Res.Number> operand) : base(operand) { }
-            protected override Res.Number Evaluate(Res.Number operand) => new()
+            protected override Res.Number EvaluatePure(Res.Number operand) => new()
             {
                 Value = Operation switch
                 {
@@ -54,9 +54,9 @@ namespace Tokens
     }
     namespace Multi
     {
-        public sealed record Union<R> : Combiner<Res.Multi<R>, Res.Multi<R>> where R : class, ResObj
+        public sealed record Union<R> : PureCombiner<Res.Multi<R>, Res.Multi<R>> where R : class, ResObj
         {
-            protected override Res.Multi<R> Evaluate(IEnumerable<Res.Multi<R>> inputs)
+            protected override Res.Multi<R> EvaluatePure(IEnumerable<Res.Multi<R>> inputs)
             {
                 return new() { Values = inputs.Map(multi => multi.Values).Flatten() };
             }
@@ -70,10 +70,20 @@ namespace Tokens
     }
     namespace Select
     {
-        public sealed record One<R> : Token<R> where R : class, ResObj
+        public sealed record One<R> : Function<Res.Multi<R>, R> where R : class, ResObj
         {
-            public override bool IsFallible => throw new NotImplementedException();
-            public override ITask<R?> Resolve(Context context)
+            public One(IToken<Res.Multi<R>> from) : base(from) { }
+            public override bool IsFallibleFunction => true;
+            protected override ITask<R?> Evaluate(Context context, Res.Multi<R> in1)
+            {
+                throw new NotImplementedException();
+            }
+        }
+        public sealed record Multiple<R> : Function<Res.Multi<R>, Res.Multi<R>> where R : class, ResObj
+        {
+            public Multiple(IToken<Res.Multi<R>> from) : base(from) { }
+            public override bool IsFallibleFunction => true;
+            protected override ITask<Res.Multi<R>?> Evaluate(Context context, Res.Multi<R> in1)
             {
                 throw new NotImplementedException();
             }

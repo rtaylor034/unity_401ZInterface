@@ -86,9 +86,9 @@ namespace Token
         {
             Arg1 = in1;
         }
-        protected abstract ITask<ROut?> Evaluate(RArg1 in1);
-        protected override ITask<ROut?> TransformTokens(List<ResObj> args) =>
-            Evaluate((RArg1)args[0]);
+        protected abstract ITask<ROut?> Evaluate(Context context, RArg1 in1);
+        protected override ITask<ROut?> TransformTokens(Context context, List<ResObj> args) =>
+            Evaluate(context, (RArg1)args[0]);
     }
     /// <summary>
     /// Tokens that inherit must have a constructor matching: <br></br>
@@ -110,9 +110,9 @@ namespace Token
             Arg1 = in1;
             Arg2 = in2;
         }
-        protected abstract ITask<ROut?> Evaluate(RArg1 in1, RArg2 in2);
-        protected override ITask<ROut?> TransformTokens(List<ResObj> args) =>
-            Evaluate((RArg1)args[0], (RArg2)args[1]);
+        protected abstract ITask<ROut?> Evaluate(Context context, RArg1 in1, RArg2 in2);
+        protected override ITask<ROut?> TransformTokens(Context context, List<ResObj> args) =>
+            Evaluate(context, (RArg1)args[0], (RArg2)args[1]);
     }
     /// <summary>
     /// Tokens that inherit must have a constructor matching: <br></br>
@@ -139,9 +139,9 @@ namespace Token
             Arg2 = in2;
             Arg3 = in3;
         }
-        protected abstract ITask<ROut?> Evaluate(RArg1 in1, RArg2 in2, RArg3 in3);
-        protected override ITask<ROut?> TransformTokens(List<ResObj> args) =>
-            Evaluate((RArg1)args[0], (RArg2)args[1], (RArg3)args[2]);
+        protected abstract ITask<ROut?> Evaluate(Context context, RArg1 in1, RArg2 in2, RArg3 in3);
+        protected override ITask<ROut?> TransformTokens(Context context, List<ResObj> args) =>
+            Evaluate(context, (RArg1)args[0], (RArg2)args[1], (RArg3)args[2]);
     }
     #region Pure Functions
     // -- [ Pure Functions ] --
@@ -152,7 +152,7 @@ namespace Token
         public sealed override bool IsFallibleFunction => false;
         protected PureFunction(IToken<RArg1> in1) : base(in1) { }
         protected abstract ROut EvaluatePure(RArg1 in1);
-        protected sealed override ITask<ROut?> Evaluate(RArg1 in1) => Task.FromResult(EvaluatePure(in1)).AsITask();
+        protected sealed override ITask<ROut?> Evaluate(Context _, RArg1 in1) => Task.FromResult(EvaluatePure(in1)).AsITask();
     }
     public abstract record PureFunction<RArg1, RArg2, ROut> : Function<RArg1, RArg2, ROut>
         where RArg1 : class, ResObj
@@ -162,7 +162,7 @@ namespace Token
         public sealed override bool IsFallibleFunction => false;
         protected PureFunction(IToken<RArg1> in1, IToken<RArg2> in2) : base(in1, in2) { }
         protected abstract ROut EvaluatePure(RArg1 in1, RArg2 in2);
-        protected sealed override ITask<ROut?> Evaluate(RArg1 in1, RArg2 in2) => Task.FromResult(EvaluatePure(in1, in2)).AsITask();
+        protected sealed override ITask<ROut?> Evaluate(Context _, RArg1 in1, RArg2 in2) => Task.FromResult(EvaluatePure(in1, in2)).AsITask();
     }
     public abstract record PureFunction<RArg1, RArg2, RArg3, ROut> : Function<RArg1, RArg2, RArg3, ROut>
         where RArg1 : class, ResObj
@@ -173,7 +173,7 @@ namespace Token
         public sealed override bool IsFallibleFunction => false;
         protected PureFunction(IToken<RArg1> in1, IToken<RArg2> in2, IToken<RArg3> in3) : base(in1, in2, in3) { }
         protected abstract ROut EvaluatePure(RArg1 in1, RArg2 in2, RArg3 in3);
-        protected sealed override ITask<ROut?> Evaluate(RArg1 in1, RArg2 in2, RArg3 in3) => Task.FromResult(EvaluatePure(in1, in2, in3)).AsITask();
+        protected sealed override ITask<ROut?> Evaluate(Context _, RArg1 in1, RArg2 in2, RArg3 in3) => Task.FromResult(EvaluatePure(in1, in2, in3)).AsITask();
     }
     // ----
     #endregion
@@ -198,8 +198,8 @@ namespace Token
         {
             Args = tokens;
         }
-        protected abstract ITask<ROut?> Evaluate(IEnumerable<RArg> inputs);
-        protected sealed override ITask<ROut?> TransformTokens(List<ResObj> tokens) => Evaluate(tokens.Map(x => (RArg)x));
+        protected abstract ITask<ROut?> Evaluate(Context context, IEnumerable<RArg> inputs);
+        protected sealed override ITask<ROut?> TransformTokens(Context context, List<ResObj> tokens) => Evaluate(context, tokens.Map(x => (RArg)x));
 
     }
     public abstract record PureCombiner<RArg, ROut> : Combiner<RArg, ROut>
@@ -210,7 +210,7 @@ namespace Token
         protected PureCombiner(params IToken<RArg>[] tokens) : this(tokens as IEnumerable<IToken<RArg>>) { }
         protected PureCombiner(IEnumerable<IToken<RArg>> tokens) : base(tokens) { }
         protected abstract ROut EvaluatePure(IEnumerable<RArg> inputs);
-        protected sealed override ITask<ROut?> Evaluate(IEnumerable<RArg> inputs) => Task.FromResult(EvaluatePure(inputs)).AsITask();
+        protected sealed override ITask<ROut?> Evaluate(Context _, IEnumerable<RArg> inputs) => Task.FromResult(EvaluatePure(inputs)).AsITask();
 
     }
     public static class Extensions
@@ -256,7 +256,7 @@ namespace Token.Unsafe
             ArgTokens = new(original.ArgTokens);
             _state = new(ArgTokens.Count);
         }
-        protected abstract ITask<R?> TransformTokens(List<ResObj> tokens);
+        protected abstract ITask<R?> TransformTokens(Context context, List<ResObj> tokens);
         public sealed override async ITask<R?> Resolve(Context context)
         {
             _state.Contexts[_state.Index] = context;
@@ -264,7 +264,7 @@ namespace Token.Unsafe
             {
                 if (_state.Index == ArgTokens.Count)
                 {
-                    if (await TransformTokens(_state.Inputs) is R o) return o;
+                    if (await TransformTokens(_state.Contexts[_state.Index], _state.Inputs) is R o) return o;
                     _state.Index--;
                 }
                 switch (await ArgTokens[_state.Index].ResolveUnsafe(_state.Contexts[_state.Index]))
