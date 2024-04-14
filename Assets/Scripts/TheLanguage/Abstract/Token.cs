@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Perfection;
 using MorseCode.ITask;
 using ResObj = Resolution.IResolution;
-using GExtensions;
 
 namespace Token
 {
@@ -19,10 +18,10 @@ namespace Token
     }
     public record Context
     {
-        public GameState State { get; set; }
-        public IInputProvider InputProvider { get; set; }
-        public Scope Scope { get; set; }
-        public List<Rule.IRule> Rules { get; set; }
+        public GameState State { get; init; }
+        public IInputProvider InputProvider { get; init; }
+        public Scope Scope { get; init; }
+        public List<Rule.IRule> Rules { get; init; }
         public Context WithResolution(ResObj resolution) => resolution.ChangeContext(this);
     }
 #nullable enable

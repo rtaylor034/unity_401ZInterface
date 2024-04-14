@@ -18,6 +18,7 @@ public class TESTER : MonoBehaviour
     // Start is called before the first frame update
     async void Start()
     {
+        //this beats herion
         var token = new Multiply(
             new Add(
                 new Constant(10),
@@ -41,16 +42,6 @@ public class TESTER : MonoBehaviour
     }
 }
 
-public record ValT1 : Resolution.NonMutating { }
-public record ValT2 : Resolution.NonMutating { }
-public record TokenFunc : Token.PureFunction<ValT1, ValT2, ValT2>
-{
-    protected override ValT2 EvaluatePure(ValT1 in1, ValT2 in2)
-    {
-        throw new NotImplementedException();
-    }
-    public TokenFunc(Token<ValT1> in1, Token<ValT2> in2) : base(in1, in2) { }
-}
 public class AClass
 {
     public virtual string TestA() => "A";

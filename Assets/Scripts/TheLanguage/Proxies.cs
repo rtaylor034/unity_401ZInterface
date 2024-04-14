@@ -8,7 +8,6 @@ using Token;
 using Proxy;
 using Token.Unsafe;
 using Proxy.Unsafe;
-using GExtensions;
 
 #nullable enable
 namespace Proxies
@@ -54,9 +53,6 @@ namespace Proxies
     {
         public override IToken<RArg> Realize(TOrig original, Rule.IRule rule)
         {
-            UnityEngine.Debug.Log("bruh");
-            UnityEngine.Debug.Log(original.Arg1);
-            UnityEngine.Debug.Log(original.Arg1.ApplyRule(rule));
             return original.Arg1.ApplyRule(rule);
         }
     }
