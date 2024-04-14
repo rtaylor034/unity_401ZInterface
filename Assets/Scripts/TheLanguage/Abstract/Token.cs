@@ -268,6 +268,8 @@ namespace Token.Unsafe
         protected abstract ITask<R?> TransformTokens(Context context, List<ResObj> tokens);
         public sealed override async ITask<R?> Resolve(Context context)
         {
+            // stateless behavior for now. (non-linear backwards timeline with nested functions)
+            _state.Index = 0;
             _state.Contexts[_state.Index] = context;
             while (_state.Index >= 0) 
             {
@@ -291,7 +293,7 @@ namespace Token.Unsafe
             _state.Index = 0;
             return null;
         }
-        // I dont want this to exist, but im not sure how else to have full backward cancel traversability.
+        // is redundant for now, but stateful behavior may be implemented in the future (as antiawesome as it is)
         private class State
         {
             public int Index { get; set; }
