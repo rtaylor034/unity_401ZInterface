@@ -5,6 +5,10 @@ using System.Collections.Generic;
 // nothing in this namespace is validated; it assumes you use it perfectly.
 namespace Perfection
 {
+    public interface IUnique
+    {
+        public int Id { get; }
+    }
     public struct Empty<T> : IEnumerable<T>
     {
         public readonly IEnumerator<T> GetEnumerator()
@@ -16,6 +20,34 @@ namespace Perfection
         {
             yield break;
         }
+        public static IEnumerable<E> Yield<E>()
+        {
+            yield break;
+        }
+    }
+    public record PSet<U> where U : IUnique
+    {
+        private List<List<U>> _storage;
+        private int _capacity;
+        public IEnumerable<U> Elements { get => _storage.Flatten(); }
+        public IEnumerable<U> Insertions { init { foreach (var v in value) { Insert(v); } } }
+        public PSet(int capacity)
+        {
+            _capacity = capacity;
+            _storage = new List<List<U>>(capacity).FillEmpty(new());
+        }
+        public PSet(PSet<U> original)
+        {
+            _capacity = original._capacity;
+            _storage = new(original._storage.Map(x => new List<U>(x)));
+        }
+        private void Insert(U element)
+        {
+            var i = GetCell(element).FindIndex(x => element.Id == x.Id);
+            if (i == -1) GetCell(element).Add(element);
+            else GetCell(element)[i] = element;
+        }
+        private List<U> GetCell(U element) => _storage[element.Id % _capacity];
     }
     public class PBiMap<T1, T2> : IEnumerable<KeyValuePair<T1, T2>>
     {
@@ -187,6 +219,11 @@ namespace Perfection
             List<T> o = new(list);
             o.Reverse();
             return o;
+        }
+        public static List<T?> FillEmpty<T>(this List<T?> list, T item)
+        {
+            for (int i = list.Count; i < list.Capacity; i++) list.Add(item);
+            return list;
         }
     }
 }

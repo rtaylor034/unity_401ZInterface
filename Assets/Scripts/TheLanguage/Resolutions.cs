@@ -28,4 +28,8 @@ namespace Resolutions
             }
         };
     }
+    public sealed record Unit : NoOp
+    {
+
+    }
 }

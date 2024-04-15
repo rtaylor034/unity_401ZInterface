@@ -13,8 +13,6 @@ namespace Resolution
     {
         public Context ChangeContext(Context before);
     }
-    
-    
     public abstract record Operation : Unsafe.Resolution
     {
         protected override sealed Context ChangeContextInternal(Context before) => UpdateContext(before);
