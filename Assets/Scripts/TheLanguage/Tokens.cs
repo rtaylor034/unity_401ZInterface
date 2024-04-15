@@ -12,41 +12,42 @@ using Res = Resolutions;
 namespace Tokens
 {
 
-    namespace Scope
+    public sealed record SubEnvironment<R> : Token.Unsafe.TokenFunction<R> where R : class, ResObj
     {
-        public sealed record Environment<R> : SubEnvironment<R> where R : class, ResObj
+        public IToken<R> SubToken { get; init; }
+        public sealed override bool IsFallibleFunction => SubToken.IsFallible;
+        public SubEnvironment(params Token.Unsafe.IToken[] envModifiers) : base(envModifiers) { }
+        public SubEnvironment(IEnumerable<Token.Unsafe.IToken> envModifiers) : base(envModifiers) { }
+        protected sealed override async ITask<R?> TransformTokens(Context context, List<ResObj> _) => await SubToken.ResolveWithRules(context);
+    }
+    public sealed record Variable<R> : Token<Res.DeclareVariable> where R : class, ResObj
+    {
+        public override bool IsFallible => ObjectToken.IsFallible;
+        public IToken<R> ObjectToken { get; private init; }
+        public string Label { get; private init; }
+        public Variable(string label, IToken<R> token)
         {
-            public Environment(params IToken<Res.Referable>[] variables) : base(variables) { }
+            ObjectToken = token;
+            Label = label;
         }
-        public sealed record Reference<R> : Infallible<R> where R : class, ResObj
+        public override async ITask<Res.DeclareVariable?> Resolve(Context context)
         {
-            public string ToLabel { get; private init; }
-            public Reference(string toLabel) => ToLabel = toLabel;
-            protected override R InfallibleResolve(Context context)
-            {
-                return (context.Scope.Get(ToLabel) is R val) ? val :
-                    throw new Exception($"Reference token resolved to non-existant or wrongly-typed object.\n" +
-                    $"Label: {ToLabel}\n" +
-                    $"Expected: {typeof(R).Name}\n" +
-                    $"Recieved: {context.Scope.Get(ToLabel)?.GetType().Name}\n" +
-                    $"Current Scope:\n" +
-                    $"{context.Scope.Variables.AccumulateInto("", (msg, x) => msg + $"> {x.Key} :{x.Value}")}");
-            }
+            return new() { Label = Label, Object = await ObjectToken.ResolveWithRules(context) };
         }
-        public sealed record Variable : Token<Res.Referable>
+    }
+    public sealed record Reference<R> : Infallible<R> where R : class, ResObj
+    {
+        public string ToLabel { get; private init; }
+        public Reference(string toLabel) => ToLabel = toLabel;
+        protected override R InfallibleResolve(Context context)
         {
-            public override bool IsFallible => ObjectToken.IsFallible;
-            public Token.Unsafe.IToken ObjectToken { get; private init; }
-            public string Label { get; private init; }
-            public Variable(string label, Token.Unsafe.IToken token)
-            {
-                ObjectToken = token;
-                Label = label;
-            }
-            public override async ITask<Res.Referable?> Resolve(Context context)
-            {
-                return new() { Label = Label, Object = await ObjectToken.ResolveUnsafe(context) };
-            }
+            return (context.Scope.Get(ToLabel) is R val) ? val :
+                throw new Exception($"Reference token resolved to non-existent or wrongly-typed object.\n" +
+                $"Label: '{ToLabel}'\n" +
+                $"Expected: {typeof(R).Name}\n" +
+                $"Recieved: {context.Scope.Get(ToLabel)?.GetType().Name}\n" +
+                $"Current Scope:\n" +
+                $"{context.Scope.Variables.AccumulateInto("", (msg, x) => msg + $"> '{x.Key}' : {x.Value}")}");
         }
     }
     namespace Number
@@ -60,25 +61,21 @@ namespace Tokens
         public sealed record Add : PureFunction<Res.Number, Res.Number, Res.Number>
         {
             public Add(IToken<Res.Number> operand1, IToken<Res.Number> operand2) : base(operand1, operand2) { }
-
             protected override Res.Number EvaluatePure(Res.Number a, Res.Number b) => new() { Value = a.Value + b.Value };
         }
         public sealed record Subtract : PureFunction<Res.Number, Res.Number, Res.Number>
         {
             public Subtract(IToken<Res.Number> operand1, IToken<Res.Number> operand2) : base(operand1, operand2) { }
-
             protected override Res.Number EvaluatePure(Res.Number a, Res.Number b) => new() { Value = a.Value - b.Value };
         }
         public sealed record Multiply : PureFunction<Res.Number, Res.Number, Res.Number>
         {
             public Multiply(IToken<Res.Number> operand1, IToken<Res.Number> operand2) : base(operand1, operand2) { }
-
             protected override Res.Number EvaluatePure(Res.Number a, Res.Number b) => new() { Value = a.Value * b.Value };
         }
         public sealed record Negate : PureFunction<Res.Number, Res.Number>
         {
             public Negate(IToken<Res.Number> operand) : base(operand) { }
-
             protected override Res.Number EvaluatePure(Res.Number operand) => new() { Value = -operand.Value };
         }
     }

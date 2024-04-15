@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using MorseCode.ITask;
 using GStructures;
 using Res = Resolutions;
-using Rule.Creator;
+using Proxy.Creator;
 using Perfection;
 using Tokens;
 using Tokens.Number;
@@ -19,20 +19,36 @@ public class TESTER : MonoBehaviour
     async void Start()
     {
         //this beats herion
-        var token = new Multiply(
+        var token_1 = new Multiply(
             new Add(
                 new Constant(10),
                 new Constant(5)),
             new Constant(2));
-        var rule = Rule.Create.For<Add, Res.Number>(P =>
+        var token_2 = new SubEnvironment<Res.Number>(new Variable<Res.Number>("x", new Constant(10)))
         {
-            return P.TokenFunction<Subtract>().WithArgs(P.OriginalArg1(), P.OriginalArg2());
-        });
-        var rule2 = Rule.Create.For<Subtract, Res.Number>(P =>
+            SubToken = new Reference<Res.Number>("y")
+        };
+        var token_3 = new Subtract(new Constant(10), new Constant(44));
+        var rule_1 = Rule.Create.For<Subtract, Res.Number>(P =>
         {
-            return P.TokenFunction<Multiply>().WithArgs(P.OriginalArg1(), P.AsIs(new Constant(100)));
+            return P.SubEnvironment(P.OriginalArg1().AsVariable("y")) with
+            {
+                SubTokenProxy = P.TokenFunction<Add>()
+                  .WithArgs(P.AsIs(new Reference<Res.Number>("y")), P.AsIs(new Reference<Res.Number>("y")))
+            };
         });
-        Debug.Log(await token.ResolveWithRules(new Context { InputProvider = null, Rules = new() { rule, rule2 }, Scope = null, State = null}));
+        var rule_2 = Rule.Create.For<Constant, Res.Number>(P =>
+        {
+            return P.AsIs(new Constant(60));
+        });
+        var context = new Context()
+        {
+            InputProvider = null,
+            State = null,
+            Rules = new() { rule_2, rule_1 },
+            Scope = new() { }
+        };
+        Debug.Log(await token_3.ResolveWithRules(context));
     }
 
     // Update is called once per frame

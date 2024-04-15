@@ -8,6 +8,7 @@ using Token;
 using Proxy;
 using Token.Unsafe;
 using Proxy.Unsafe;
+using Rule;
 
 #nullable enable
 namespace Proxies
@@ -45,6 +46,44 @@ namespace Proxies
             //SHAKY
             return (TokenFunction<ROut>)typeof(TNew).GetConstructor(new Type[] { typeof(IEnumerable<IToken<RArg>>) })
                 .Invoke(new object[] { tokens });
+        }
+    }
+    public record SubEnvironment<TOrig, R> : Proxy<TOrig, R>
+        where TOrig : IToken<R>
+        where R : class, ResObj
+    {
+        protected List<IProxy> EnvModifiers { get; init; }
+        public IProxy<R> SubTokenProxy { get; init; }
+        public SubEnvironment(params IProxy[] proxies)
+        {
+            EnvModifiers = new(proxies);
+        }
+        public SubEnvironment(IEnumerable<IProxy> proxies)
+        {
+            EnvModifiers = new(proxies);
+        }
+        public SubEnvironment(SubEnvironment<TOrig, R> original) : base(original)
+        {
+            EnvModifiers = new(original.EnvModifiers);
+            SubTokenProxy = original.SubTokenProxy;
+        }
+        public override IToken<R> Realize(TOrig original, Rule.IRule rule) =>
+            new Tokens.SubEnvironment<R>(EnvModifiers.Map(x => x.UnsafeRealize(original, rule))) { SubToken = SubTokenProxy.UnsafeTypedRealize(original, rule) };
+    }
+    public record Variable<TOrig, R> : Proxy<TOrig, Resolutions.DeclareVariable>
+        where TOrig : IToken
+        where R : class, ResObj
+    {
+        protected IProxy<TOrig, R> ObjectProxy { get; init; }
+        protected string Label { get; init; }
+        public Variable(string label, IProxy<TOrig, R> proxy)
+        {
+            Label = label;
+            ObjectProxy = proxy;
+        }
+        public override IToken<Resolutions.DeclareVariable> Realize(TOrig original, IRule realizingRule)
+        {
+            return new Tokens.Variable<R>(Label, ObjectProxy.Realize(original, realizingRule));
         }
     }
     #region OriginalArgs

@@ -18,7 +18,7 @@ namespace Resolutions
         public IEnumerable<R> Values { get => _elements; init { _elements = new(value); } }
         public override Context ChangeContext(Context before) => _elements.AccumulateInto(before, (p, x) => p.WithResolution(x));
     }
-    public sealed record Referable : BaseObject
+    public sealed record DeclareVariable : BaseObject
     {
         public string Label { get; init; }
         public ResObj Object { get; init; }

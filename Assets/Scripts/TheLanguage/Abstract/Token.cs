@@ -15,6 +15,10 @@ namespace Token
 
     public record Scope
     {
+        public Scope()
+        {
+            _dict = new();
+        }
         public IEnumerable<KeyValuePair<string, ResObj>> Variables { get => _dict; init => _dict = new(value); }
         private Dictionary<string, ResObj> _dict { get; init; }
         public ResObj? Get(string key) => _dict.TryGetValue(key, out ResObj val) ? val : null;
@@ -218,13 +222,7 @@ namespace Token
         protected abstract ROut EvaluatePure(IEnumerable<RArg> inputs);
         protected sealed override ITask<ROut?> Evaluate(Context _, IEnumerable<RArg> inputs) => Task.FromResult(EvaluatePure(inputs)).AsITask();
     }
-    public abstract record SubEnvironment<R> : Unsafe.TokenFunction<R> where R : class, ResObj
-    {
-        public IToken<R> SubToken { get; init; }
-        public sealed override bool IsFallibleFunction => SubToken.IsFallible;
-        public SubEnvironment(params Unsafe.IToken[] tokens) : base(tokens) { }
-        protected sealed override async ITask<R?> TransformTokens(Context context, List<ResObj> _) => await SubToken.ResolveWithRules(context);
-    }
+    
     public static class Extensions
     {
         public static IToken<R> ApplyRules<R>(this IToken<R> token, IEnumerable<Rule.IRule> rules, out List<Rule.IRule> appliedRules) where R : class, ResObj
