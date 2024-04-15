@@ -16,7 +16,7 @@ namespace Tokens
     {
         public IToken<R> SubToken { get; init; }
         public sealed override bool IsFallibleFunction => SubToken.IsFallible;
-        public SubEnvironment(params Token.Unsafe.IToken[] envModifiers) : base(envModifiers) { }
+        public SubEnvironment(params IToken<Resolution.Operation>[] envModifiers) : base(envModifiers) { }
         public SubEnvironment(IEnumerable<Token.Unsafe.IToken> envModifiers) : base(envModifiers) { }
         protected sealed override async ITask<R?> TransformTokens(Context context, List<ResObj> _) => await SubToken.ResolveWithRules(context);
     }

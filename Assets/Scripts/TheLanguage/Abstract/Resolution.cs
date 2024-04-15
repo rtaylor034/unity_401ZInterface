@@ -13,6 +13,21 @@ namespace Resolution
     {
         public Context ChangeContext(Context before);
     }
+    
+    
+    public abstract record Operation : Unsafe.Resolution
+    {
+        protected override sealed Context ChangeContextInternal(Context before) => UpdateContext(before);
+        protected abstract Context UpdateContext(Context before);
+    }
+    public abstract record NoOp : Unsafe.Resolution
+    {
+        protected override sealed Context ChangeContextInternal(Context before) => before;
+    }
+}
+namespace Resolution.Unsafe
+{
+    //not actually unsafe, just here because you should either extend 'Operation' or 'NoOp'.
     public abstract record Resolution : IResolution
     {
         /// <summary>
@@ -20,10 +35,7 @@ namespace Resolution
         /// </summary>
         /// <param name="context"></param>
         /// <returns></returns>
-        public abstract Context ChangeContext(Context before);
-    }
-    public abstract record NonMutating : Resolution
-    {
-        public override Context ChangeContext(Context context) => context;
+        public Context ChangeContext(Context before) => ChangeContextInternal(before);
+        protected abstract Context ChangeContextInternal(Context before);
     }
 }

@@ -67,7 +67,7 @@ namespace Proxy.Creator
     public struct Base<TFor, R> : IBase<TFor, TFor, R> where TFor : Token.IToken<R> where R : class, ResObj
     {
         public readonly Proxies.Direct<TFor, R> AsIs(Token.IToken<R> token) => new(token);
-        public readonly Proxies.SubEnvironment<TFor, R> SubEnvironment(params Proxy.Unsafe.IProxy[] envModifiers) => new(envModifiers);
+        public readonly Proxies.SubEnvironment<TFor, R> SubEnvironment(params IProxy<TFor, Resolution.Operation>[] envModifiers) => new(envModifiers);
         public readonly IFunction<TNew, TNew> TokenFunction<TNew>() where TNew : Token.Unsafe.TokenFunction<R>
         { return new Function<TNew>(); }
         public interface IFunction<out TNew, out TNew_> { }

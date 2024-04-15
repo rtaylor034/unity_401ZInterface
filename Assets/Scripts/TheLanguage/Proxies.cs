@@ -52,13 +52,13 @@ namespace Proxies
         where TOrig : IToken<R>
         where R : class, ResObj
     {
-        protected List<IProxy> EnvModifiers { get; init; }
+        protected List<IProxy<TOrig, Resolution.Operation>> EnvModifiers { get; init; }
         public IProxy<R> SubTokenProxy { get; init; }
-        public SubEnvironment(params IProxy[] proxies)
+        public SubEnvironment(params IProxy<TOrig, Resolution.Operation>[] proxies)
         {
             EnvModifiers = new(proxies);
         }
-        public SubEnvironment(IEnumerable<IProxy> proxies)
+        public SubEnvironment(IEnumerable<IProxy<TOrig, Resolution.Operation>> proxies)
         {
             EnvModifiers = new(proxies);
         }
