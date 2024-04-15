@@ -5,6 +5,7 @@ using System.Collections.Generic;
 // nothing in this namespace is validated; it assumes you use it perfectly.
 namespace Perfection
 {
+    public delegate T Updater<T>(T original);
     public interface IUnique
     {
         public int UniqueId { get; }
@@ -25,33 +26,43 @@ namespace Perfection
             yield break;
         }
     }
-    public record PSet<U> : IEnumerable<U> where U : IUnique
+    public record PSet<U> : IEnumerable<U> where U : class, IUnique
     {
-        private List<List<U>> _storage;
-        private int _capacity;
-        public IEnumerable<U> Insertions { init { foreach (var v in value) { Insert(v); } } }
-        public PSet(int capacity)
+        private List<List<U>> _storage { get; init; }
+        private int _modulo { get; init; }
+        public PSet(int modulo, IEnumerable<U> elements)
         {
-            _capacity = capacity;
-            _storage = new List<List<U>>(capacity).FillEmpty(new());
+            _modulo = modulo;
+            _storage = elements
+                .AccumulateInto(new List<List<U>>(modulo).FillEmpty(new(2)),
+                   (store, x) =>
+                   {
+                       var bucket = store[x.UniqueId % modulo];
+                       var index = bucket.FindIndex(y => x.UniqueId == y.UniqueId);
+                       if (index == -1) bucket.Add(x);
+                       bucket[index] = x;
+                       return store;
+                   });
         }
-        public PSet(PSet<U> original)
-        {
-            _capacity = original._capacity;
-            _storage = new(original._storage.Map(x => new List<U>(x)));
-        }
-        private void Insert(U element)
-        {
-            var i = GetCell(element).FindIndex(x => element.UniqueId == x.UniqueId);
-            if (i == -1) GetCell(element).Add(element);
-            else GetCell(element)[i] = element;
-        }
-        private List<U> GetCell(U element) => _storage[element.UniqueId % _capacity];
-
         public IEnumerator<U> GetEnumerator() => _storage.Flatten().GetEnumerator();
-
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => _storage.Flatten().GetEnumerator();
     }
+    public record PList<T> : IEnumerable<T>
+    {
+        private List<T> _list { get; init; }
+        public PList(IEnumerable<T> elements)
+        {
+            _list = new(elements);
+        }
+        public PList()
+        {
+            _list = new(0);
+        }
+        public T this[int i] => _list[i];
+        public IEnumerator<T> GetEnumerator() => _list.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)_list).GetEnumerator();
+    }
+    
     
 #nullable enable
     // me when i rewrite System.Linq but worse and with rust names
@@ -122,6 +133,10 @@ namespace Perfection
             return false;
         }
         public static IEnumerable<T> Yield<T>(this T value) { yield return value; }
+        public static IEnumerable<T> Yield<T>(this T value, int amount)
+        {
+            for (int i = 0; i < amount; i++) yield return value;
+        }
         public static IEnumerable<T> Take<T>(this IEnumerable<T> enumerable, int amount)
         {
             int i = 0;

@@ -8,13 +8,14 @@ namespace Resolutions
 {
     public sealed record Number : NoOp
     {
-        public int Value { get; init; }
+        public int Value { get; private init; }
+        public Number(int value) => Value = value;
     }
     public sealed record Multi<R> : Operation where R : ResObj
     {
-        private List<R> _elements { get; init; }
-        public IEnumerable<R> Values { get => _elements; init { _elements = new(value); } }
-        protected override Context UpdateContext(Context before) => _elements.AccumulateInto(before, (p, x) => p.WithResolution(x));
+        public List<R> Elements { get; init; }
+        public Updater<IEnumerable<R>> dElements { init => Elements = new(value(Elements)); }
+        protected override Context UpdateContext(Context before) => Elements.AccumulateInto(before, (p, x) => p.WithResolution(x));
     }
     public sealed record DeclareVariable : Operation
     {
