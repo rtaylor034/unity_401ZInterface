@@ -2,10 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using MorseCode.ITask;
 using UnityEngine;
+using Perfection;
+using Resolutions;
 
 public record GameState
 {
-    private List<Unit> _units;
-    public IEnumerable<Unit> Units => _units;
-
+    public PSet<Unit> Units { get; init; }
 }

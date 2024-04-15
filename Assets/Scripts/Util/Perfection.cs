@@ -7,7 +7,7 @@ namespace Perfection
 {
     public interface IUnique
     {
-        public int Id { get; }
+        public int UniqueId { get; }
     }
     public struct Empty<T> : IEnumerable<T>
     {
@@ -25,11 +25,10 @@ namespace Perfection
             yield break;
         }
     }
-    public record PSet<U> where U : IUnique
+    public record PSet<U> : IEnumerable<U> where U : IUnique
     {
         private List<List<U>> _storage;
         private int _capacity;
-        public IEnumerable<U> Elements { get => _storage.Flatten(); }
         public IEnumerable<U> Insertions { init { foreach (var v in value) { Insert(v); } } }
         public PSet(int capacity)
         {
@@ -43,87 +42,17 @@ namespace Perfection
         }
         private void Insert(U element)
         {
-            var i = GetCell(element).FindIndex(x => element.Id == x.Id);
+            var i = GetCell(element).FindIndex(x => element.UniqueId == x.UniqueId);
             if (i == -1) GetCell(element).Add(element);
             else GetCell(element)[i] = element;
         }
-        private List<U> GetCell(U element) => _storage[element.Id % _capacity];
-    }
-    public class PBiMap<T1, T2> : IEnumerable<KeyValuePair<T1, T2>>
-    {
-        private Dictionary<T1, T2> _forward;
-        private Dictionary<T2, T1> _backward;
+        private List<U> GetCell(U element) => _storage[element.UniqueId % _capacity];
 
-        public PBiMap()
-        {
-            _forward = new();
-            _backward = new();
-        }
-        public PBiMap(IEnumerable<KeyValuePair<T1, T2>> values)
-        {
-            _forward = new(values);
-            _backward = new(InvertKeys(values));
-        }
-        public PBiMap(PBiMap<T1, T2> original)
-        {
-            _forward = original._forward;
-            _backward = original._backward;
-        }
-        public PBiMap<T1, T2> With(IEnumerable<KeyValuePair<T1, T2>> values)
-        {
-            Dictionary<T1, T2> nforward = new(_forward.Also(values));
-            Dictionary<T2, T1> nbackward = new(_backward.Also(InvertKeys(values)));
-            return new()
-            {
-                _forward = nforward,
-                _backward = nbackward
-            };
-        }
-        private static IEnumerable<KeyValuePair<V, K>> InvertKeys<K, V>(IEnumerable<KeyValuePair<K, V>> values)
-        {
-            foreach (var val in values) { yield return KeyValuePair.Create(val.Value, val.Key); }
-        }
-        public T2 Get(T1 key) => _forward[key];
-        public T1 Get(T2 key) => _backward[key];
+        public IEnumerator<U> GetEnumerator() => _storage.Flatten().GetEnumerator();
 
-        public IEnumerator<KeyValuePair<T1, T2>> GetEnumerator()
-        {
-            return ((IEnumerable<KeyValuePair<T1, T2>>)_forward).GetEnumerator();
-        }
-        public IEnumerator<KeyValuePair<T2, T1>> InvertedEnumerator()
-        {
-            return (_backward).GetEnumerator();
-        }
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return ((IEnumerable)_forward).GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
-    public class PList<T> : IEnumerable<T>
-    {
-        private List<T> _list;
-        public PList()
-        {
-            _list = new();
-        }
-        public PList(IEnumerable<T> values)
-        {
-            _list = new(values);
-        }
-        public PList<T> With(IEnumerable<T> values)
-        {
-            return new(_list.Also(values));
-        }
-        public IEnumerator<T> GetEnumerator()
-        {
-            return ((IEnumerable<T>)_list).GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return ((IEnumerable)_list).GetEnumerator();
-        }
-    }
+    
 #nullable enable
     // me when i rewrite System.Linq but worse and with rust names
     public static class Extensions

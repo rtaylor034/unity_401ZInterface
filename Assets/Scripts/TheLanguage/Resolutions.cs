@@ -28,8 +28,25 @@ namespace Resolutions
             }
         };
     }
-    public sealed record Unit : NoOp
+    public sealed record Unit : NoOp, IUnique
     {
-
+        public int UniqueId { get; private init; }
+        public int HP { get; init; }
+        public Coordinates Position { get; init; }
+        public Unit(int id)
+        {
+            UniqueId = id;
+        }
+    }
+    public sealed record Coordinates : NoOp
+    {
+        public int G { get; init; }
+        public int U { get; init; }
+        public int D { get; init; }
+        public int this[int i] => i switch
+        {
+            0 => G, 1 => U, 2 => D,
+            _ => throw new System.IndexOutOfRangeException("Attempted to index a Position out of 0..2 range.")
+        };
     }
 }
