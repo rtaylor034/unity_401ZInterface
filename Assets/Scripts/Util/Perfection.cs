@@ -25,7 +25,7 @@ namespace Perfection
     // Shitty ass HashSet
     public record PSet<T> : PIndexedSet<T, T>
     {
-        public PSet(int modulo) : base(modulo, x => x) { }
+        public PSet(int modulo) : base(x => x, modulo) { }
     }
     public record PIndexedSet<I, T> : IEnumerable<T>
     {
@@ -49,7 +49,7 @@ namespace Perfection
         public readonly int Modulo;
         public readonly int Count;
         public readonly Func<T, I> IndexGenerator;
-        public PIndexedSet(int modulo, Func<T, I> indexGenerator)
+        public PIndexedSet(Func<T, I> indexGenerator, int modulo)
         {
             Modulo = modulo;
             IndexGenerator = indexGenerator;

@@ -12,10 +12,9 @@ public record GameState
     public Updater<PIndexedSet<int, Res.Unit>> dUnits { init => Units = value(Units); }
     public Updater<PIndexedSet<Res.Coordinates, Res.Hex.Hex>> dHexes { init => Hexes = value(Hexes); }
 
-
     public GameState()
     {
-        Units = new(13, x => x.UUID);
-        Hexes = new(77, x => x.Position);
+        Units = new(unit => unit.UUID, 13);
+        Hexes = new(hex => hex.Position, 77);
     }
 }
