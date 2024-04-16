@@ -37,7 +37,7 @@ namespace Perfection
             {
                 Count = 0;
                 _storage = new List<List<T>>(Modulo);
-                _storage.AddRange(new List<T>(2).GenerateSequence((_) => new(2)).Take(Modulo));
+                _storage.AddRange(new List<T>(2).Sequence((_) => new(2)).Take(Modulo));
                 foreach (var v in value)
                 {
                     var bindex = IndexGenerator(v).GetHashCode().Abs() % Modulo;
@@ -76,7 +76,7 @@ namespace Perfection
             {
                 Count = 0;
                 _storage = new List<List<(K key, T val)>>(Modulo);
-                _storage.AddRange(new List<(K key, T val)>(2).GenerateSequence((_) => new(2)).Take(Modulo));
+                _storage.AddRange(new List<(K key, T val)>(2).Sequence((_) => new(2)).Take(Modulo));
                 foreach (var v in value)
                 {
                     var bindex = v.key.GetHashCode().Abs() % Modulo;
@@ -139,7 +139,7 @@ namespace Perfection
         /// WARNING: generates INFINITE iterator. meant to be used with <see cref="Until{T}(IEnumerable{T}, Predicate{T})"/>
         /// </summary>
         /// <returns></returns>
-        public static IEnumerable<T> GenerateSequence<T>(this T startingValue, Func<T, T> function)
+        public static IEnumerable<T> Sequence<T>(this T startingValue, Func<T, T> function)
         {
             T o = startingValue;
             while (true)

@@ -15,6 +15,6 @@ public record GameState
     public GameState()
     {
         Units = new(unit => unit.UUID, 13);
-        Hexes = new(hex => hex.Position, 77);
+        Hexes = new(hex => hex.Position, 133);
     }
 }

@@ -54,6 +54,7 @@ namespace Resolutions
             0 => R, 1 => U, 2 => D,
             _ => throw new System.IndexOutOfRangeException("Attempted to index Coordinates out of 0..2 range.")
         };
+        public override string ToString() => $"({R}.{U}.{D})";
     }
     namespace Hex
     {

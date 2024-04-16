@@ -298,8 +298,8 @@ namespace Token.Unsafe
             public State(int argCount)
             {
                 Index = 0;
-                Contexts = new((null as Context).GenerateSequence(_ => null).Take(argCount + 1));
-                Inputs = new((null as ResObj).GenerateSequence(_ => null).Take(argCount));
+                Contexts = new((null as Context).Sequence(_ => null).Take(argCount + 1));
+                Inputs = new((null as ResObj).Sequence(_ => null).Take(argCount));
             }
         }
     }

@@ -28,7 +28,7 @@ namespace GStructures
         }
 
         public MC.IAwaiter GetAwaiter() => Awaiter;
-        public MC.IConfiguredTask ConfigureAwait(bool continueOnCapturedContext) => throw new GStructures.NahException();
+        public MC.IConfiguredTask ConfigureAwait(bool continueOnCapturedContext) => throw new System.NotImplementedException();
 
         public class ControlledAwaiter : MC.IAwaiter
         {
@@ -88,8 +88,8 @@ namespace GStructures
         public MC.IAwaiter<T> GetAwaiter() => Awaiter;
         MC.IAwaiter MC.ITask.GetAwaiter() => Awaiter;
 
-        MC.IConfiguredTask<T> MC.ITask<T>.ConfigureAwait(bool continueOnCapturedContext) => throw new GStructures.NahException();
-        MC.IConfiguredTask MC.ITask.ConfigureAwait(bool continueOnCapturedContext) => throw new GStructures.NahException();
+        MC.IConfiguredTask<T> MC.ITask<T>.ConfigureAwait(bool continueOnCapturedContext) => throw new System.NotImplementedException();
+        MC.IConfiguredTask MC.ITask.ConfigureAwait(bool continueOnCapturedContext) => throw new System.NotImplementedException();
 
         public class ControlledAwaiter<B> : ControlledTask.ControlledAwaiter, MC.IAwaiter<B>
         {
