@@ -117,7 +117,7 @@ namespace Perfection
 
     // me when i rewrite System.Linq but worse and with rust names
 #nullable enable
-    public static class Enumerable_ext
+    public static class IEnumerable_ext
     {
         public static IEnumerable<TResult> Map<TIn, TResult>(this IEnumerable<TIn> enumerable, Func<TIn, TResult> mapFunction)
         {
@@ -209,6 +209,9 @@ namespace Perfection
             var iter = enumerable.GetEnumerator();
             return iter.MoveNext() ? iter.Current : null;
         }
+    }
+    public static class Misc_ext
+    {
         public static List<T> Reversed<T>(this List<T> list)
         {
             List<T> o = new(list);
@@ -219,6 +222,17 @@ namespace Perfection
         {
             for (int i = list.Count; i < list.Capacity; i++) list.Add(item);
             return list;
+        }
+    }
+    public static class Perfect_ext
+    {
+        public static PIndexedSet<I, T> WithElements<I, T>(this PIndexedSet<I, T> set, IEnumerable<T> elements)
+        {
+            return new(set.Modulo, set.IndexGenerator, elements);
+        }
+        public static PSet<T> WithElements<T>(this PSet<T> set, IEnumerable<T> elements)
+        {
+            return new(set.Modulo, elements);
         }
     }
 }

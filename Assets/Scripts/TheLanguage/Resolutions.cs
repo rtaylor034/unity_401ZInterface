@@ -53,4 +53,12 @@ namespace Resolutions
             _ => throw new System.IndexOutOfRangeException("Attempted to index Coordinates out of 0..2 range.")
         };
     }
+    namespace Hex
+    {
+        public abstract record Hex : NoOp
+        {
+            public Coordinates Position { get; init; }
+            public Updater<Coordinates> dPosition { init => Position = value(Position); }
+        }
+    }
 }
