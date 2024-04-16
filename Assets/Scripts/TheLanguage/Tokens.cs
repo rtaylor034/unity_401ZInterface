@@ -48,7 +48,7 @@ namespace Tokens
                 $"Expected: {typeof(R).Name}\n" +
                 $"Recieved: {context.Variables[_toLabel]?.GetType().Name}\n" +
                 $"Current Scope:\n" +
-                $"{context.Variables.AccumulateInto("", (msg, x) => msg + $"> '{x.key}' : {x.val}")}");
+                $"{context.Variables.Elements.AccumulateInto("", (msg, x) => msg + $"> '{x.key}' : {x.val}")}");
         }
     }
     namespace Number
@@ -82,18 +82,18 @@ namespace Tokens
     }
     namespace List
     {
-        public sealed record Union<R> : PureCombiner<Resolution.IMulti<R>, Res.List<R>> where R : class, ResObj
+        public sealed record Union<R> : PureCombiner<Resolution.IMulti<R>, Res.Multi<R>> where R : class, ResObj
         {
-            protected override Res.List<R> EvaluatePure(IEnumerable<Resolution.IMulti<R>> inputs)
+            protected override Res.Multi<R> EvaluatePure(IEnumerable<Resolution.IMulti<R>> inputs)
             {
-                return new() { Elements = new(inputs.Map(multi => multi.GetElements()).Flatten()) };
+                return new() { Values = inputs.Map(x => x.Values).Flatten() };
             }
         }
-        public sealed record Yield<R> : Infallible<Res.List<R>> where R : class, ResObj
+        public sealed record Yield<R> : Infallible<Res.Multi<R>> where R : class, ResObj
         {
             private readonly R _value;
             public Yield(R value) => _value = value;
-            protected override Res.List<R> InfallibleResolve(Context context) => new() { Elements = new(_value.Yield()) };
+            protected override Res.Multi<R> InfallibleResolve(Context context) => new() { Values = _value.Yield() };
         }
     }
     namespace Select
@@ -107,11 +107,11 @@ namespace Tokens
                 throw new NotImplementedException();
             }
         }
-        public sealed record Multiple<R> : Function<Resolution.IMulti<R>, Res.List<R>> where R : class, ResObj
+        public sealed record Multiple<R> : Function<Resolution.IMulti<R>, Res.Multi<R>> where R : class, ResObj
         {
             public Multiple(IToken<Resolution.IMulti<R>> from) : base(from) { }
             public override bool IsFallibleFunction => true;
-            protected override ITask<Res.List<R>?> Evaluate(Context context, Resolution.IMulti<R> in1)
+            protected override ITask<Res.Multi<R>?> Evaluate(Context context, Resolution.IMulti<R> in1)
             {
                 throw new NotImplementedException();
             }

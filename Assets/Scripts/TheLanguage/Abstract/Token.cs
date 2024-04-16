@@ -39,9 +39,9 @@ namespace Token
         {
             return context.Rules.Count == 0
                 ? await Resolve(context)
-                : await this.ApplyRules(context.Rules, out var applied).Resolve(context with
+                : await this.ApplyRules(context.Rules.Elements, out var applied).Resolve(context with
                 {
-                    dRules = o => new(o.Filter(x => !applied.HasMatch(y => ReferenceEquals(x, y))))
+                    dRules = q => q with { dElements = q => q.Filter(x => !applied.HasMatch(y => ReferenceEquals(x, y))) }
                 });
         }
         public async ITask<ResObj?> ResolveUnsafe(Context context)

@@ -32,7 +32,7 @@ public class TESTER : MonoBehaviour
         {
             InputProvider = null,
             State = null,
-            Rules = new(rule_1.Yield()),
+            Rules = new() { Elements = rule_1.Yield() },
             Variables = new(7)
         };
         Debug.Log(await token_3.ResolveWithRules(context));

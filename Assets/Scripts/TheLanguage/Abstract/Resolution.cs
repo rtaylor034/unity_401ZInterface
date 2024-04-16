@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Token;
 using Perfection;
-using ResObj = Resolution.IResolution
+using ResObj = Resolution.IResolution;
 
 #nullable enable
 namespace Resolution
@@ -26,7 +26,7 @@ namespace Resolution
     }
     public interface IMulti<out R> : ResObj where R : ResObj
     {
-        public IEnumerable<R> GetElements();
+        public IEnumerable<R> Values { get; }
     }
 }
 namespace Resolution.Unsafe

@@ -14,10 +14,12 @@ namespace Resolutions
     }
     public sealed record Multi<R> : Operation, IMulti<R> where R : ResObj
     {
-        public PList<R> Values { get; init; }
-        public Updater<PList<R>> dElements { init => Values = value(Values); }
-        protected override Context UpdateContext(Context before) => Values.Elements.AccumulateInto(before, (p, x) => p.WithResolution(x));
-        public IEnumerable<R> GetElements() => Values.Elements;
+        private readonly PList<R> _list;
+        public IEnumerable<R> Values { get => _list.Elements; init => _list = new() { Elements = value }; }
+        public Updater<IEnumerable<R>> dValues { init => Values = value(Values); }
+        public Multi() { _list = new(); }
+        protected override Context UpdateContext(Context before) => Values.AccumulateInto(before, (p, x) => p.WithResolution(x));
+
     }
     public sealed record DeclareVariable : Operation
     {
