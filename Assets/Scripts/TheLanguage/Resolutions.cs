@@ -29,7 +29,7 @@ namespace Resolutions
         public Updater<ResObj> dObject { init => Object = value(Object); }
         protected override Context UpdateContext(Context before) => before with
         {
-            dVariables = p => p with { dElements = x => x.Also((Label, Object).Yield()) }
+            dVariables = m => m with { dElements = m => m.Also((Label, Object).Yield()) }
         };
     } 
     public sealed record Unit : NoOp
