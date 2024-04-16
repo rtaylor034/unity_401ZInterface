@@ -23,35 +23,44 @@ namespace Perfection
         }
     }
     // Shitty ass HashSet
-    public record PSet<T> : IEnumerable<T>
+    public record PSet<T> : PQuickIndexSet<T, T>
+    {
+        public PSet(int modulo, IEnumerable<T> elements) : base(modulo, x => x, elements) { }
+        public PSet(int modulo) : base(modulo, x => x) { }
+    }
+    public record PQuickIndexSet<I, T> : IEnumerable<T>
     {
         private readonly List<List<T>> _storage;
         public readonly int Modulo;
         public readonly int Count;
-        public PSet(int modulo, IEnumerable<T> elements)
+        public readonly Func<T, I> IndexGenerator;
+        public PQuickIndexSet(int modulo, Func<T, I> indexGenerator, IEnumerable<T> elements)
         {
             Modulo = modulo;
+            IndexGenerator = indexGenerator;
             (Count, _storage) = elements
                 .AccumulateInto((0, new List<List<T>>(modulo).FillEmpty(new(2))),
                    (data, x) =>
                    {
                        var (count, store) = data;
-                       var bucket = store[x.GetHashCode() % modulo];
+                       var bucket = store[indexGenerator(x).GetHashCode() % modulo];
                        var index = bucket.FindIndex(y => x.Equals(y));
                        if (index == -1) bucket.Add(x);
                        bucket[index] = x;
                        return (++count, store);
                    });
         }
-        public PSet(int modulo)
+        public PQuickIndexSet(int modulo, Func<T, I> indexGenerator)
         {
             Modulo = modulo;
+            IndexGenerator = indexGenerator;
             Count = 0;
             _storage = new(0);
         }
-        public bool Contains(T other) => GetBucket(other).Contains(other);
-        public T this[T indexer] => GetBucket(indexer).Find(x => indexer.Equals(x));
-        private List<T> GetBucket(T element) => _storage[element.GetHashCode() % Modulo];
+        public bool Contains(T other) => GetBucket(IndexGenerator(other)).Contains(other);
+        public T this[T element] => GetBucket(IndexGenerator(element)).Find(x => element.Equals(x));
+        public IEnumerable<T> AreaOfIndex(I indexer) => GetBucket(indexer);
+        private List<T> GetBucket(I index) => _storage[index.GetHashCode() % Modulo];
         public IEnumerator<T> GetEnumerator() => _storage.Flatten().GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => _storage.Flatten().GetEnumerator();
     }
