@@ -12,11 +12,12 @@ namespace Resolutions
         public int Value { get; init; }
         public Updater<int> dValue { init => Value = value(Value); }
     }
-    public sealed record Multi<R> : Operation where R : ResObj
+    public sealed record List<R> : Operation, IMulti<R> where R : ResObj
     {
         public PList<R> Elements { get; init; }
         public Updater<PList<R>> dElements { init => Elements = value(Elements); }
         protected override Context UpdateContext(Context before) => Elements.AccumulateInto(before, (p, x) => p.WithResolution(x));
+        public IEnumerable<R> GetElements() => Elements;
     }
     public sealed record DeclareVariable : Operation
     {
@@ -40,8 +41,6 @@ namespace Resolutions
         {
             UUID = id;
         }
-        public bool Equals(Unit? other) => other is not null && UUID == other.UUID;
-        public override int GetHashCode() => UUID;
     }
     public sealed record Coordinates : NoOp
     {

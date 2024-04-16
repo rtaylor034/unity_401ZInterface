@@ -80,38 +80,38 @@ namespace Tokens
             protected override Res.Number EvaluatePure(Res.Number operand) => new() { Value = -operand.Value };
         }
     }
-    namespace Multi
+    namespace List
     {
-        public sealed record Union<R> : PureCombiner<Res.Multi<R>, Res.Multi<R>> where R : class, ResObj
+        public sealed record Union<R> : PureCombiner<Resolution.IMulti<R>, Res.List<R>> where R : class, ResObj
         {
-            protected override Res.Multi<R> EvaluatePure(IEnumerable<Res.Multi<R>> inputs)
+            protected override Res.List<R> EvaluatePure(IEnumerable<Resolution.IMulti<R>> inputs)
             {
-                return new() { Elements = new(inputs.Map(multi => multi.Elements).Flatten()) };
+                return new() { Elements = new(inputs.Map(multi => multi.GetElements()).Flatten()) };
             }
         }
-        public sealed record Yield<R> : Infallible<Res.Multi<R>> where R : class, ResObj
+        public sealed record Yield<R> : Infallible<Res.List<R>> where R : class, ResObj
         {
             private readonly R _value;
             public Yield(R value) => _value = value;
-            protected override Res.Multi<R> InfallibleResolve(Context context) => new() { Elements = new(_value.Yield()) };
+            protected override Res.List<R> InfallibleResolve(Context context) => new() { Elements = new(_value.Yield()) };
         }
     }
     namespace Select
     {
-        public sealed record One<R> : Function<Res.Multi<R>, R> where R : class, ResObj
+        public sealed record One<R> : Function<Resolution.IMulti<R>, R> where R : class, ResObj
         {
-            public One(IToken<Res.Multi<R>> from) : base(from) { }
+            public One(IToken<Resolution.IMulti<R>> from) : base(from) { }
             public override bool IsFallibleFunction => true;
-            protected override ITask<R?> Evaluate(Context context, Res.Multi<R> in1)
+            protected override ITask<R?> Evaluate(Context context, Resolution.IMulti<R> in1)
             {
                 throw new NotImplementedException();
             }
         }
-        public sealed record Multiple<R> : Function<Res.Multi<R>, Res.Multi<R>> where R : class, ResObj
+        public sealed record Multiple<R> : Function<Resolution.IMulti<R>, Res.List<R>> where R : class, ResObj
         {
-            public Multiple(IToken<Res.Multi<R>> from) : base(from) { }
+            public Multiple(IToken<Resolution.IMulti<R>> from) : base(from) { }
             public override bool IsFallibleFunction => true;
-            protected override ITask<Res.Multi<R>?> Evaluate(Context context, Res.Multi<R> in1)
+            protected override ITask<Res.List<R>?> Evaluate(Context context, Resolution.IMulti<R> in1)
             {
                 throw new NotImplementedException();
             }

@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using Token;
+using Perfection;
+using ResObj = Resolution.IResolution
 
 #nullable enable
 namespace Resolution
@@ -21,6 +23,10 @@ namespace Resolution
     public abstract record NoOp : Unsafe.Resolution
     {
         protected override sealed Context ChangeContextInternal(Context before) => before;
+    }
+    public interface IMulti<out R> : ResObj where R : ResObj
+    {
+        public IEnumerable<R> GetElements();
     }
 }
 namespace Resolution.Unsafe

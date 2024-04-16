@@ -23,18 +23,18 @@ namespace Perfection
         }
     }
     // Shitty ass HashSet
-    public record PSet<T> : PQuickIndexSet<T, T>
+    public record PSet<T> : PIndexedSet<T, T>
     {
         public PSet(int modulo, IEnumerable<T> elements) : base(modulo, x => x, elements) { }
         public PSet(int modulo) : base(modulo, x => x) { }
     }
-    public record PQuickIndexSet<I, T> : IEnumerable<T>
+    public record PIndexedSet<I, T> : IEnumerable<T>
     {
-        private readonly List<List<T>> _storage;
+        protected readonly List<List<T>> _storage;
         public readonly int Modulo;
         public readonly int Count;
         public readonly Func<T, I> IndexGenerator;
-        public PQuickIndexSet(int modulo, Func<T, I> indexGenerator, IEnumerable<T> elements)
+        public PIndexedSet(int modulo, Func<T, I> indexGenerator, IEnumerable<T> elements)
         {
             Modulo = modulo;
             IndexGenerator = indexGenerator;
@@ -50,16 +50,15 @@ namespace Perfection
                        return (++count, store);
                    });
         }
-        public PQuickIndexSet(int modulo, Func<T, I> indexGenerator)
+        public PIndexedSet(int modulo, Func<T, I> indexGenerator)
         {
             Modulo = modulo;
             IndexGenerator = indexGenerator;
             Count = 0;
             _storage = new(0);
         }
-        public bool Contains(T other) => GetBucket(IndexGenerator(other)).Contains(other);
-        public T this[T element] => GetBucket(IndexGenerator(element)).Find(x => element.Equals(x));
-        public IEnumerable<T> AreaOfIndex(I indexer) => GetBucket(indexer);
+        public bool Contains(I index) => GetBucket(index).HasMatch(x => IndexGenerator(x).Equals(index));
+        public T this[I index] => GetBucket(index).Find(x => IndexGenerator(x).Equals(index));
         private List<T> GetBucket(I index) => _storage[index.GetHashCode() % Modulo];
         public IEnumerator<T> GetEnumerator() => _storage.Flatten().GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => _storage.Flatten().GetEnumerator();

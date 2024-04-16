@@ -7,7 +7,7 @@ using Resolutions;
 
 public record GameState
 {
-    public PSet<Unit> Units { get; init; }
-    public Updater<PSet<Unit>> dUnits { init => Units = value(Units); }
+    public PIndexedSet<int, Unit> Units { get; init; }
+    public Updater<PIndexedSet<int, Unit>> dUnits { init => Units = value(Units); }
     
 }
