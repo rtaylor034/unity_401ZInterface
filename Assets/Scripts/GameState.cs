@@ -7,8 +7,15 @@ using Res = Resolutions;
 
 public record GameState
 {
-    public PIndexedSet<int, Res.Unit> Units { get; init; }
+    public readonly PIndexedSet<int, Res.Unit> Units;
+    public readonly PIndexedSet<Res.Coordinates, Res.Hex.Hex> Hexes;
     public Updater<PIndexedSet<int, Res.Unit>> dUnits { init => Units = value(Units); }
-    public PIndexedSet<Res.Coordinates, Res.Hex.Hex> Hexes { get; init; } 
     public Updater<PIndexedSet<Res.Coordinates, Res.Hex.Hex>> dHexes { init => Hexes = value(Hexes); }
+
+
+    public GameState()
+    {
+        Units = new(13, x => x.UUID);
+        Hexes = new(77, x => x.Position);
+    }
 }

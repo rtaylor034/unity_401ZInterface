@@ -29,7 +29,7 @@ namespace Resolutions
         {
             dVariables = p => p with { dElements = x => x.Also((Label, Object).Yield()) }
         };
-    }
+    } 
     public sealed record Unit : NoOp
     {
         public readonly int UUID;
