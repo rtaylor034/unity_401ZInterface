@@ -21,7 +21,9 @@ namespace Resolutions
     public sealed record DeclareVariable : Operation
     {
         public string Label { get; init; }
+        public Updater<string> dLabel { init => Label = value(Label); }
         public ResObj Object { get; init; }
+        public Updater<ResObj> dObject { init => Object = value(Object); }
         protected override Context UpdateContext(Context before) => before with
         {
             dVariables = p => new(p.Modulo, p.Also((Label, Object).Yield()))
@@ -30,8 +32,10 @@ namespace Resolutions
     public sealed record Unit : NoOp
     {
         public readonly int UUID;
-        public int HP { get; init; }
+        public int HP { get; init; } 
+        public Updater<int> dHP { init => HP = value(HP); }
         public Coordinates Position { get; init; }
+        public Updater<Coordinates> dPosition { init => Position = value(Position); }
         public Unit(int id)
         {
             UUID = id;
@@ -41,12 +45,12 @@ namespace Resolutions
     }
     public sealed record Coordinates : NoOp
     {
-        public int G { get; init; }
+        public int R { get; init; }
         public int U { get; init; }
         public int D { get; init; }
         public int this[int i] => i switch
         {
-            0 => G, 1 => U, 2 => D,
+            0 => R, 1 => U, 2 => D,
             _ => throw new System.IndexOutOfRangeException("Attempted to index Coordinates out of 0..2 range.")
         };
     }

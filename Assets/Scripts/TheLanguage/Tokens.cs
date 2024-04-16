@@ -23,8 +23,8 @@ namespace Tokens
     public sealed record Variable<R> : Token<Res.DeclareVariable> where R : class, ResObj
     {
         public override bool IsFallible => ObjectToken.IsFallible;
-        public IToken<R> ObjectToken { get; private init; }
-        public string Label { get; private init; }
+        public readonly IToken<R> ObjectToken;
+        public readonly string Label;
         public Variable(string label, IToken<R> token)
         {
             ObjectToken = token;
@@ -32,29 +32,30 @@ namespace Tokens
         }
         public override async ITask<Res.DeclareVariable?> Resolve(Context context)
         {
-            return new() { Label = Label, Object = await ObjectToken.ResolveWithRules(context) };
+            return (await ObjectToken.ResolveWithRules(context) is Res.DeclareVariable res) ?
+                new() { Label = Label, Object = res } : null;
         }
     }
     public sealed record Reference<R> : Infallible<R> where R : class, ResObj
     {
-        public string ToLabel { get; private init; }
-        public Reference(string toLabel) => ToLabel = toLabel;
+        private readonly string _toLabel;
+        public Reference(string toLabel) => _toLabel = toLabel;
         protected override R InfallibleResolve(Context context)
         {
-            return (context.Scope.Get(ToLabel) is R val) ? val :
+            return (context.Variables[_toLabel] is R val) ? val :
                 throw new Exception($"Reference token resolved to non-existent or wrongly-typed object.\n" +
-                $"Label: '{ToLabel}'\n" +
+                $"Label: '{_toLabel}'\n" +
                 $"Expected: {typeof(R).Name}\n" +
-                $"Recieved: {context.Scope.Get(ToLabel)?.GetType().Name}\n" +
+                $"Recieved: {context.Variables[_toLabel]?.GetType().Name}\n" +
                 $"Current Scope:\n" +
-                $"{context.Scope.Variables.AccumulateInto("", (msg, x) => msg + $"> '{x.Key}' : {x.Value}")}");
+                $"{context.Variables.AccumulateInto("", (msg, x) => msg + $"> '{x.key}' : {x.val}")}");
         }
     }
     namespace Number
     {
         public sealed record Constant : Infallible<Res.Number>
         {
-            private int _value { get; init; }
+            private readonly int _value;
             public Constant(int value) => _value = value;
             protected override Res.Number InfallibleResolve(Context context) => new() { Value = _value };
         }
@@ -90,7 +91,7 @@ namespace Tokens
         }
         public sealed record Yield<R> : Infallible<Res.Multi<R>> where R : class, ResObj
         {
-            private R _value { get; init; }
+            private readonly R _value;
             public Yield(R value) => _value = value;
             protected override Res.Multi<R> InfallibleResolve(Context context) => new() { Elements = new(_value.Yield()) };
         }
