@@ -11,24 +11,16 @@ namespace Token
     #region Structures
 #nullable enable
     public interface IInputProvider { }
-#pragma warning disable CS8618
-
-    public record Scope
-    {
-        public Scope()
-        {
-            _dict = new();
-        }
-        public IEnumerable<KeyValuePair<string, ResObj>> Variables { get => _dict; init => _dict = new(value); }
-        private Dictionary<string, ResObj> _dict { get; init; }
-        public ResObj? Get(string key) => _dict.TryGetValue(key, out ResObj val) ? val : null;
-    }
     public record Context
     {
-        public GameState State { get; init; }
         public IInputProvider InputProvider { get; init; }
-        public Scope Scope { get; init; }
-        public List<Rule.IRule> Rules { get; init; }
+        public GameState State { get; init; }
+        public Updater<GameState> dState { init => State = value(State); }
+        public PMap<string, ResObj> Variables { get; init; }
+        public Updater<PMap<string, ResObj>> dVariables { init => Variables = value(Variables); }
+        public PList<Rule.IRule> Rules { get; init; }
+        public Updater<PList<Rule.IRule>> dRules { init => Rules = value(Rules); }
+
         public Context WithResolution(ResObj resolution) => resolution.ChangeContext(this);
     }
     #endregion
@@ -49,7 +41,7 @@ namespace Token
                 ? await Resolve(context)
                 : await this.ApplyRules(context.Rules, out var applied).Resolve(context with
                 {
-                    Rules = new(context.Rules.Filter(x => !applied.HasMatch(y => ReferenceEquals(x, y))))
+                    dRules = o => new(o.Filter(x => !applied.HasMatch(y => ReferenceEquals(x, y))))
                 });
         }
         public async ITask<ResObj?> ResolveUnsafe(Context context)
@@ -64,9 +56,7 @@ namespace Token
     public abstract record Infallible<R> : Token<R> where R : class, ResObj
     {
         public override bool IsFallible => false;
-#pragma warning disable CS8619
         public override ITask<R?> Resolve(Context context) => Task.FromResult(InfallibleResolve(context)).AsITask();
-#pragma warning restore CS8619
         protected abstract R InfallibleResolve(Context context);
     }
     #region Functions

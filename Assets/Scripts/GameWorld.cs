@@ -4,5 +4,5 @@ using UnityEngine;
 
 public class GameWorld : MonoBehaviour, Token.IInputProvider
 {
-    private Dictionary<Unit, Physical.Unit> _unitMap;
+    
 }

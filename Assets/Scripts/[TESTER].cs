@@ -32,16 +32,16 @@ public class TESTER : MonoBehaviour
         {
             InputProvider = null,
             State = null,
-            Rules = new() { rule_1 },
-            Scope = new() { }
+            Rules = new(rule_1.Yield()),
+            Variables = new(7)
         };
         Debug.Log(await token_3.ResolveWithRules(context));
+        Debug.Log(default(GameState));
     }
 
     // Update is called once per frame
     void Update()
     {
-        
     }
 }
 

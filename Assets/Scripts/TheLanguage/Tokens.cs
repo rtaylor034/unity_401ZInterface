@@ -85,14 +85,14 @@ namespace Tokens
         {
             protected override Res.Multi<R> EvaluatePure(IEnumerable<Res.Multi<R>> inputs)
             {
-                return new() { Values = inputs.Map(multi => multi.Values).Flatten() };
+                return new() { Elements = new(inputs.Map(multi => multi.Elements).Flatten()) };
             }
         }
         public sealed record Yield<R> : Infallible<Res.Multi<R>> where R : class, ResObj
         {
             private R _value { get; init; }
             public Yield(R value) => _value = value;
-            protected override Res.Multi<R> InfallibleResolve(Context context) => new() { Values = _value.Yield() };
+            protected override Res.Multi<R> InfallibleResolve(Context context) => new() { Elements = new(_value.Yield()) };
         }
     }
     namespace Select

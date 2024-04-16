@@ -297,3 +297,4 @@ dotnet_naming_style.starts_with_double_underscore_pascalcase.capitalization = pa
 
 # warnings
 dotnet_diagnostic.CS8524.severity = none
+dotnet_diagnostic.CS8618.severity = suggestion

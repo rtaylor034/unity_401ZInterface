@@ -6,10 +6,6 @@ using System.Collections.Generic;
 namespace Perfection
 {
     public delegate T Updater<T>(T original);
-    public interface IUnique
-    {
-        public int UniqueId { get; }
-    }
     public struct Empty<T> : IEnumerable<T>
     {
         public readonly IEnumerator<T> GetEnumerator()
@@ -21,52 +17,99 @@ namespace Perfection
         {
             yield break;
         }
-        public static IEnumerable<E> Yield<E>()
+        public static IEnumerable<T> Yield()
         {
             yield break;
         }
     }
-    public record PSet<U> : IEnumerable<U> where U : class, IUnique
+    // Shitty ass HashSet
+    public record PSet<T> : IEnumerable<T>
     {
-        private List<List<U>> _storage { get; init; }
-        private int _modulo { get; init; }
-        public PSet(int modulo, IEnumerable<U> elements)
+        private readonly List<List<T>> _storage;
+        public readonly int Modulo;
+        public readonly int Count;
+        public PSet(int modulo, IEnumerable<T> elements)
         {
-            _modulo = modulo;
-            _storage = elements
-                .AccumulateInto(new List<List<U>>(modulo).FillEmpty(new(2)),
-                   (store, x) =>
+            Modulo = modulo;
+            (Count, _storage) = elements
+                .AccumulateInto((0, new List<List<T>>(modulo).FillEmpty(new(2))),
+                   (data, x) =>
                    {
-                       var bucket = store[x.UniqueId % modulo];
-                       var index = bucket.FindIndex(y => x.UniqueId == y.UniqueId);
+                       var (count, store) = data;
+                       var bucket = store[x.GetHashCode() % modulo];
+                       var index = bucket.FindIndex(y => x.Equals(y));
                        if (index == -1) bucket.Add(x);
                        bucket[index] = x;
-                       return store;
+                       return (++count, store);
                    });
         }
-        public IEnumerator<U> GetEnumerator() => _storage.Flatten().GetEnumerator();
+        public PSet(int modulo)
+        {
+            Modulo = modulo;
+            Count = 0;
+            _storage = new(0);
+        }
+        public bool Contains(T other) => GetBucket(other).Contains(other);
+        public T this[T indexer] => GetBucket(indexer).Find(x => indexer.Equals(x));
+        private List<T> GetBucket(T element) => _storage[element.GetHashCode() % Modulo];
+        public IEnumerator<T> GetEnumerator() => _storage.Flatten().GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => _storage.Flatten().GetEnumerator();
+    }
+    // Shitty ass Dictionary
+    public record PMap<K, T> : IEnumerable<(K key, T val)>
+    {
+        private readonly List<List<(K key, T val)>> _storage;
+        public readonly int Modulo;
+        public readonly int Count;
+        public PMap(int modulo, IEnumerable<(K key, T val)> elements)
+        {
+            Modulo = modulo;
+            (Count, _storage) = elements
+                .AccumulateInto((0, new List<List<(K key, T val)>>(modulo).FillEmpty(new(2))),
+                   (data, x) =>
+                   {
+                       var (count, store) = data;
+                       var bucket = store[x.key.GetHashCode() % modulo];
+                       var index = bucket.FindIndex(y => x.key.Equals(y.key));
+                       if (index == -1) bucket.Add(x);
+                       bucket[index] = x;
+                       return (++count, store);
+                   });
+        }
+        public PMap(int modulo)
+        {
+            Modulo = modulo;
+            Count = 0;
+            _storage = new(0);
+        }
+        public T this[K indexer] => GetBucket(indexer).Find(x => indexer.Equals(x.key)).val;
+        private List<(K key, T val)> GetBucket(K element) => _storage[element.GetHashCode() % Modulo];
+        public IEnumerator<(K key, T val)> GetEnumerator() => _storage.Flatten().GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => _storage.Flatten().GetEnumerator();
     }
     public record PList<T> : IEnumerable<T>
     {
-        private List<T> _list { get; init; }
+        private readonly List<T> _list;
+        public readonly int Count;
         public PList(IEnumerable<T> elements)
         {
             _list = new(elements);
+            Count = _list.Count;
         }
         public PList()
         {
             _list = new(0);
+            Count = 0;
         }
         public T this[int i] => _list[i];
         public IEnumerator<T> GetEnumerator() => _list.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)_list).GetEnumerator();
     }
-    
-    
-#nullable enable
+
+
     // me when i rewrite System.Linq but worse and with rust names
-    public static class Extensions
+#nullable enable
+    public static class Enumerable_ext
     {
         public static IEnumerable<TResult> Map<TIn, TResult>(this IEnumerable<TIn> enumerable, Func<TIn, TResult> mapFunction)
         {
@@ -164,7 +207,7 @@ namespace Perfection
             o.Reverse();
             return o;
         }
-        public static List<T?> FillEmpty<T>(this List<T?> list, T item)
+        public static List<T> FillEmpty<T>(this List<T> list, T item)
         {
             for (int i = list.Count; i < list.Capacity; i++) list.Add(item);
             return list;

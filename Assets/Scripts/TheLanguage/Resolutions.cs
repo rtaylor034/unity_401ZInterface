@@ -4,17 +4,18 @@ using ResObj = Resolution.IResolution;
 using System.Collections.Generic;
 using Token;
 
+#nullable enable
 namespace Resolutions
 {
     public sealed record Number : NoOp
     {
-        public int Value { get; private init; }
-        public Number(int value) => Value = value;
+        public int Value { get; init; }
+        public Updater<int> dValue { init => Value = value(Value); }
     }
     public sealed record Multi<R> : Operation where R : ResObj
     {
-        public List<R> Elements { get; init; }
-        public Updater<IEnumerable<R>> dElements { init => Elements = new(value(Elements)); }
+        public PList<R> Elements { get; init; }
+        public Updater<PList<R>> dElements { init => Elements = value(Elements); }
         protected override Context UpdateContext(Context before) => Elements.AccumulateInto(before, (p, x) => p.WithResolution(x));
     }
     public sealed record DeclareVariable : Operation
@@ -23,21 +24,20 @@ namespace Resolutions
         public ResObj Object { get; init; }
         protected override Context UpdateContext(Context before) => before with
         {
-            Scope = before.Scope with
-            {
-                Variables = before.Scope.Variables.Also(KeyValuePair.Create(Label, Object).Yield())
-            }
+            dVariables = p => new(p.Modulo, p.Also((Label, Object).Yield()))
         };
     }
-    public sealed record Unit : NoOp, IUnique
+    public sealed record Unit : NoOp
     {
-        public int UniqueId { get; private init; }
+        public readonly int UUID;
         public int HP { get; init; }
         public Coordinates Position { get; init; }
         public Unit(int id)
         {
-            UniqueId = id;
+            UUID = id;
         }
+        public bool Equals(Unit? other) => other is not null && UUID == other.UUID;
+        public override int GetHashCode() => UUID;
     }
     public sealed record Coordinates : NoOp
     {
@@ -47,7 +47,7 @@ namespace Resolutions
         public int this[int i] => i switch
         {
             0 => G, 1 => U, 2 => D,
-            _ => throw new System.IndexOutOfRangeException("Attempted to index a Position out of 0..2 range.")
+            _ => throw new System.IndexOutOfRangeException("Attempted to index Coordinates out of 0..2 range.")
         };
     }
 }
