@@ -36,7 +36,16 @@ public class TESTER : MonoBehaviour
             Variables = new(7)
         };
         Debug.Log(await token_3.ResolveWithRules(context));
-        Debug.Log(default(GameState));
+        PList<string> plist = new() { Elements = new string[] { "first", "second" } };
+        plist = plist with { dElements = m => m.Also("third".Yield()) };
+        Debug.Log(plist);
+        PIndexedSet<char, string> pset = new(x => x[2], 10)
+        { Elements = 0.GenerateSequence(x => x + 1).Take(100).Map(x => "ax" + x.ToString()) };
+        pset = pset with { dElements = m => m.Also(new string[] { "ADD1", "ADD2", "ADD3" }) };
+        Debug.Log(pset);
+        var rand = new System.Random();
+        PMap<int, string> pmap = new(13) { Elements = 0.GenerateSequence(x => x + 10).Take(10).Map(x => (x, $"YEA{rand.Next(54444)}")) };
+        Debug.Log(pmap);
     }
 
     // Update is called once per frame

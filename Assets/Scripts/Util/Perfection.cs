@@ -26,23 +26,25 @@ namespace Perfection
     public record PSet<T> : PIndexedSet<T, T>
     {
         public PSet(int modulo) : base(x => x, modulo) { }
+        public override string ToString() => _storage
+            .AccumulateInto($"PSet:\n", (msg1, x) => msg1 +
+        $"{x.AccumulateInto(">", (msg2, y) => msg2 + $" [{y}]\n  ")}\n");
     }
     public record PIndexedSet<I, T> : IEnumerable<T>
     {
         protected readonly List<List<T>> _storage;
         public IEnumerable<T> Elements { get => _storage.Flatten(); init
             {
-                (Count, _storage) = value
-                    .AccumulateInto((0, new List<List<T>>(Modulo).FillEmpty(new(2))),
-                       (data, x) =>
-                       {
-                           var (count, store) = data;
-                           var bucket = store[IndexGenerator(x).GetHashCode() % Modulo];
-                           var index = bucket.FindIndex(y => x.Equals(y));
-                           if (index == -1) bucket.Add(x);
-                           bucket[index] = x;
-                           return (++count, store);
-                       });
+                Count = 0;
+                _storage = new List<List<T>>(Modulo);
+                _storage.AddRange(new List<T>(2).GenerateSequence((_) => new(2)).Take(Modulo));
+                foreach (var v in value)
+                {
+                    var bindex = IndexGenerator(v).GetHashCode().Abs() % Modulo;
+                    var foundAt = _storage[bindex].FindIndex(x => IndexGenerator(v).Equals(IndexGenerator(x)));
+                    if (foundAt == -1) _storage[bindex].Add(v);
+                    else _storage[bindex][foundAt] = v;
+                }
             }
         } 
         public Updater<IEnumerable<T>> dElements { init => Elements = value(Elements); }
@@ -58,9 +60,11 @@ namespace Perfection
         }
         public bool Contains(I index) => GetBucket(index).HasMatch(x => IndexGenerator(x).Equals(index));
         public T this[I index] => GetBucket(index).Find(x => IndexGenerator(x).Equals(index));
-        private List<T> GetBucket(I index) => _storage[index.GetHashCode() % Modulo];
+        private List<T> GetBucket(I index) => _storage[index.GetHashCode().Abs() % Modulo];
         public IEnumerator<T> GetEnumerator() => _storage.Flatten().GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => _storage.Flatten().GetEnumerator();
+        public override string ToString() => _storage.AccumulateInto("PIndexedSet:\n", (msg1, x) => msg1 +
+        $"{x.AccumulateInto(">", (msg2, y) => msg2 + $" [{IndexGenerator(y)} : {y}]\n  ")}\n");
     }
     // Shitty ass Dictionary
     public record PMap<K, T>
@@ -70,17 +74,16 @@ namespace Perfection
         {
             get => _storage.Flatten(); init
             {
-                (Count, _storage) = value
-                .AccumulateInto((0, new List<List<(K key, T val)>>(Modulo).FillEmpty(new(2))),
-                   (data, x) =>
-                   {
-                       var (count, store) = data;
-                       var bucket = store[x.key.GetHashCode() % Modulo];
-                       var index = bucket.FindIndex(y => x.key.Equals(y.key));
-                       if (index == -1) bucket.Add(x);
-                       bucket[index] = x;
-                       return (++count, store);
-                   });
+                Count = 0;
+                _storage = new List<List<(K key, T val)>>(Modulo);
+                _storage.AddRange(new List<(K key, T val)>(2).GenerateSequence((_) => new(2)).Take(Modulo));
+                foreach (var v in value)
+                {
+                    var bindex = v.key.GetHashCode().Abs() % Modulo;
+                    var foundAt = _storage[bindex].FindIndex(x => v.key.Equals(x.key));
+                    if (foundAt == -1) _storage[bindex].Add(v);
+                    else _storage[bindex][foundAt] = v;
+                }
             }
         } 
         public Updater<IEnumerable<(K key, T val)>> dElements { init => Elements = value(Elements); }
@@ -93,7 +96,8 @@ namespace Perfection
             _storage = new(0);
         }
         public T this[K indexer] => GetBucket(indexer).Find(x => indexer.Equals(x.key)).val;
-        private List<(K key, T val)> GetBucket(K element) => _storage[element.GetHashCode() % Modulo];
+        private List<(K key, T val)> GetBucket(K element) => _storage[element.GetHashCode().Abs() % Modulo];
+        public override string ToString() => Elements.AccumulateInto("PMap:\n", (msg, x) => msg + $"- [{x.key} : {x.val}]\n");
     }
     public record PList<T>
     {
@@ -107,6 +111,7 @@ namespace Perfection
             Count = 0;
         }
         public T this[int i] => _list[i];
+        public override string ToString() => Elements.AccumulateInto("PList:\n", (msg, x) => msg + $"- {x}\n");
     }
     // me when i rewrite System.Linq but worse and with rust names
 #nullable enable
@@ -216,5 +221,9 @@ namespace Perfection
             for (int i = list.Count; i < list.Capacity; i++) list.Add(item);
             return list;
         }
+    }
+    public static class Math_ext
+    {
+        public static int Abs(this int value) => Math.Abs(value);
     }
 }
