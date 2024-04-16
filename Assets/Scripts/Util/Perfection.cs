@@ -25,31 +25,30 @@ namespace Perfection
     // Shitty ass HashSet
     public record PSet<T> : PIndexedSet<T, T>
     {
-        public PSet(int modulo, IEnumerable<T> elements) : base(modulo, x => x, elements) { }
         public PSet(int modulo) : base(modulo, x => x) { }
     }
     public record PIndexedSet<I, T> : IEnumerable<T>
     {
         protected readonly List<List<T>> _storage;
+        public IEnumerable<T> Elements { get => _storage.Flatten(); init
+            {
+                (Count, _storage) = value
+                    .AccumulateInto((0, new List<List<T>>(Modulo).FillEmpty(new(2))),
+                       (data, x) =>
+                       {
+                           var (count, store) = data;
+                           var bucket = store[IndexGenerator(x).GetHashCode() % Modulo];
+                           var index = bucket.FindIndex(y => x.Equals(y));
+                           if (index == -1) bucket.Add(x);
+                           bucket[index] = x;
+                           return (++count, store);
+                       });
+            }
+        } 
+        public Updater<IEnumerable<T>> dElements { init => Elements = value(Elements); }
         public readonly int Modulo;
         public readonly int Count;
         public readonly Func<T, I> IndexGenerator;
-        public PIndexedSet(int modulo, Func<T, I> indexGenerator, IEnumerable<T> elements)
-        {
-            Modulo = modulo;
-            IndexGenerator = indexGenerator;
-            (Count, _storage) = elements
-                .AccumulateInto((0, new List<List<T>>(modulo).FillEmpty(new(2))),
-                   (data, x) =>
-                   {
-                       var (count, store) = data;
-                       var bucket = store[indexGenerator(x).GetHashCode() % modulo];
-                       var index = bucket.FindIndex(y => x.Equals(y));
-                       if (index == -1) bucket.Add(x);
-                       bucket[index] = x;
-                       return (++count, store);
-                   });
-        }
         public PIndexedSet(int modulo, Func<T, I> indexGenerator)
         {
             Modulo = modulo;
@@ -64,26 +63,29 @@ namespace Perfection
         IEnumerator IEnumerable.GetEnumerator() => _storage.Flatten().GetEnumerator();
     }
     // Shitty ass Dictionary
-    public record PMap<K, T> : IEnumerable<(K key, T val)>
+    public record PMap<K, T>
     {
         private readonly List<List<(K key, T val)>> _storage;
-        public readonly int Modulo;
-        public readonly int Count;
-        public PMap(int modulo, IEnumerable<(K key, T val)> elements)
+        public IEnumerable<(K key, T val)> Elements
         {
-            Modulo = modulo;
-            (Count, _storage) = elements
-                .AccumulateInto((0, new List<List<(K key, T val)>>(modulo).FillEmpty(new(2))),
+            get => _storage.Flatten(); init
+            {
+                (Count, _storage) = value
+                .AccumulateInto((0, new List<List<(K key, T val)>>(Modulo).FillEmpty(new(2))),
                    (data, x) =>
                    {
                        var (count, store) = data;
-                       var bucket = store[x.key.GetHashCode() % modulo];
+                       var bucket = store[x.key.GetHashCode() % Modulo];
                        var index = bucket.FindIndex(y => x.key.Equals(y.key));
                        if (index == -1) bucket.Add(x);
                        bucket[index] = x;
                        return (++count, store);
                    });
-        }
+            }
+        } 
+        public Updater<IEnumerable<(K key, T val)>> dElements { init => Elements = value(Elements); }
+        public readonly int Modulo;
+        public readonly int Count;
         public PMap(int modulo)
         {
             Modulo = modulo;
@@ -92,29 +94,20 @@ namespace Perfection
         }
         public T this[K indexer] => GetBucket(indexer).Find(x => indexer.Equals(x.key)).val;
         private List<(K key, T val)> GetBucket(K element) => _storage[element.GetHashCode() % Modulo];
-        public IEnumerator<(K key, T val)> GetEnumerator() => _storage.Flatten().GetEnumerator();
-        IEnumerator IEnumerable.GetEnumerator() => _storage.Flatten().GetEnumerator();
     }
-    public record PList<T> : IEnumerable<T>
+    public record PList<T>
     {
         private readonly List<T> _list;
+        public IEnumerable<T> Elements { get => _list; init { _list = new(value); Count = _list.Count; } } 
+        public Updater<IEnumerable<T>> dElements { init => Elements = value(Elements); }
         public readonly int Count;
-        public PList(IEnumerable<T> elements)
-        {
-            _list = new(elements);
-            Count = _list.Count;
-        }
         public PList()
         {
             _list = new(0);
             Count = 0;
         }
         public T this[int i] => _list[i];
-        public IEnumerator<T> GetEnumerator() => _list.GetEnumerator();
-        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)_list).GetEnumerator();
     }
-
-
     // me when i rewrite System.Linq but worse and with rust names
 #nullable enable
     public static class IEnumerable_ext
@@ -222,17 +215,6 @@ namespace Perfection
         {
             for (int i = list.Count; i < list.Capacity; i++) list.Add(item);
             return list;
-        }
-    }
-    public static class Perfect_ext
-    {
-        public static PIndexedSet<I, T> WithElements<I, T>(this PIndexedSet<I, T> set, IEnumerable<T> elements)
-        {
-            return new(set.Modulo, set.IndexGenerator, elements);
-        }
-        public static PSet<T> WithElements<T>(this PSet<T> set, IEnumerable<T> elements)
-        {
-            return new(set.Modulo, elements);
         }
     }
 }

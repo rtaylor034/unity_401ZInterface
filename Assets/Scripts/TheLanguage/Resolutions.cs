@@ -12,12 +12,12 @@ namespace Resolutions
         public int Value { get; init; }
         public Updater<int> dValue { init => Value = value(Value); }
     }
-    public sealed record List<R> : Operation, IMulti<R> where R : ResObj
+    public sealed record Multi<R> : Operation, IMulti<R> where R : ResObj
     {
-        public PList<R> Elements { get; init; }
-        public Updater<PList<R>> dElements { init => Elements = value(Elements); }
-        protected override Context UpdateContext(Context before) => Elements.AccumulateInto(before, (p, x) => p.WithResolution(x));
-        public IEnumerable<R> GetElements() => Elements;
+        public PList<R> Values { get; init; }
+        public Updater<PList<R>> dElements { init => Values = value(Values); }
+        protected override Context UpdateContext(Context before) => Values.Elements.AccumulateInto(before, (p, x) => p.WithResolution(x));
+        public IEnumerable<R> GetElements() => Values.Elements;
     }
     public sealed record DeclareVariable : Operation
     {
@@ -27,7 +27,7 @@ namespace Resolutions
         public Updater<ResObj> dObject { init => Object = value(Object); }
         protected override Context UpdateContext(Context before) => before with
         {
-            dVariables = p => new(p.Modulo, p.Also((Label, Object).Yield()))
+            dVariables = p => p with { dElements = x => x.Also((Label, Object).Yield()) }
         };
     }
     public sealed record Unit : NoOp
