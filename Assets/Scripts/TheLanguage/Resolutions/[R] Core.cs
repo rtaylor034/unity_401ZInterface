@@ -28,10 +28,18 @@ namespace Resolutions
         public Updater<ResObj> dObject { init => Object = value(Object); }
         protected override Context UpdateContext(Context context) => context with
         {
-            dVariables = m => m with { dElements = m => m.Also((Label, Object).Yield()) }
+            dVariables = Q => Q with { dElements = Q => Q.Also((Label, Object).Yield()) }
         };
     }
-    
-    
-    
+    public sealed record DeclareRule : Operation
+    {
+        public Rule.IRule Rule { get; init; } 
+        public Updater<Rule.IRule> dRule { init => Rule = value(Rule); }
+        protected override Context UpdateContext(Context context) => context with
+        {
+            dRules = Q => Q with { dElements = Q => Q.Also(Rule.Yield()) }
+        };
+    }
+
+
 }

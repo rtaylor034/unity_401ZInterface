@@ -5,6 +5,12 @@ using System.Collections.Generic;
 // nothing in this namespace is validated; it assumes you use it perfectly.
 namespace Perfection
 {
+    /// <summary>
+    /// <paramref name="original"/> is to be named 'Q' by convention.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="original"></param>
+    /// <returns></returns>
     public delegate T Updater<T>(T original);
     public struct Empty<T> : IEnumerable<T>
     {
