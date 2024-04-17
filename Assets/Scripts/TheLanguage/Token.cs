@@ -246,19 +246,19 @@ namespace Token.Unsafe
     public abstract record TokenFunction<R> : Token<R> where R : class, ResObj
     {
         //abstract and move this definition to pure
-        public sealed override bool IsFallible => IsFallibleFunction || ArgTokens.Map(x => x.IsFallible).HasMatch(x => x == true);
+        public sealed override bool IsFallible => IsFallibleFunction || ArgTokens.Elements.Map(x => x.IsFallible).HasMatch(x => x == true);
         public abstract bool IsFallibleFunction { get; }
-        protected List<IToken> ArgTokens { get; init; }
+        protected PList<IToken> ArgTokens { get; init; }
         private State _state { get; set; }
         protected TokenFunction(params IToken[] tokens) : this(tokens as IEnumerable<IToken>) { }
         protected TokenFunction(IEnumerable<IToken> tokens)
         {
-            ArgTokens = new(tokens);
+            ArgTokens = new() { Elements = tokens };
             _state = new(ArgTokens.Count);
         }
         public TokenFunction(TokenFunction<R> original) : base(original)
         {
-            ArgTokens = new(original.ArgTokens);
+            ArgTokens = original.ArgTokens;
             _state = new(ArgTokens.Count);
         }
         protected abstract ITask<R?> TransformTokens(Context context, List<ResObj> tokens);

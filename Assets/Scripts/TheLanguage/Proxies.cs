@@ -52,30 +52,24 @@ namespace Proxies
         where TOrig : IToken<R>
         where R : class, ResObj
     {
-        protected List<IProxy<TOrig, Resolution.Operation>> EnvModifiers { get; init; }
+        protected readonly PList<IProxy<TOrig, Resolution.Operation>> EnvModifiers;
         public IProxy<R> SubTokenProxy { get; init; }
-        public SubEnvironment(params IProxy<TOrig, Resolution.Operation>[] proxies)
-        {
-            EnvModifiers = new(proxies);
-        }
+        public SubEnvironment(params IProxy<TOrig, Resolution.Operation>[] proxies) :
+            this((IEnumerable<IProxy<TOrig, Resolution.Operation>>)proxies)
+        { }
         public SubEnvironment(IEnumerable<IProxy<TOrig, Resolution.Operation>> proxies)
         {
-            EnvModifiers = new(proxies);
-        }
-        public SubEnvironment(SubEnvironment<TOrig, R> original) : base(original)
-        {
-            EnvModifiers = new(original.EnvModifiers);
-            SubTokenProxy = original.SubTokenProxy;
+            EnvModifiers = new() { Elements = proxies };
         }
         public override IToken<R> Realize(TOrig original, Rule.IRule rule) =>
-            new Tokens.SubEnvironment<R>(EnvModifiers.Map(x => x.UnsafeRealize(original, rule))) { SubToken = SubTokenProxy.UnsafeTypedRealize(original, rule) };
+            new Tokens.SubEnvironment<R>(EnvModifiers.Elements.Map(x => x.UnsafeRealize(original, rule))) { SubToken = SubTokenProxy.UnsafeTypedRealize(original, rule) };
     }
     public record Variable<TOrig, R> : Proxy<TOrig, Resolutions.DeclareVariable>
         where TOrig : IToken
         where R : class, ResObj
     {
-        protected IProxy<TOrig, R> ObjectProxy { get; init; }
-        protected string Label { get; init; }
+        protected readonly IProxy<TOrig, R> ObjectProxy;
+        protected readonly string Label;
         public Variable(string label, IProxy<TOrig, R> proxy)
         {
             Label = label;
