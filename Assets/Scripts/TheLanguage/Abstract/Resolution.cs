@@ -13,16 +13,16 @@ namespace Resolution
     /// </summary>
     public interface IResolution
     {
-        public Context ChangeContext(Context before);
+        public Context ChangeContext(Context context);
     }
     public abstract record Operation : Unsafe.Resolution
     {
         protected override sealed Context ChangeContextInternal(Context before) => UpdateContext(before);
-        protected abstract Context UpdateContext(Context before);
+        protected abstract Context UpdateContext(Context context);
     }
     public abstract record NoOp : Unsafe.Resolution
     {
-        protected override sealed Context ChangeContextInternal(Context before) => before;
+        protected override sealed Context ChangeContextInternal(Context context) => context;
     }
     public interface IMulti<out R> : ResObj where R : ResObj
     {
@@ -40,6 +40,6 @@ namespace Resolution.Unsafe
         /// <param name="context"></param>
         /// <returns></returns>
         public Context ChangeContext(Context before) => ChangeContextInternal(before);
-        protected abstract Context ChangeContextInternal(Context before);
+        protected abstract Context ChangeContextInternal(Context context);
     }
 }

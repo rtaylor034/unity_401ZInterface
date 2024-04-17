@@ -18,7 +18,7 @@ namespace Resolutions
         public IEnumerable<R> Values { get => _list.Elements; init => _list = new() { Elements = value }; }
         public Updater<IEnumerable<R>> dValues { init => Values = value(Values); }
         public Multi() { _list = new(); }
-        protected override Context UpdateContext(Context before) => Values.AccumulateInto(before, (p, x) => p.WithResolution(x));
+        protected override Context UpdateContext(Context context) => Values.AccumulateInto(context, (p, x) => p.WithResolution(x));
 
     }
     public sealed record DeclareVariable : Operation
@@ -27,23 +27,12 @@ namespace Resolutions
         public Updater<string> dLabel { init => Label = value(Label); }
         public ResObj Object { get; init; }
         public Updater<ResObj> dObject { init => Object = value(Object); }
-        protected override Context UpdateContext(Context before) => before with
+        protected override Context UpdateContext(Context context) => context with
         {
             dVariables = m => m with { dElements = m => m.Also((Label, Object).Yield()) }
         };
-    } 
-    public sealed record Unit : NoOp
-    {
-        public readonly int UUID;
-        public int HP { get; init; } 
-        public Updater<int> dHP { init => HP = value(HP); }
-        public Coordinates Position { get; init; }
-        public Updater<Coordinates> dPosition { init => Position = value(Position); }
-        public Unit(int id)
-        {
-            UUID = id;
-        }
     }
+    
     public sealed record Coordinates : NoOp
     {
         public int R { get; init; }
@@ -56,12 +45,5 @@ namespace Resolutions
         };
         public override string ToString() => $"({R}.{U}.{D})";
     }
-    namespace Hex
-    {
-        public abstract record Hex : NoOp
-        {
-            public Coordinates Position { get; init; }
-            public Updater<Coordinates> dPosition { init => Position = value(Position); }
-        }
-    }
+    
 }
