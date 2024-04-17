@@ -81,11 +81,8 @@ namespace Token
         where RArg1 : class, ResObj
         where ROut : class, ResObj
     {
-        public IToken<RArg1> Arg1 { get; private init; }
-        protected Function(IToken<RArg1> in1) : base(in1)
-        {
-            Arg1 = in1;
-        }
+        public IToken<RArg1> Arg1 => (IToken<RArg1>)ArgTokens[0];
+        protected Function(IToken<RArg1> in1) : base(in1) { }
         protected abstract ITask<ROut?> Evaluate(Context context, RArg1 in1);
         protected override ITask<ROut?> TransformTokens(Context context, List<ResObj> args) =>
             Evaluate(context, (RArg1)args[0]);
@@ -103,13 +100,9 @@ namespace Token
         where RArg2 : class, ResObj
         where ROut : class, ResObj
     {
-        public IToken<RArg1> Arg1 { get; private init; }
-        public IToken<RArg2> Arg2 { get; private init; }
-        protected Function(IToken<RArg1> in1, IToken<RArg2> in2) : base(in1, in2)
-        {
-            Arg1 = in1;
-            Arg2 = in2;
-        }
+        public IToken<RArg1> Arg1 => (IToken<RArg1>)ArgTokens[0];
+        public IToken<RArg2> Arg2 => (IToken<RArg2>)ArgTokens[1];
+        protected Function(IToken<RArg1> in1, IToken<RArg2> in2) : base(in1, in2) { }
         protected abstract ITask<ROut?> Evaluate(Context context, RArg1 in1, RArg2 in2);
         protected override ITask<ROut?> TransformTokens(Context context, List<ResObj> args) =>
             Evaluate(context, (RArg1)args[0], (RArg2)args[1]);
@@ -130,15 +123,10 @@ namespace Token
         where RArg3 : class, ResObj
         where ROut : class, ResObj
     {
-        public IToken<RArg1> Arg1 { get; private init; }
-        public IToken<RArg2> Arg2 { get; private init; }
-        public IToken<RArg3> Arg3 { get; private init; }
-        protected Function(IToken<RArg1> in1, IToken<RArg2> in2, IToken<RArg3> in3) : base(in1, in2, in3)
-        {
-            Arg1 = in1;
-            Arg2 = in2;
-            Arg3 = in3;
-        }
+        public IToken<RArg1> Arg1 => (IToken<RArg1>)ArgTokens[0];
+        public IToken<RArg2> Arg2 => (IToken<RArg2>)ArgTokens[1];
+        public IToken<RArg3> Arg3 => (IToken<RArg3>)ArgTokens[2];
+        protected Function(IToken<RArg1> in1, IToken<RArg2> in2, IToken<RArg3> in3) : base(in1, in2, in3) { }
         protected abstract ITask<ROut?> Evaluate(Context context, RArg1 in1, RArg2 in2, RArg3 in3);
         protected override ITask<ROut?> TransformTokens(Context context, List<ResObj> args) =>
             Evaluate(context, (RArg1)args[0], (RArg2)args[1], (RArg3)args[2]);
@@ -189,15 +177,9 @@ namespace Token
         where RArg : class, ResObj
         where ROut : class, ResObj
     {
-        public IEnumerable<IToken<RArg>> Args { get; private init; }
-        protected Combiner(IEnumerable<IToken<RArg>> tokens) : base(tokens)
-        {
-            Args = tokens;
-        }
-        protected Combiner(params IToken<RArg>[] tokens) : base(tokens)
-        {
-            Args = tokens;
-        }
+        public IEnumerable<IToken<RArg>> Args => ArgTokens.Elements.Map(x => (IToken<RArg>)x);
+        protected Combiner(IEnumerable<IToken<RArg>> tokens) : base(tokens) { }
+        protected Combiner(params IToken<RArg>[] tokens) : this(tokens as IEnumerable<IToken<RArg>>) { }
         protected abstract ITask<ROut?> Evaluate(Context context, IEnumerable<RArg> inputs);
         protected sealed override ITask<ROut?> TransformTokens(Context context, List<ResObj> tokens) => Evaluate(context, tokens.Map(x => (RArg)x));
 
@@ -207,8 +189,8 @@ namespace Token
         where ROut : class, ResObj
     {
         public sealed override bool IsFallibleFunction => false;
-        protected PureCombiner(params IToken<RArg>[] tokens) : this(tokens as IEnumerable<IToken<RArg>>) { }
         protected PureCombiner(IEnumerable<IToken<RArg>> tokens) : base(tokens) { }
+        protected PureCombiner(params IToken<RArg>[] tokens) : this(tokens as IEnumerable<IToken<RArg>>) { }
         protected abstract ROut EvaluatePure(IEnumerable<RArg> inputs);
         protected sealed override ITask<ROut?> Evaluate(Context _, IEnumerable<RArg> inputs) => Task.FromResult(EvaluatePure(inputs)).AsITask();
     }
