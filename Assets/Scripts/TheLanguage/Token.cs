@@ -55,8 +55,8 @@ namespace Token
     }
     public abstract record Infallible<R> : Token<R> where R : class, ResObj
     {
-        public override bool IsFallible => false;
-        public override ITask<R?> Resolve(Context context) => Task.FromResult(InfallibleResolve(context)).AsITask();
+        public sealed override bool IsFallible => false;
+        public sealed override ITask<R?> Resolve(Context context) => Task.FromResult(InfallibleResolve(context)).AsITask();
         protected abstract R InfallibleResolve(Context context);
     }
     #region Functions
