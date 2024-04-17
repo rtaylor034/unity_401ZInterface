@@ -19,7 +19,6 @@ namespace Resolutions
         public Updater<IEnumerable<R>> dValues { init => Values = value(Values); }
         public Multi() { _list = new(); }
         protected override Context UpdateContext(Context context) => Values.AccumulateInto(context, (p, x) => p.WithResolution(x));
-
     }
     public sealed record DeclareVariable : Operation
     {
@@ -33,17 +32,6 @@ namespace Resolutions
         };
     }
     
-    public sealed record Coordinates : NoOp
-    {
-        public int R { get; init; }
-        public int U { get; init; }
-        public int D { get; init; }
-        public int this[int i] => i switch
-        {
-            0 => R, 1 => U, 2 => D,
-            _ => throw new System.IndexOutOfRangeException("Attempted to index Coordinates out of 0..2 range.")
-        };
-        public override string ToString() => $"({R}.{U}.{D})";
-    }
+    
     
 }
