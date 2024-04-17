@@ -33,7 +33,7 @@ namespace Tokens
         }
         public override async ITask<r_.DeclareVariable?> Resolve(Context context)
         {
-            return (await _objectToken.ResolveWithRules(context) is r_.DeclareVariable res) ?
+            return (await _objectToken.ResolveWithRules(context) is R res) ?
                 new() { Label = _label, Object = res } : null;
         }
     }
