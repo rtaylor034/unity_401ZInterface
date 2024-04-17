@@ -230,8 +230,8 @@ namespace Token.Unsafe
         //abstract and move this definition to pure
         public sealed override bool IsFallible => IsFallibleFunction || ArgTokens.Elements.Map(x => x.IsFallible).HasMatch(x => x == true);
         public abstract bool IsFallibleFunction { get; }
-        protected PList<IToken> ArgTokens { get; init; }
-        private State _state { get; set; }
+        protected readonly PList<IToken> ArgTokens;
+        private State _state;
         protected TokenFunction(params IToken[] tokens) : this(tokens as IEnumerable<IToken>) { }
         protected TokenFunction(IEnumerable<IToken> tokens)
         {

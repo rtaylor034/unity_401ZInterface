@@ -14,7 +14,7 @@ namespace Rule
     }
     public record Rule<TFor, R> : IRule where TFor : Token.IToken<R> where R : class, ResObj
     {
-        private IProxy<TFor, R> _proxy { get; init; }
+        private readonly IProxy<TFor, R> _proxy;
         public Rule(IProxy<TFor, R> proxy)
         {
             _proxy = proxy;

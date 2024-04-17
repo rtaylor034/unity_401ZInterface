@@ -36,24 +36,17 @@ namespace Proxy.Unsafe
         where TOrig : IToken<R>
         where R : class, ResObj
     {
-        protected List<IProxy> ArgProxies { get; init; }
-        protected FunctionProxy(params IProxy[] proxies)
-        {
-            ArgProxies = new(proxies);
-        }
+        protected readonly PList<IProxy> ArgProxies;
+        protected FunctionProxy(params IProxy[] proxies) : this(proxies as IEnumerable<IProxy>) { }
         protected FunctionProxy(IEnumerable<IProxy> proxies)
         {
-            ArgProxies = new(proxies);
-        }
-        public FunctionProxy(FunctionProxy<TOrig, R> original) : base(original)
-        {
-            ArgProxies = new(original.ArgProxies);
+            ArgProxies = new() { Elements = proxies };
         }
         protected abstract TokenFunction<R> ConstructFromArgs(List<IToken> tokens);
         public override IToken<R> Realize(TOrig original, Rule.IRule rule) => ConstructFromArgs(MakeSubstitutions(original, rule));
         protected List<IToken> MakeSubstitutions(TOrig original, Rule.IRule rule)
         {
-            return new(ArgProxies.Map(x => x.UnsafeRealize(original, rule)));
+            return new(ArgProxies.Elements.Map(x => x.UnsafeRealize(original, rule)));
         }
     }
 }
