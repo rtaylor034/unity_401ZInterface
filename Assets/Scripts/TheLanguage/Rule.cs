@@ -12,9 +12,9 @@ namespace Rule
         public Token.IToken<R>? TryApplyTyped<R>(Token.IToken<R> original) where R : class, ResObj;
         public Token.Unsafe.IToken? TryApply(Token.Unsafe.IToken original);
     }
+
     public record Rule<TFor, R> : IRule where TFor : Token.IToken<R> where R : class, ResObj
     {
-        private readonly IProxy<TFor, R> _proxy;
         public Rule(IProxy<TFor, R> proxy)
         {
             _proxy = proxy;
@@ -31,7 +31,9 @@ namespace Rule
         {
             return (original is TFor match) ? (Token.IToken<ROut>)Apply(match) : null;
         }
+        private readonly IProxy<TFor, R> _proxy;
     }
+
     public static class Create
     {
         public static Rule<TFor, R> For<TFor, R>(Func<Proxy.Creator.Base<TFor, R>, IProxy<TFor, R>> createStatement) where TFor : Token.IToken<R> where R : class, ResObj

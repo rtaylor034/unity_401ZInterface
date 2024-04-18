@@ -16,37 +16,47 @@ namespace Tokens
     public sealed record SubEnvironment<R> : Token.Unsafe.TokenFunction<R> where R : class, ResObj
     {
         public IToken<R> SubToken { get; init; }
-        public sealed override bool IsFallibleFunction => SubToken.IsFallible;
         public SubEnvironment(params IToken<Resolution.Operation>[] envModifiers) : base(envModifiers) { }
         public SubEnvironment(IEnumerable<Token.Unsafe.IToken> envModifiers) : base(envModifiers) { }
+        public sealed override bool IsFallibleFunction => SubToken.IsFallible;
+
         protected sealed override async ITask<R?> TransformTokens(Context context, List<ResObj> _) => await SubToken.ResolveWithRules(context);
     }
+
     public sealed record Variable<R> : Token<r_.DeclareVariable> where R : class, ResObj
     {
-        public override bool IsFallible => _objectToken.IsFallible;
-        private readonly IToken<R> _objectToken;
-        private readonly string _label;
         public Variable(string label, IToken<R> token)
         {
             _objectToken = token;
             _label = label;
         }
+        public override bool IsFallible => _objectToken.IsFallible;
         public override async ITask<r_.DeclareVariable?> Resolve(Context context)
         {
             return (await _objectToken.ResolveWithRules(context) is R res) ?
                 new() { Label = _label, Object = res } : null;
         }
+
+        private readonly IToken<R> _objectToken;
+        private readonly string _label;
     }
+
     public sealed record Rule<R> : Infallible<r_.DeclareRule> where R : class, ResObj
     {
+        public Rule(Rule.IRule rule)
+        {
+            _rule = rule;
+        }
+
+        protected override DeclareRule InfallibleResolve(Context context) { return new() { Rule = _rule }; }
+
         private readonly Rule.IRule _rule;
-        public Rule(Rule.IRule rule) => _rule = rule;
-        protected override DeclareRule InfallibleResolve(Context context) => new() { Rule = _rule };
     }
+
     public sealed record Reference<R> : Infallible<R> where R : class, ResObj
     {
-        private readonly string _toLabel;
         public Reference(string toLabel) => _toLabel = toLabel;
+
         protected override R InfallibleResolve(Context context)
         {
             return (context.Variables[_toLabel] is R val) ? val :
@@ -57,5 +67,7 @@ namespace Tokens
                 $"Current Scope:\n" +
                 $"{context.Variables.Elements.AccumulateInto("", (msg, x) => msg + $"> '{x.key}' : {x.val}")}");
         }
+
+        private readonly string _toLabel;
     }
 }

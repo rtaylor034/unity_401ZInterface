@@ -16,11 +16,13 @@ namespace Resolutions
         };
         public override string ToString() => $"({R}.{U}.{D})";
     }
+
     public abstract record Hex : NoOp
     {
         public Coordinates Position { get; init; }
         public Updater<Coordinates> dPosition { init => Position = value(Position); }
     }
+
     public sealed record Unit : NoOp
     {
         public readonly int UUID;

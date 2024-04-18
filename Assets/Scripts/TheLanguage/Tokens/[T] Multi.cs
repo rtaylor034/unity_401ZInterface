@@ -13,11 +13,17 @@ namespace Tokens.Multi
             return new() { Values = inputs.Map(x => x.Values).Flatten() };
         }
     }
+    
     // FIXME: incorrect implementation of Yield
     public sealed record Yield<R> : Infallible<r_.Multi<R>> where R : class, ResObj
     {
-        private readonly R _value;
-        public Yield(R value) => _value = value;
+        public Yield(R value)
+        {
+            _value = value;
+        }
+
         protected override r_.Multi<R> InfallibleResolve(Context context) => new() { Values = _value.Yield() };
+
+        private readonly R _value;
     }
 }

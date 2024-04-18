@@ -20,8 +20,7 @@ namespace Token
         public Updater<PMap<string, ResObj>> dVariables { init => Variables = value(Variables); }
         public PList<Rule.IRule> Rules { get; init; }
         public Updater<PList<Rule.IRule>> dRules { init => Rules = value(Rules); }
-
-        public Context WithResolution(ResObj resolution) => resolution.ChangeContext(this);
+        public Context WithResolution(ResObj resolution) { return resolution.ChangeContext(this); }
     }
     #endregion
 
@@ -30,11 +29,11 @@ namespace Token
         public ITask<R?> ResolveWithRules(Context context);
         public ITask<R?> Resolve(Context context);
     }
+
     public abstract record Token<R> : IToken<R> where R : class, ResObj
     {
         public abstract bool IsFallible { get; }
         public abstract ITask<R?> Resolve(Context context);
-
         public async ITask<R?> ResolveWithRules(Context context)
         {
             return context.Rules.Count == 0
@@ -44,21 +43,18 @@ namespace Token
                     dRules = Q => Q with { dElements = Q => Q.Filter(x => !applied.HasMatch(y => ReferenceEquals(x, y))) }
                 });
         }
-        public async ITask<ResObj?> ResolveUnsafe(Context context)
-        {
-            return await Resolve(context);
-        }
-        public async ITask<ResObj?> ResolveWithRulesUnsafe(Context context)
-        {
-            return await ResolveWithRules(context);
-        }
+        public async ITask<ResObj?> ResolveUnsafe(Context context) { return await Resolve(context); }
+        public async ITask<ResObj?> ResolveWithRulesUnsafe(Context context) { return await ResolveWithRules(context); }
     }
+
     public abstract record Infallible<R> : Token<R> where R : class, ResObj
     {
         public sealed override bool IsFallible => false;
-        public sealed override ITask<R?> Resolve(Context context) => Task.FromResult(InfallibleResolve(context)).AsITask();
+        public sealed override ITask<R?> Resolve(Context context) { return Task.FromResult(InfallibleResolve(context)).AsITask(); }
+
         protected abstract R InfallibleResolve(Context context);
     }
+
     #region Functions
     // ---- [ Functions ] ----
     public interface IHasArg1<out RArg> : Unsafe.IHasArg1 where RArg : class, ResObj
@@ -71,6 +67,7 @@ namespace Token
     {
         public IEnumerable<IToken<RArgs>> Args { get; }
     }
+
     /// <summary>
     /// Tokens that inherit must have a constructor matching: <br></br>
     /// <code>(IToken&lt;<typeparamref name="RArg1"/>&gt;)</code>
@@ -82,11 +79,13 @@ namespace Token
         where ROut : class, ResObj
     {
         public IToken<RArg1> Arg1 => (IToken<RArg1>)ArgTokens[0];
+
         protected Function(IToken<RArg1> in1) : base(in1) { }
         protected abstract ITask<ROut?> Evaluate(Context context, RArg1 in1);
         protected override ITask<ROut?> TransformTokens(Context context, List<ResObj> args) =>
             Evaluate(context, (RArg1)args[0]);
     }
+
     /// <summary>
     /// Tokens that inherit must have a constructor matching: <br></br>
     /// <code>(IToken&lt;<typeparamref name="RArg1"/>&gt;, IToken&lt;<typeparamref name="RArg2"/>&gt;)</code>
@@ -102,11 +101,13 @@ namespace Token
     {
         public IToken<RArg1> Arg1 => (IToken<RArg1>)ArgTokens[0];
         public IToken<RArg2> Arg2 => (IToken<RArg2>)ArgTokens[1];
-        protected Function(IToken<RArg1> in1, IToken<RArg2> in2) : base(in1, in2) { }
+
         protected abstract ITask<ROut?> Evaluate(Context context, RArg1 in1, RArg2 in2);
+        protected Function(IToken<RArg1> in1, IToken<RArg2> in2) : base(in1, in2) { }
         protected override ITask<ROut?> TransformTokens(Context context, List<ResObj> args) =>
             Evaluate(context, (RArg1)args[0], (RArg2)args[1]);
     }
+
     /// <summary>
     /// Tokens that inherit must have a constructor matching: <br></br>
     /// <code>(IToken&lt;<typeparamref name="RArg1"/>&gt;, IToken&lt;<typeparamref name="RArg2"/>&gt;, IToken&lt;<typeparamref name="RArg3"/>&gt;)</code>
@@ -126,8 +127,9 @@ namespace Token
         public IToken<RArg1> Arg1 => (IToken<RArg1>)ArgTokens[0];
         public IToken<RArg2> Arg2 => (IToken<RArg2>)ArgTokens[1];
         public IToken<RArg3> Arg3 => (IToken<RArg3>)ArgTokens[2];
-        protected Function(IToken<RArg1> in1, IToken<RArg2> in2, IToken<RArg3> in3) : base(in1, in2, in3) { }
+
         protected abstract ITask<ROut?> Evaluate(Context context, RArg1 in1, RArg2 in2, RArg3 in3);
+        protected Function(IToken<RArg1> in1, IToken<RArg2> in2, IToken<RArg3> in3) : base(in1, in2, in3) { }
         protected override ITask<ROut?> TransformTokens(Context context, List<ResObj> args) =>
             Evaluate(context, (RArg1)args[0], (RArg2)args[1], (RArg3)args[2]);
     }
@@ -138,8 +140,9 @@ namespace Token
         where ROut : class, ResObj
     {
         public sealed override bool IsFallibleFunction => false;
-        protected PureFunction(IToken<RArg1> in1) : base(in1) { }
+
         protected abstract ROut EvaluatePure(RArg1 in1);
+        protected PureFunction(IToken<RArg1> in1) : base(in1) { }
         protected sealed override ITask<ROut?> Evaluate(Context _, RArg1 in1) => Task.FromResult(EvaluatePure(in1)).AsITask();
     }
     public abstract record PureFunction<RArg1, RArg2, ROut> : Function<RArg1, RArg2, ROut>
@@ -148,8 +151,9 @@ namespace Token
         where ROut : class, ResObj
     {
         public sealed override bool IsFallibleFunction => false;
-        protected PureFunction(IToken<RArg1> in1, IToken<RArg2> in2) : base(in1, in2) { }
+
         protected abstract ROut EvaluatePure(RArg1 in1, RArg2 in2);
+        protected PureFunction(IToken<RArg1> in1, IToken<RArg2> in2) : base(in1, in2) { }
         protected sealed override ITask<ROut?> Evaluate(Context _, RArg1 in1, RArg2 in2) => Task.FromResult(EvaluatePure(in1, in2)).AsITask();
     }
     public abstract record PureFunction<RArg1, RArg2, RArg3, ROut> : Function<RArg1, RArg2, RArg3, ROut>
@@ -159,8 +163,9 @@ namespace Token
         where ROut : class, ResObj
     {
         public sealed override bool IsFallibleFunction => false;
-        protected PureFunction(IToken<RArg1> in1, IToken<RArg2> in2, IToken<RArg3> in3) : base(in1, in2, in3) { }
+
         protected abstract ROut EvaluatePure(RArg1 in1, RArg2 in2, RArg3 in3);
+        protected PureFunction(IToken<RArg1> in1, IToken<RArg2> in2, IToken<RArg3> in3) : base(in1, in2, in3) { }
         protected sealed override ITask<ROut?> Evaluate(Context _, RArg1 in1, RArg2 in2, RArg3 in3) => Task.FromResult(EvaluatePure(in1, in2, in3)).AsITask();
     }
     // ----
@@ -178,23 +183,25 @@ namespace Token
         where ROut : class, ResObj
     {
         public IEnumerable<IToken<RArg>> Args => ArgTokens.Elements.Map(x => (IToken<RArg>)x);
+
+        protected abstract ITask<ROut?> Evaluate(Context context, IEnumerable<RArg> inputs);
         protected Combiner(IEnumerable<IToken<RArg>> tokens) : base(tokens) { }
         protected Combiner(params IToken<RArg>[] tokens) : this(tokens as IEnumerable<IToken<RArg>>) { }
-        protected abstract ITask<ROut?> Evaluate(Context context, IEnumerable<RArg> inputs);
-        protected sealed override ITask<ROut?> TransformTokens(Context context, List<ResObj> tokens) => Evaluate(context, tokens.Map(x => (RArg)x));
-
+        protected sealed override ITask<ROut?> TransformTokens(Context context, List<ResObj> tokens) { return Evaluate(context, tokens.Map(x => (RArg)x)); }
     }
+
     public abstract record PureCombiner<RArg, ROut> : Combiner<RArg, ROut>
         where RArg : class, ResObj
         where ROut : class, ResObj
     {
         public sealed override bool IsFallibleFunction => false;
+
+        protected abstract ROut EvaluatePure(IEnumerable<RArg> inputs);
         protected PureCombiner(IEnumerable<IToken<RArg>> tokens) : base(tokens) { }
         protected PureCombiner(params IToken<RArg>[] tokens) : this(tokens as IEnumerable<IToken<RArg>>) { }
-        protected abstract ROut EvaluatePure(IEnumerable<RArg> inputs);
         protected sealed override ITask<ROut?> Evaluate(Context _, IEnumerable<RArg> inputs) => Task.FromResult(EvaluatePure(inputs)).AsITask();
     }
-    
+
     public static class Extensions
     {
         public static IToken<R> ApplyRules<R>(this IToken<R> token, IEnumerable<Rule.IRule> rules, out List<Rule.IRule> appliedRules) where R : class, ResObj
@@ -225,31 +232,17 @@ namespace Token.Unsafe
         public ITask<ResObj?> ResolveWithRulesUnsafe(Context context);
         public ITask<ResObj?> ResolveUnsafe(Context context);
     }
+
     public abstract record TokenFunction<R> : Token<R> where R : class, ResObj
     {
-        //abstract and move this definition to pure
-        public sealed override bool IsFallible => IsFallibleFunction || ArgTokens.Elements.Map(x => x.IsFallible).HasMatch(x => x == true);
         public abstract bool IsFallibleFunction { get; }
-        protected readonly PList<IToken> ArgTokens;
-        private State _state;
-        protected TokenFunction(params IToken[] tokens) : this(tokens as IEnumerable<IToken>) { }
-        protected TokenFunction(IEnumerable<IToken> tokens)
-        {
-            ArgTokens = new() { Elements = tokens };
-            _state = new(ArgTokens.Count);
-        }
-        public TokenFunction(TokenFunction<R> original) : base(original)
-        {
-            ArgTokens = original.ArgTokens;
-            _state = new(ArgTokens.Count);
-        }
-        protected abstract ITask<R?> TransformTokens(Context context, List<ResObj> tokens);
+        public sealed override bool IsFallible => IsFallibleFunction || ArgTokens.Elements.Map(x => x.IsFallible).HasMatch(x => x == true);
         public sealed override async ITask<R?> Resolve(Context context)
         {
             // stateless behavior for now. (non-linear backwards timeline with nested functions)
             _state.Index = 0;
             _state.Contexts[_state.Index] = context;
-            while (_state.Index >= 0) 
+            while (_state.Index >= 0)
             {
                 if (_state.Index == ArgTokens.Count)
                 {
@@ -271,7 +264,16 @@ namespace Token.Unsafe
             _state.Index = 0;
             return null;
         }
-        // is redundant for now, but stateful behavior may be implemented in the future (as antiawesome as it is)
+
+        protected abstract ITask<R?> TransformTokens(Context context, List<ResObj> tokens);
+        protected TokenFunction(IEnumerable<IToken> tokens)
+        {
+            ArgTokens = new() { Elements = tokens };
+            _state = new(ArgTokens.Count);
+        }
+        protected TokenFunction(params IToken[] tokens) : this(tokens as IEnumerable<IToken>) { }
+        protected readonly PList<IToken> ArgTokens;
+
         private class State
         {
             public int Index { get; set; }
@@ -284,7 +286,14 @@ namespace Token.Unsafe
                 Inputs = new((null as ResObj).Sequence(_ => null).Take(argCount));
             }
         }
+        private State _state;
+        public TokenFunction(TokenFunction<R> original) : base(original)
+        {
+            ArgTokens = original.ArgTokens;
+            _state = new(ArgTokens.Count);
+        }
     }
+
     public interface IHasArg1 : IToken { }
     public interface IHasArg2 : IHasArg1 { }
     public interface IHasArg3 : IHasArg2 { }
