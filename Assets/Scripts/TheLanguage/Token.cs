@@ -133,6 +133,23 @@ namespace Token
         protected override ITask<ROut?> TransformTokens(Context context, List<ResObj> args) =>
             Evaluate(context, (RArg1)args[0], (RArg2)args[1], (RArg3)args[2]);
     }
+
+    /// <summary>
+    /// Tokens that inherit must have a constructor matching: <br></br>
+    /// <code>(IEnumerable&lt;IToken&lt;<typeparamref name="RArg"/>&gt;>&gt;)</code>
+    /// </summary>
+    /// <typeparam name="RArg"></typeparam>
+    public abstract record Combiner<RArg, ROut> : Unsafe.TokenFunction<ROut>, IHasCombineArgs<RArg>
+        where RArg : class, ResObj
+        where ROut : class, ResObj
+    {
+        public IEnumerable<IToken<RArg>> Args => ArgTokens.Elements.Map(x => (IToken<RArg>)x);
+
+        protected abstract ITask<ROut?> Evaluate(Context context, IEnumerable<RArg> inputs);
+        protected Combiner(IEnumerable<IToken<RArg>> tokens) : base(tokens) { }
+        protected Combiner(params IToken<RArg>[] tokens) : this(tokens as IEnumerable<IToken<RArg>>) { }
+        protected sealed override ITask<ROut?> TransformTokens(Context context, List<ResObj> tokens) { return Evaluate(context, tokens.Map(x => (RArg)x)); }
+    }
     #region Pure Functions
     // -- [ Pure Functions ] --
     public abstract record PureFunction<RArg1, ROut> : Function<RArg1, ROut>
@@ -168,28 +185,6 @@ namespace Token
         protected PureFunction(IToken<RArg1> in1, IToken<RArg2> in2, IToken<RArg3> in3) : base(in1, in2, in3) { }
         protected sealed override ITask<ROut?> Evaluate(Context _, RArg1 in1, RArg2 in2, RArg3 in3) => Task.FromResult(EvaluatePure(in1, in2, in3)).AsITask();
     }
-    // ----
-    #endregion
-    // --------
-    #endregion
-
-    /// <summary>
-    /// Tokens that inherit must have a constructor matching: <br></br>
-    /// <code>(IEnumerable&lt;IToken&lt;<typeparamref name="RArg"/>&gt;>&gt;)</code>
-    /// </summary>
-    /// <typeparam name="RArg"></typeparam>
-    public abstract record Combiner<RArg, ROut> : Unsafe.TokenFunction<ROut>, IHasCombineArgs<RArg>
-        where RArg : class, ResObj
-        where ROut : class, ResObj
-    {
-        public IEnumerable<IToken<RArg>> Args => ArgTokens.Elements.Map(x => (IToken<RArg>)x);
-
-        protected abstract ITask<ROut?> Evaluate(Context context, IEnumerable<RArg> inputs);
-        protected Combiner(IEnumerable<IToken<RArg>> tokens) : base(tokens) { }
-        protected Combiner(params IToken<RArg>[] tokens) : this(tokens as IEnumerable<IToken<RArg>>) { }
-        protected sealed override ITask<ROut?> TransformTokens(Context context, List<ResObj> tokens) { return Evaluate(context, tokens.Map(x => (RArg)x)); }
-    }
-
     public abstract record PureCombiner<RArg, ROut> : Combiner<RArg, ROut>
         where RArg : class, ResObj
         where ROut : class, ResObj
@@ -201,6 +196,10 @@ namespace Token
         protected PureCombiner(params IToken<RArg>[] tokens) : this(tokens as IEnumerable<IToken<RArg>>) { }
         protected sealed override ITask<ROut?> Evaluate(Context _, IEnumerable<RArg> inputs) => Task.FromResult(EvaluatePure(inputs)).AsITask();
     }
+    // ----
+    #endregion
+    // --------
+    #endregion
 
     public static class Extensions
     {
@@ -218,8 +217,10 @@ namespace Token
             }
             return o;
         }
-        public static IToken<R> ApplyRule<R>(this IToken<R> token, Rule.IRule rule) where R : class, ResObj
-            => token.ApplyRules(rule.Yield(), out var _);
+        public static IToken<R> ApplyRule<R>(this IToken<R> token, Rule.IRule? rule) where R : class, ResObj
+        {
+            return (rule is not null) ? token.ApplyRules(rule.Yield(), out var _) : token;
+        }
 
     }
 }

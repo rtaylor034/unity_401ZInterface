@@ -35,6 +35,9 @@ public class TESTER : MonoBehaviour
             Variables = new(7)
         };
         Debug.Log(await token_3.ResolveWithRules(context));
+        In<AClass> a = null;
+        In<BClass> b = null;
+        b = a;
     }
 
     // Update is called once per frame

@@ -20,7 +20,7 @@ namespace Proxies
             _token = token;
         }
         public Direct<TTo, R> Fix<TTo>() where TTo : IToken<R> => new(_token);
-        public override IToken<R> Realize(TOrig _, Rule.IRule __) => _token;
+        public override IToken<R> Realize(TOrig _, Rule.IRule? __) => _token;
 
         private readonly IToken<R> _token;
     }
@@ -31,7 +31,7 @@ namespace Proxies
         where RArg : class, ResObj
         where ROut : class, ResObj
     {
-        public override IToken<ROut> Realize(TOrig original, Rule.IRule rule)
+        public override IToken<ROut> Realize(TOrig original, Rule.IRule? rule)
         {
             return (TNew)typeof(TNew).GetConstructor(new Type[] { typeof(IEnumerable<IToken<RArg>>) })
                 .Invoke(new object[] { original.Args.Map(x => x.ApplyRule(rule)) }) ;
@@ -63,7 +63,7 @@ namespace Proxies
             _envModifiers = new() { Elements = proxies };
         }
         public SubEnvironment(params IProxy<TOrig, Resolution.Operation>[] proxies) : this((IEnumerable<IProxy<TOrig, Resolution.Operation>>)proxies) { }
-        public override IToken<R> Realize(TOrig original, Rule.IRule rule) =>
+        public override IToken<R> Realize(TOrig original, Rule.IRule? rule) =>
             new Tokens.SubEnvironment<R>(_envModifiers.Elements.Map(x => x.UnsafeRealize(original, rule))) { SubToken = SubTokenProxy.UnsafeTypedRealize(original, rule) };
 
         private readonly PList<IProxy<TOrig, Resolution.Operation>> _envModifiers;
@@ -78,9 +78,9 @@ namespace Proxies
             _label = label;
             _objectProxy = proxy;
         }
-        public override IToken<Resolutions.DeclareVariable> Realize(TOrig original, IRule realizingRule)
+        public override IToken<Resolutions.DeclareVariable> Realize(TOrig original, IRule? rule)
         {
-            return new Tokens.Variable<R>(_label, _objectProxy.Realize(original, realizingRule));
+            return new Tokens.Variable<R>(_label, _objectProxy.Realize(original, rule));
         }
 
         private readonly string _label;
@@ -90,15 +90,15 @@ namespace Proxies
     // ---- [ OriginalArgs ] ----
     public sealed record OriginalArg1<TOrig, RArg> : Proxy<TOrig, RArg> where TOrig : Token.IHasArg1<RArg> where RArg : class, ResObj
     {
-        public override IToken<RArg> Realize(TOrig original, Rule.IRule rule) { return original.Arg1.ApplyRule(rule); }
+        public override IToken<RArg> Realize(TOrig original, Rule.IRule? rule) { return original.Arg1.ApplyRule(rule); }
     }
     public sealed record OriginalArg2<TOrig, RArg> : Proxy<TOrig, RArg> where TOrig : Token.IHasArg2<RArg> where RArg : class, ResObj
     {
-        public override IToken<RArg> Realize(TOrig original, Rule.IRule rule) { return original.Arg2.ApplyRule(rule); }
+        public override IToken<RArg> Realize(TOrig original, Rule.IRule? rule) { return original.Arg2.ApplyRule(rule); }
     }
     public sealed record OriginalArg3<TOrig, RArg> : Proxy<TOrig, RArg> where TOrig : Token.IHasArg3<RArg> where RArg : class, ResObj
     {
-        public override IToken<RArg> Realize(TOrig original, Rule.IRule rule) { return original.Arg3.ApplyRule(rule); }
+        public override IToken<RArg> Realize(TOrig original, Rule.IRule? rule) { return original.Arg3.ApplyRule(rule); }
     }
     // --------
     #endregion
