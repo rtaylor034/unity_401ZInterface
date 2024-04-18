@@ -265,6 +265,7 @@ namespace Token.Unsafe
             return null;
         }
 
+        protected readonly PList<IToken> ArgTokens;
         protected abstract ITask<R?> TransformTokens(Context context, List<ResObj> tokens);
         protected TokenFunction(IEnumerable<IToken> tokens)
         {
@@ -272,7 +273,6 @@ namespace Token.Unsafe
             _state = new(ArgTokens.Count);
         }
         protected TokenFunction(params IToken[] tokens) : this(tokens as IEnumerable<IToken>) { }
-        protected readonly PList<IToken> ArgTokens;
 
         private class State
         {
