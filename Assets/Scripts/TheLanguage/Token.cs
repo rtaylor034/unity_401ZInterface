@@ -36,9 +36,12 @@ namespace Token
         public abstract ITask<R?> Resolve(Context context);
         public async ITask<R?> ResolveWithRules(Context context)
         {
+            // i dont like this check very much, but its to have aliases expand before rules are applied.
+            // if this is not present than only rules specifically targetting the alias token will apply, ignoring rules that affect what the alias expands into (which is not what we want).
+            var resolvingToken = (this is Alias.IAlias<R> alias) ? alias.Expand() : this;
             return context.Rules.Count == 0
-                ? await Resolve(context)
-                : await this.ApplyRules(context.Rules.Elements, out var applied).Resolve(context with
+                ? await resolvingToken.Resolve(context)
+                : await resolvingToken.ApplyRules(context.Rules.Elements, out var applied).Resolve(context with
                 {
                     dRules = Q => Q with { dElements = Q => Q.Filter(x => !applied.HasMatch(y => ReferenceEquals(x, y))) }
                 });

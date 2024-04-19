@@ -121,7 +121,7 @@ namespace Perfection
     }
     // me when i rewrite System.Linq but worse and with rust names
 #nullable enable
-    public static class IEnumerable_ext
+    public static class Iter
     {
         public static IEnumerable<TResult> Map<TIn, TResult>(this IEnumerable<TIn> enumerable, Func<TIn, TResult> mapFunction)
         {
@@ -212,6 +212,10 @@ namespace Perfection
         {
             var iter = enumerable.GetEnumerator();
             return iter.MoveNext() ? iter.Current : null;
+        }
+        public static IEnumerable<T> Over<T>(params T[] arr)
+        {
+            foreach (var v in arr) yield return v;
         }
     }
     public static class Misc_ext

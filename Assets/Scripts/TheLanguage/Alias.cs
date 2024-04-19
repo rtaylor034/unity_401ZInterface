@@ -11,12 +11,21 @@ using Token;
 #nullable enable
 namespace Token.Alias
 {
-    public record Alias<R> : Token<R> where R : class, ResObj
+    public interface IAlias<R> : IToken<R> where R : class, ResObj
     {
-        public override bool IsFallible => RealizeThis().IsFallible;
+        public IToken<R> Expand();
+    }
+    public record Alias<R> : Token<R>, IAlias<R> where R : class, ResObj
+    {
+        public override bool IsFallible => Expand().IsFallible;
+        public IToken<R> Expand()
+        {
+            return (_cachedRealization is null) ? _proxy.UnsafeTypedRealize(this, null) : _cachedRealization;
+        }
         public override ITask<R?> Resolve(Context context)
         {
-            return RealizeThis().Resolve(context);
+            //technically should never happen?
+            return Expand().Resolve(context);
         }
         protected Alias(Proxy.Unsafe.IProxy<R> proxy)
         {
@@ -26,10 +35,7 @@ namespace Token.Alias
         private readonly Proxy.Unsafe.IProxy<R> _proxy;
         //NOTE: this only works under the assumption that proxies are perfect pure (stateless immutable).
         private readonly IToken<R>? _cachedRealization;
-        private IToken<R> RealizeThis()
-        {
-            return (_cachedRealization is null) ? _proxy.UnsafeTypedRealize(this, null) : _cachedRealization;
-        }
+        
     }
 
     public abstract record OneArg<RArg1, ROut> : Alias<ROut>, IHasArg1<RArg1>
