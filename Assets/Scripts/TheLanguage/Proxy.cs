@@ -19,6 +19,14 @@ namespace Proxy
         public IToken<R> UnsafeTypedRealize(IToken original, Rule.IRule? rule) => Realize((TOrig)original, rule);
         public IToken UnsafeRealize(IToken original, Rule.IRule? rule) => UnsafeTypedRealize(original, rule);
     }
+    public static class Create
+    {
+        public static IProxy<TFor, R> For<TFor, R>(Func<Creator.Base<TFor, R>, IProxy<TFor, R>> createStatement) where TFor : Token.IToken<R> where R : class, ResObj
+        {
+            return createStatement(new Creator.Base<TFor, R>());
+        }
+
+    }
 }
 namespace Proxy.Unsafe
 {
@@ -50,6 +58,7 @@ namespace Proxy.Unsafe
             return new(ArgProxies.Elements.Map(x => x.UnsafeRealize(original, rule)));
         }
     }
+    
 }
 namespace Proxy.Creator
 {

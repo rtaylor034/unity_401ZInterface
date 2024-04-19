@@ -13,20 +13,23 @@ namespace Token.Alias
 {
     public record Alias<R> : Token<R> where R : class, ResObj
     {
-        public override bool IsFallible => _isFallible;
+        public override bool IsFallible => RealizeThis().IsFallible;
         public override ITask<R?> Resolve(Context context)
         {
-            return _realizedToken.Resolve(context);
+            return RealizeThis().Resolve(context);
         }
         protected Alias(Proxy.Unsafe.IProxy<R> proxy)
         {
             _proxy = proxy;
-            _realizedToken = proxy.UnsafeTypedRealize(this, null);
-            _isFallible = _realizedToken.IsFallible;
+            _cachedRealization = null;
         }
         private readonly Proxy.Unsafe.IProxy<R> _proxy;
-        private readonly IToken<R> _realizedToken;
-        private readonly bool _isFallible;
+        //NOTE: this only works under the assumption that proxies are perfect pure (stateless immutable).
+        private readonly IToken<R>? _cachedRealization;
+        private IToken<R> RealizeThis()
+        {
+            return (_cachedRealization is null) ? _proxy.UnsafeTypedRealize(this, null) : _cachedRealization;
+        }
     }
 
     public abstract record OneArg<RArg1, ROut> : Alias<ROut>, IHasArg1<RArg1>
