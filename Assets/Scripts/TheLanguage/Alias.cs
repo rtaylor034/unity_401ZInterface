@@ -33,6 +33,7 @@ namespace Token.Alias
         private readonly IToken<R>? _cachedRealization;
         
     }
+
     /// <summary>
     /// Tokens that inherit must have a constructor matching: <br></br>
     /// <code>(IToken&lt;<typeparamref name="RArg1"/>&gt;)</code>
