@@ -24,6 +24,14 @@ public class TESTER : MonoBehaviour
         {
             SubToken = new Add(new MultTwo(new Subtract(new Reference<INT>("scope1"), new Constant(1))), new MultTwo(new Reference<INT>("scope1")))
         };
+        var rule_co = Rule.Create.For<Constant, INT>(P =>
+        {
+            return P.AsIs(new Constant(2));
+        });
+        var rule_alias = Rule.Create.For<MultTwo, INT>(P =>
+        {
+            return P.AsIs(new Constant(10));
+        });
         var context = new Context()
         {
             InputProvider = null,
@@ -33,7 +41,7 @@ public class TESTER : MonoBehaviour
         };
         var bruh = 0.Sequence(x => x + 1).Take(20).ContinueAfter(x => x.Take(10).Also(99.Yield(5)));
         Debug.Log(new PList<int>() { Elements = bruh });
-        Debug.Log(await token_monster.ResolveWithRules(context with { Rules = new() }));
+        Debug.Log(await token_monster.ResolveWithRules(context with { Rules = new() { Elements = Iter.Over(rule_alias) } } ));
         In<AClass> a = null;
         In<BClass> b = null;
         b = a;
