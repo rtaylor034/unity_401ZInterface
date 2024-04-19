@@ -33,8 +33,12 @@ namespace Token.Alias
         private readonly IToken<R>? _cachedRealization;
         
     }
-
-    public abstract record OneArg<RArg1, ROut> : Alias<ROut>, IHasArg1<RArg1>
+    /// <summary>
+    /// Tokens that inherit must have a constructor matching: <br></br>
+    /// <code>(IToken&lt;<typeparamref name="RArg1"/>&gt;)</code>
+    /// </summary>
+    /// <typeparam name="RArg1"></typeparam>
+    public abstract record OneArg<RArg1, ROut> : Alias<ROut>, IFunction<RArg1, ROut>
         where RArg1 : class, ResObj
         where ROut : class, ResObj
     {
@@ -45,8 +49,13 @@ namespace Token.Alias
         }
         private readonly IToken<RArg1> _arg1;
     }
-
-    public abstract record TwoArg<RArg1, RArg2, ROut> : Alias<ROut>, IHasArg1<RArg1>, IHasArg2<RArg2>
+    /// <summary>
+    /// Tokens that inherit must have a constructor matching: <br></br>
+    /// <code>(IToken&lt;<typeparamref name="RArg1"/>&gt;, IToken&lt;<typeparamref name="RArg2"/>&gt;)</code>
+    /// </summary>
+    /// <typeparam name="RArg1"></typeparam>
+    /// <typeparam name="RArg2"></typeparam>
+    public abstract record TwoArg<RArg1, RArg2, ROut> : Alias<ROut>, IFunction<RArg1, RArg2, ROut>
         where RArg1 : class, ResObj
         where RArg2 : class, ResObj
         where ROut : class, ResObj
@@ -61,8 +70,14 @@ namespace Token.Alias
         private readonly IToken<RArg1> _arg1;
         private readonly IToken<RArg2> _arg2;
     }
-
-    public abstract record ThreeArg<RArg1, RArg2, RArg3, ROut> : Alias<ROut>, IHasArg1<RArg1>, IHasArg2<RArg2>, IHasArg3<RArg3>
+    /// <summary>
+    /// Tokens that inherit must have a constructor matching: <br></br>
+    /// <code>(IToken&lt;<typeparamref name="RArg1"/>&gt;, IToken&lt;<typeparamref name="RArg2"/>&gt;, IToken&lt;<typeparamref name="RArg3"/>&gt;)</code>
+    /// </summary>
+    /// <typeparam name="RArg1"></typeparam>
+    /// <typeparam name="RArg2"></typeparam>
+    /// <typeparam name="RArg3"></typeparam>
+    public abstract record ThreeArg<RArg1, RArg2, RArg3, ROut> : Alias<ROut>, IFunction<RArg1, RArg2, RArg3, ROut>
         where RArg1 : class, ResObj
         where RArg2 : class, ResObj
         where RArg3 : class, ResObj

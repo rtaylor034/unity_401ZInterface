@@ -19,6 +19,7 @@ namespace Proxy
         public IToken<R> UnsafeTypedRealize(IToken original, Rule.IRule? rule) => Realize((TOrig)original, rule);
         public IToken UnsafeRealize(IToken original, Rule.IRule? rule) => UnsafeTypedRealize(original, rule);
     }
+
     public static class Create
     {
         public static IProxy<TFor, R> For<TFor, R>(Func<Creator.Base<TFor, R>, IProxy<TFor, R>> createStatement) where TFor : Token.IToken<R> where R : class, ResObj
@@ -47,7 +48,7 @@ namespace Proxy.Unsafe
         public override IToken<R> Realize(TOrig original, Rule.IRule? rule) { return ConstructFromArgs(MakeSubstitutions(original, rule)); }
 
         protected readonly PList<IProxy> ArgProxies;
-        protected abstract TokenFunction<R> ConstructFromArgs(List<IToken> tokens);
+        protected abstract IToken<R> ConstructFromArgs(List<IToken> tokens);
         protected FunctionProxy(IEnumerable<IProxy> proxies)
         {
             ArgProxies = new() { Elements = proxies };
@@ -71,7 +72,7 @@ namespace Proxy.Creator
     {
         public readonly Proxies.Direct<TFor, R> AsIs(Token.IToken<R> token) => new(token);
         public readonly Proxies.SubEnvironment<TFor, R> SubEnvironment(params IProxy<TFor, Resolution.Operation>[] envModifiers) => new(envModifiers);
-        public readonly IFunction<TNew, TNew> TokenFunction<TNew>() where TNew : Token.Unsafe.TokenFunction<R>
+        public readonly IFunction<TNew, TNew> TokenFunction<TNew>() where TNew : Token.Unsafe.IFunction<R>
         { return new Function<TNew>(); }
         public interface IFunction<out TNew, out TNew_> { }
         public struct Function<TNew> : IFunction<TNew, TNew> { }
@@ -80,23 +81,23 @@ namespace Proxy.Creator
     public static class Extensions
     {
         public static Proxies.Function<TNew, TOrig, RArg1, ROut> WithArgs<TNew, TOrig, RArg1, ROut>
-            (this Base<TOrig, ROut>.IFunction<Token.Function<RArg1, ROut>, TNew> _, IProxy<TOrig, RArg1> arg1)
-            where TNew : Token.Function<RArg1, ROut>
+            (this Base<TOrig, ROut>.IFunction<Token.IFunction<RArg1, ROut>, TNew> _, IProxy<TOrig, RArg1> arg1)
+            where TNew : Token.IFunction<RArg1, ROut>
             where TOrig : Token.IToken<ROut>
             where RArg1 : class, ResObj
             where ROut : class, ResObj
         { return new(arg1); }
         public static Proxies.Function<TNew, TOrig, RArg1, RArg2, ROut> WithArgs<TNew, TOrig, RArg1, RArg2, ROut>
-            (this Base<TOrig, ROut>.IFunction<Token.Function<RArg1, RArg2, ROut>, TNew> _, IProxy<TOrig, RArg1> arg1, IProxy<TOrig, RArg2> arg2)
-            where TNew : Token.Function<RArg1, RArg2, ROut>
+            (this Base<TOrig, ROut>.IFunction<Token.IFunction<RArg1, RArg2, ROut>, TNew> _, IProxy<TOrig, RArg1> arg1, IProxy<TOrig, RArg2> arg2)
+            where TNew : Token.IFunction<RArg1, RArg2, ROut>
             where TOrig : Token.IToken<ROut>
             where RArg1 : class, ResObj
             where RArg2 : class, ResObj
             where ROut : class, ResObj
         { return new(arg1, arg2); }
         public static Proxies.Function<TNew, TOrig, RArg1, RArg2, RArg3, ROut> WithArgs<TNew, TOrig, RArg1, RArg2, RArg3, ROut>
-            (this Base<TOrig, ROut>.IFunction<Token.Function<RArg1, RArg2, RArg3, ROut>, TNew> _, IProxy<TOrig, RArg1> arg1, IProxy<TOrig, RArg2> arg2, IProxy<TOrig, RArg2> arg3)
-            where TNew : Token.Function<RArg1, RArg2, RArg3, ROut>
+            (this Base<TOrig, ROut>.IFunction<Token.IFunction<RArg1, RArg2, RArg3, ROut>, TNew> _, IProxy<TOrig, RArg1> arg1, IProxy<TOrig, RArg2> arg2, IProxy<TOrig, RArg2> arg3)
+            where TNew : Token.IFunction<RArg1, RArg2, RArg3, ROut>
             where TOrig : Token.IToken<ROut>
             where RArg1 : class, ResObj
             where RArg2 : class, ResObj
@@ -104,18 +105,18 @@ namespace Proxy.Creator
             where ROut : class, ResObj
         { return new(arg1, arg2, arg3); }
         // SHAKY
-        public static Proxies.OriginalArg1<TOrig, RArg> OriginalArg1<TOrig, RArg, ROut>(this IBase<TOrig, Token.IHasArg1<RArg>, ROut> _)
-            where TOrig : Token.IHasArg1<RArg>
+        public static Proxies.OriginalArg1<TOrig, RArg> OriginalArg1<TOrig, RArg, ROut>(this IBase<TOrig, Token.Unsafe.IHasArg1<RArg>, ROut> _)
+            where TOrig : Token.Unsafe.IHasArg1<RArg>
             where RArg : class, ResObj
             where ROut : class, ResObj
         { return new(); }
-        public static Proxies.OriginalArg2<TOrig, RArg> OriginalArg2<TOrig, RArg, ROut>(this IBase<TOrig, Token.IHasArg2<RArg>, ROut> _)
-            where TOrig : Token.IHasArg2<RArg>
+        public static Proxies.OriginalArg2<TOrig, RArg> OriginalArg2<TOrig, RArg, ROut>(this IBase<TOrig, Token.Unsafe.IHasArg2<RArg>, ROut> _)
+            where TOrig : Token.Unsafe.IHasArg2<RArg>
             where RArg : class, ResObj
             where ROut : class, ResObj
         { return new(); }
-        public static Proxies.OriginalArg3<TOrig, RArg> OriginalArg3<TOrig, RArg, ROut>(this IBase<TOrig, Token.IHasArg3<RArg>, ROut> _)
-            where TOrig : Token.IHasArg3<RArg>
+        public static Proxies.OriginalArg3<TOrig, RArg> OriginalArg3<TOrig, RArg, ROut>(this IBase<TOrig, Token.Unsafe.IHasArg3<RArg>, ROut> _)
+            where TOrig : Token.Unsafe.IHasArg3<RArg>
             where RArg : class, ResObj
             where ROut : class, ResObj
         { return new(); }

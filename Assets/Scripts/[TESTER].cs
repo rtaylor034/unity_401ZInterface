@@ -30,7 +30,8 @@ public class TESTER : MonoBehaviour
         });
         var rule_alias = Rule.Create.For<MultTwo, INT>(P =>
         {
-            return P.AsIs(new Constant(10));
+            return P.TokenFunction<MultTwo>()
+            .WithArgs(P.AsIs(new Constant(4)));
         });
         var context = new Context()
         {

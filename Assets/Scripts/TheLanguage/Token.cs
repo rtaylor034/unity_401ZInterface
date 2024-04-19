@@ -57,24 +57,33 @@ namespace Token
 
     #region Functions
     // ---- [ Functions ] ----
-    public interface IHasArg1<out RArg> : Unsafe.IHasArg1 where RArg : class, ResObj
-    { public IToken<RArg> Arg1 { get; } }
-    public interface IHasArg2<out RArg> : Unsafe.IHasArg2 where RArg : class, ResObj
-    { public IToken<RArg> Arg2 { get; } }
-    public interface IHasArg3<out RArg> : Unsafe.IHasArg3 where RArg : class, ResObj
-    { public IToken<RArg> Arg3 { get; } }
-    public interface IHasCombineArgs<out RArgs> : Unsafe.IToken where RArgs : class, ResObj
-    {
-        public IEnumerable<IToken<RArgs>> Args { get; }
-    }
 
+    public interface IFunction<RArg1, ROut> : Unsafe.IHasArg1<RArg1>, Unsafe.IFunction<ROut>
+        where RArg1 : class, ResObj
+        where ROut : class, ResObj
+    { }
+    public interface IFunction<RArg1, RArg2, ROut> : Unsafe.IHasArg1<RArg1>, Unsafe.IHasArg2<RArg2>, Unsafe.IFunction<ROut>
+    where RArg1 : class, ResObj
+    where RArg2 : class, ResObj
+    where ROut : class, ResObj
+    { }
+    public interface IFunction<RArg1, RArg2, RArg3, ROut> : Unsafe.IHasArg1<RArg1>, Unsafe.IHasArg2<RArg2>, Unsafe.IHasArg3<RArg3>, Unsafe.IFunction<ROut>
+        where RArg1 : class, ResObj
+        where RArg2 : class, ResObj
+        where RArg3 : class, ResObj
+        where ROut : class, ResObj
+    { }
+    public interface ICombiner<RArgs, ROut> : Unsafe.IHasCombinerArgs<RArgs>, Unsafe.IFunction<ROut>
+    where RArgs : class, ResObj
+    where ROut : class, ResObj
+    { }
     /// <summary>
     /// Tokens that inherit must have a constructor matching: <br></br>
     /// <code>(IToken&lt;<typeparamref name="RArg1"/>&gt;)</code>
     /// </summary>
     /// <typeparam name="RArg1"></typeparam>
     public abstract record Function<RArg1, ROut> : Unsafe.TokenFunction<ROut>,
-        IHasArg1<RArg1>
+        IFunction<RArg1, ROut>
         where RArg1 : class, ResObj
         where ROut : class, ResObj
     {
@@ -93,8 +102,7 @@ namespace Token
     /// <typeparam name="RArg1"></typeparam>
     /// <typeparam name="RArg2"></typeparam>
     public abstract record Function<RArg1, RArg2, ROut> : Unsafe.TokenFunction<ROut>,
-        IHasArg1<RArg1>,
-        IHasArg2<RArg2>
+        IFunction<RArg1, RArg2, ROut>
         where RArg1 : class, ResObj
         where RArg2 : class, ResObj
         where ROut : class, ResObj
@@ -116,9 +124,7 @@ namespace Token
     /// <typeparam name="RArg2"></typeparam>
     /// <typeparam name="RArg3"></typeparam>
     public abstract record Function<RArg1, RArg2, RArg3, ROut> : Unsafe.TokenFunction<ROut>,
-        IHasArg1<RArg1>,
-        IHasArg2<RArg2>,
-        IHasArg3<RArg3>
+        IFunction<RArg1, RArg2, RArg3, ROut>
         where RArg1 : class, ResObj
         where RArg2 : class, ResObj
         where RArg3 : class, ResObj
@@ -139,7 +145,7 @@ namespace Token
     /// <code>(IEnumerable&lt;IToken&lt;<typeparamref name="RArg"/>&gt;>&gt;)</code>
     /// </summary>
     /// <typeparam name="RArg"></typeparam>
-    public abstract record Combiner<RArg, ROut> : Unsafe.TokenFunction<ROut>, IHasCombineArgs<RArg>
+    public abstract record Combiner<RArg, ROut> : Unsafe.TokenFunction<ROut>, ICombiner<RArg, ROut>
         where RArg : class, ResObj
         where ROut : class, ResObj
     {
@@ -234,6 +240,24 @@ namespace Token.Unsafe
         public ITask<ResObj?> ResolveUnsafe(Context context);
     }
 
+    public interface IHasArg1<RArg> : Unsafe.IHasArg1 where RArg : class, ResObj
+    { public IToken<RArg> Arg1 { get; } }
+    public interface IHasArg2<RArg> : Unsafe.IHasArg2 where RArg : class, ResObj
+    { public IToken<RArg> Arg2 { get; } }
+    public interface IHasArg3<RArg> : Unsafe.IHasArg3 where RArg : class, ResObj
+    { public IToken<RArg> Arg3 { get; } }
+    public interface IHasCombinerArgs<RArgs> : IToken where RArgs : class, ResObj
+    {
+        public IEnumerable<IToken<RArgs>> Args { get; }
+    }
+
+    // shitty name for this interface-set. consider something like 'FromArgs', 'ProductOfArgs', 'ArgTransformer', or something.
+    public interface IFunction<ROut> : IToken<ROut> where ROut : class, ResObj { }
+
+    public interface IHasArg1 : IToken { }
+    public interface IHasArg2 : IHasArg1 { }
+    public interface IHasArg3 : IHasArg2 { }
+
     public abstract record TokenFunction<R> : Token<R> where R : class, ResObj
     {
         public abstract bool IsFallibleFunction { get; }
@@ -294,8 +318,4 @@ namespace Token.Unsafe
             _state = new(ArgTokens.Count);
         }
     }
-
-    public interface IHasArg1 : IToken { }
-    public interface IHasArg2 : IHasArg1 { }
-    public interface IHasArg3 : IHasArg2 { }
 }
