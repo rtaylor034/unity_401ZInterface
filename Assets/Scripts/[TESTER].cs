@@ -24,7 +24,10 @@ public class TESTER : MonoBehaviour
         {
             SubToken = new Add(new MultTwo(new Subtract(new Reference<INT>("scope1"), new Constant(1))), new MultTwo(new Reference<INT>("scope1")))
         };
-
+        var rule_multadd = Rule.Create.For<Add, INT>(P =>
+        {
+            P.
+        })
         var context = new Context()
         {
             InputProvider = null,
