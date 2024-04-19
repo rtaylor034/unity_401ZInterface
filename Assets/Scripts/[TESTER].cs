@@ -31,7 +31,8 @@ public class TESTER : MonoBehaviour
         var rule_alias = Rule.Create.For<MultTwo, INT>(P =>
         {
             return P.TokenFunction<MultTwo>()
-            .WithArgs(P.AsIs(new Constant(4)));
+            .WithArgs(P.TokenFunction<MultTwo>()
+                .WithArgs(P.AsIs(new Constant(5))));
         });
         var context = new Context()
         {
@@ -40,7 +41,7 @@ public class TESTER : MonoBehaviour
             Rules = new(),
             Variables = new(7)
         };
-        var bruh = 0.Sequence(x => x + 1).Take(20).ContinueAfter(x => x.Take(10).Also(99.Yield(5)));
+        var bruh = 1.Sequence(x => x + 1).ContinueAfter(x => x.Take(10).Also(0.Yield(5))).Take(20);
         Debug.Log(new PList<int>() { Elements = bruh });
         Debug.Log(await token_monster.ResolveWithRules(context with { Rules = new() { Elements = Iter.Over(rule_alias) } } ));
         In<AClass> a = null;
