@@ -167,14 +167,21 @@ namespace Perfection
         {
             foreach (var v in enumerable)
             {
-                if (breakCondition(v)) yield break;
                 yield return v;
+                if (breakCondition(v)) yield break;
             }
         }
         public static IEnumerable<T> After<T>(this IEnumerable<T> enumerable, Predicate<T> startCondition)
         {
             var iter = enumerable.GetEnumerator();
-            while (iter.MoveNext() && !startCondition(iter.Current)) { }
+            while (iter.MoveNext())
+            {
+                if (startCondition(iter.Current))
+                {
+                    yield return iter.Current;
+                    break;
+                }
+            }
             while (iter.MoveNext()) yield return iter.Current;
         }
         public static IEnumerable<T> Flatten<T>(this IEnumerable<IEnumerable<T>> enumerable)
@@ -187,20 +194,20 @@ namespace Perfection
             foreach (var v in enumerable) if (matchCondition(v)) return true;
             return false;
         }
-        public static IEnumerable<T> Yield<T>(this T value) { yield return value; }
-        public static IEnumerable<T> Yield<T>(this T value, int amount)
+        public static IEnumerable<T> Yield<T>(this T value, int amount = 1)
         {
             for (int i = 0; i < amount; i++) yield return value;
         }
         public static IEnumerable<T> Take<T>(this IEnumerable<T> enumerable, int amount)
         {
+            if (amount == 0) yield break;
             int i = 0;
             foreach (var v in enumerable)
             {
-                if (i >= amount) yield break;
                 yield return v;
                 i++;
-            } 
+                if (i >= amount) yield break;
+            }
         }
         public static IEnumerable<T> Skip<T>(this IEnumerable<T> enumerable, int amount)
         {
@@ -208,11 +215,22 @@ namespace Perfection
             for (int i = -1; i < amount; i++) iter.MoveNext();
             while (iter.MoveNext()) yield return iter.Current;
         }
+        public static IEnumerable<T> ContinueAfter<T>(this IEnumerable<T> enumerable, Func<IEnumerable<T>, IEnumerable<T>> consumer)
+        {
+            var iter = enumerable.GetEnumerator();
+            foreach (var v in consumer(iter.AsEnumerable())) yield return v;
+            foreach (var v in iter.AsEnumerable()) yield return v;
+        }
+        public static IEnumerable<T> AsEnumerable<T>(this IEnumerator<T> enumerator)
+        {
+            while (enumerator.MoveNext()) yield return enumerator.Current;
+        }
         public static T? First<T>(this IEnumerable<T> enumerable) where T : class
         {
             var iter = enumerable.GetEnumerator();
             return iter.MoveNext() ? iter.Current : null;
         }
+
         public static IEnumerable<T> Over<T>(params T[] arr)
         {
             foreach (var v in arr) yield return v;
