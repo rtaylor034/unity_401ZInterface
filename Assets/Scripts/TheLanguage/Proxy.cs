@@ -42,7 +42,7 @@ namespace Proxy.Unsafe
     }
 
     public abstract record FunctionProxy<TOrig, R> : Proxy<TOrig, R>
-        where TOrig : IToken<R>
+        where TOrig : IToken
         where R : class, ResObj
     {
         public override IToken<R> Realize(TOrig original, Rule.IRule? rule) { return ConstructFromArgs(MakeSubstitutions(original, rule)); }
@@ -70,7 +70,10 @@ namespace Proxy.Creator
     public interface IBase<out TFor, out TFor_, out R> where TFor : Token.Unsafe.IToken where R : class, ResObj { }
     public struct Base<TFor, R> : IBase<TFor, TFor, R> where TFor : Token.IToken<R> where R : class, ResObj
     {
-        public readonly Proxies.Direct<TFor, R> AsIs(Token.IToken<R> token) => new(token);
+        public readonly Proxies.Direct<TFor, RThis> AsIs<RThis>(Token.IToken<RThis> token) where RThis : class, ResObj
+        {
+            return new(token);
+        }
         public readonly ISubEnvironment<TNew, TNew> TokenEnvironment<TNew>() where TNew : Token.Unsafe.IFunction<R>
         { return new SubEnvironment<TNew>(); }
         public readonly IFunction<TNew, TNew> TokenFunction<TNew>() where TNew : Token.Unsafe.IFunction<R>

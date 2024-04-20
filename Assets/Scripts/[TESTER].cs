@@ -30,10 +30,11 @@ public class TESTER : MonoBehaviour
         });
         var rule_alias = Rule.Create.For<MultTwo, INT>(P =>
         {
-            return P.TokenEnvironment<Scope<INT>>().Environment(P.AsIs(new Variable<INT>("scope2", new Constant(5))))
+            return P.TokenEnvironment<Scope<INT>>().Environment(P.AsIs(new Variable<INT>("scope2", new Constant(8)))) with
             {
-                SubTokenProxy
-            }
+                SubTokenProxy = P.TokenFunction<Add>()
+                .WithArgs(P.AsIs(new Reference<INT>("scope2")), P.AsIs(new Reference<INT>("scope1")))
+            };
         });
         var context = new Context()
         {

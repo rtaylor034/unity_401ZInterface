@@ -7,7 +7,6 @@ using MorseCode.ITask;
 using ResObj = Resolution.IResolution;
 using Token;
 using r_ = Resolutions;
-using Resolutions;
 
 #nullable enable
 namespace Tokens
@@ -44,7 +43,7 @@ namespace Tokens
             _rule = rule;
         }
 
-        protected override DeclareRule InfallibleResolve(Context context) { return new() { Rule = _rule }; }
+        protected override r_.DeclareRule InfallibleResolve(Context context) { return new() { Rule = _rule }; }
 
         private readonly Rule.IRule _rule;
     }

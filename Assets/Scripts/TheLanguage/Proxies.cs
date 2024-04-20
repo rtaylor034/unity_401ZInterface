@@ -13,7 +13,7 @@ using Rule;
 #nullable enable
 namespace Proxies
 {
-    public sealed record Direct<TOrig, R> : Proxy<TOrig, R> where TOrig : IToken<R> where R : class, ResObj
+    public sealed record Direct<TOrig, R> : Proxy<TOrig, R> where TOrig : IToken where R : class, ResObj
     {
         public Direct(IToken<R> token)
         {
@@ -40,7 +40,7 @@ namespace Proxies
 
     public record Combiner<TNew, TOrig, RArg, ROut> : FunctionProxy<TOrig, ROut>
         where TNew : IHasCombinerArgs<RArg>, IToken<ROut>
-        where TOrig : IToken<ROut>
+        where TOrig : IToken
         where RArg : class, ResObj
         where ROut : class, ResObj
     {
@@ -55,7 +55,7 @@ namespace Proxies
 
     public sealed record SubEnvironment<TNew, TOrig, REnv, ROut> : Proxy<TOrig, ROut>
         where TNew : Token.SubEnvironment<REnv, ROut>
-        where TOrig : IToken<ROut>
+        where TOrig : IToken
         where REnv : Resolution.Operation
         where ROut : class, ResObj
     {
@@ -68,13 +68,13 @@ namespace Proxies
         public override IToken<ROut> Realize(TOrig original, Rule.IRule? rule)
         {
             return (SubEnvironment<REnv, ROut>)typeof(TNew).GetConstructor(new Type[] { typeof(IEnumerable<IToken<REnv>>) })
-            .Invoke(System.Linq.Enumerable.ToArray(_envModifiers.Elements.Map(x => x.Realize(original, rule)))) with
+            .Invoke(new object[] { _envModifiers.Elements.Map(x => x.Realize(original, rule)) }) with
             {
                 SubToken = SubTokenProxy.UnsafeTypedRealize(original, rule)
             };
         }
 
-        private readonly PList<IProxy<TOrig, Resolution.Operation>> _envModifiers;
+        private readonly PList<IProxy<TOrig, REnv>> _envModifiers;
     }
 
     public sealed record Variable<TOrig, R> : Proxy<TOrig, Resolutions.DeclareVariable>
@@ -113,7 +113,7 @@ namespace Proxies
     #region Functions
     // ---- [ Functions ] ----
     public record Function<TNew, TOrig, RArg1, ROut> : FunctionProxy<TOrig, ROut>
-        where TOrig : IToken<ROut>
+        where TOrig : IToken
         where TNew : IFunction<RArg1, ROut>
         where RArg1 : class, ResObj
         where ROut : class, ResObj
@@ -127,7 +127,7 @@ namespace Proxies
         }
     }
     public record Function<TNew, TOrig, RArg1, RArg2, ROut> : FunctionProxy<TOrig, ROut>
-        where TOrig : IToken<ROut>
+        where TOrig : IToken
         where TNew : IFunction<RArg1, RArg2, ROut>
         where RArg1 : class, ResObj
         where RArg2 : class, ResObj
@@ -142,7 +142,7 @@ namespace Proxies
         }
     }
     public record Function<TNew, TOrig, RArg1, RArg2, RArg3, ROut> : FunctionProxy<TOrig, ROut>
-        where TOrig : IToken<ROut>
+        where TOrig : IToken
         where TNew : IFunction<RArg1, RArg2, RArg3, ROut>
         where RArg1 : class, ResObj
         where RArg2 : class, ResObj
