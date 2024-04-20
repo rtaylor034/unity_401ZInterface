@@ -4,6 +4,7 @@ using ResObj = Resolution.IResolution;
 using Token;
 using Perfection;
 using r_ = Resolutions;
+using Resolutions;
 namespace Tokens.Multi
 {
     public sealed record Union<R> : PureCombiner<Resolution.IMulti<R>, r_.Multi<R>> where R : class, ResObj
@@ -14,16 +15,12 @@ namespace Tokens.Multi
         }
     }
     
-    // FIXME: incorrect implementation of Yield
-    public sealed record Yield<R> : Infallible<r_.Multi<R>> where R : class, ResObj
+    public sealed record Yield<R> : PureFunction<R, r_.Multi<R>> where R : class, ResObj
     {
-        public Yield(R value)
+        public Yield(IToken<R> value) : base(value) { }
+        protected override Multi<R> EvaluatePure(R in1)
         {
-            _value = value;
+            return new() { Values = in1.Yield() };
         }
-
-        protected override r_.Multi<R> InfallibleResolve(Context context) => new() { Values = _value.Yield() };
-
-        private readonly R _value;
     }
 }
