@@ -55,6 +55,11 @@ namespace Token
         protected abstract R InfallibleResolve(Context context);
     }
 
+    /// <summary>
+    /// Tokens that inherit must have a constructor matching: <br></br>
+    /// <code>(IEnumerable&lt;IToken&lt;<typeparamref name="REnv"/>&gt;&gt;)</code>
+    /// </summary>
+    /// <typeparam name="REnv"></typeparam>
     public abstract record SubEnvironment<REnv, ROut> : Combiner<REnv, ROut>
         where REnv : Resolution.Operation
         where ROut : class, ResObj
@@ -155,7 +160,7 @@ namespace Token
 
     /// <summary>
     /// Tokens that inherit must have a constructor matching: <br></br>
-    /// <code>(IEnumerable&lt;IToken&lt;<typeparamref name="RArg"/>&gt;>&gt;)</code>
+    /// <code>(IEnumerable&lt;IToken&lt;<typeparamref name="RArg"/>&gt;&gt;)</code>
     /// </summary>
     /// <typeparam name="RArg"></typeparam>
     public abstract record Combiner<RArg, ROut> : Unsafe.TokenFunction<ROut>, ICombiner<RArg, ROut>
