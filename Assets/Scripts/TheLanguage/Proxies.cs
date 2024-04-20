@@ -26,7 +26,7 @@ namespace Proxies
     }
 
     public sealed record CombinerTransform<TNew, TOrig, RArg, ROut> : Proxy<TOrig, ROut>
-        where TOrig : IHasCombinerArgs<RArg>
+        where TOrig : IHasCombinerArgs<RArg>, IToken<ROut>
         where TNew : Token.ICombiner<RArg, ROut>
         where RArg : class, ResObj
         where ROut : class, ResObj
@@ -38,17 +38,17 @@ namespace Proxies
         }
     }
 
-    public record Combiner<TNew, TOrig, RArg, ROut> : FunctionProxy<TOrig, ROut>
-        where TNew : IHasCombinerArgs<RArg>, IToken<ROut>
+    public record Combiner<TNew, TOrig, RArgs, ROut> : FunctionProxy<TOrig, ROut>
+        where TNew : Token.ICombiner<RArgs, ROut>
         where TOrig : IToken
-        where RArg : class, ResObj
+        where RArgs : class, ResObj
         where ROut : class, ResObj
     {
-        public Combiner(IEnumerable<IProxy<TOrig, RArg>> proxies) : base(proxies) { }
+        public Combiner(IEnumerable<IProxy<TOrig, RArgs>> proxies) : base(proxies) { }
 
         protected override IToken<ROut> ConstructFromArgs(List<IToken> tokens)
         {
-            return (IToken<ROut>)typeof(TNew).GetConstructor(new Type[] { typeof(IEnumerable<IToken<RArg>>) })
+            return (IToken<ROut>)typeof(TNew).GetConstructor(new Type[] { typeof(IEnumerable<IToken<RArgs>>) })
                 .Invoke(new object[] { tokens });
         }
     }
