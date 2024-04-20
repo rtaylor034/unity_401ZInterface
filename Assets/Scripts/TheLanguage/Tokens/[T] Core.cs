@@ -13,14 +13,10 @@ using Resolutions;
 namespace Tokens
 {
 
-    public sealed record SubEnvironment<R> : Token.Unsafe.TokenFunction<R> where R : class, ResObj
+    public sealed record Scope<R> : SubEnvironment<r_.DeclareVariable, R> where R : class, ResObj
     {
-        public IToken<R> SubToken { get; init; }
-        public SubEnvironment(params IToken<Resolution.Operation>[] envModifiers) : base(envModifiers) { }
-        public SubEnvironment(IEnumerable<Token.Unsafe.IToken> envModifiers) : base(envModifiers) { }
-        public sealed override bool IsFallibleFunction => SubToken.IsFallible;
-
-        protected sealed override async ITask<R?> TransformTokens(Context context, List<ResObj> _) => await SubToken.ResolveWithRules(context);
+        public Scope(IEnumerable<IToken<r_.DeclareVariable>> variables) : base(variables) { }
+        public Scope(params IToken<r_.DeclareVariable>[] variables) : base(variables) { }
     }
 
     public sealed record Variable<R> : Token<r_.DeclareVariable> where R : class, ResObj

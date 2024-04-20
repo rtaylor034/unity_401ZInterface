@@ -107,7 +107,6 @@ namespace Perfection
     }
     public record PList<T>
     {
-        private readonly List<T> _list;
         public IEnumerable<T> Elements { get => _list; init { _list = new(value); Count = _list.Count; } } 
         public Updater<IEnumerable<T>> dElements { init => Elements = value(Elements); }
         public readonly int Count;
@@ -117,7 +116,10 @@ namespace Perfection
             Count = 0;
         }
         public T this[int i] => _list[i];
+        public T[] ToArray() { return _list.ToArray(); }
         public override string ToString() => Elements.AccumulateInto("PList:\n", (msg, x) => msg + $"- {x}\n");
+
+        private readonly List<T> _list;
     }
     // me when i rewrite System.Linq but worse and with rust names
 #nullable enable

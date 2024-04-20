@@ -53,18 +53,26 @@ namespace Proxies
         }
     }
 
-    public sealed record SubEnvironment<TOrig, R> : Proxy<TOrig, R>
-        where TOrig : IToken<R>
-        where R : class, ResObj
+    public sealed record SubEnvironment<TNew, TOrig, REnv, ROut> : Proxy<TOrig, ROut>
+        where TNew : Token.SubEnvironment<REnv, ROut>
+        where TOrig : IToken<ROut>
+        where REnv : Resolution.Operation
+        where ROut : class, ResObj
     {
-        public IProxy<R> SubTokenProxy { get; init; }
-        public SubEnvironment(IEnumerable<IProxy<TOrig, Resolution.Operation>> proxies)
+        public IProxy<ROut> SubTokenProxy { get; init; }
+        public SubEnvironment(IEnumerable<IProxy<TOrig, REnv>> proxies)
         {
             _envModifiers = new() { Elements = proxies };
         }
-        public SubEnvironment(params IProxy<TOrig, Resolution.Operation>[] proxies) : this((IEnumerable<IProxy<TOrig, Resolution.Operation>>)proxies) { }
-        public override IToken<R> Realize(TOrig original, Rule.IRule? rule) =>
-            new Tokens.SubEnvironment<R>(_envModifiers.Elements.Map(x => x.UnsafeRealize(original, rule))) { SubToken = SubTokenProxy.UnsafeTypedRealize(original, rule) };
+        public SubEnvironment(params IProxy<TOrig, REnv>[] proxies) : this((IEnumerable<IProxy<TOrig, REnv>>)proxies) { }
+        public override IToken<ROut> Realize(TOrig original, Rule.IRule? rule)
+        {
+            return (SubEnvironment<REnv, ROut>)typeof(TNew).GetConstructor(new Type[] { typeof(IEnumerable<IToken<REnv>>) })
+            .Invoke(System.Linq.Enumerable.ToArray(_envModifiers.Elements.Map(x => x.Realize(original, rule)))) with
+            {
+                SubToken = SubTokenProxy.UnsafeTypedRealize(original, rule)
+            };
+        }
 
         private readonly PList<IProxy<TOrig, Resolution.Operation>> _envModifiers;
     }

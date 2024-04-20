@@ -55,6 +55,19 @@ namespace Token
         protected abstract R InfallibleResolve(Context context);
     }
 
+    public abstract record SubEnvironment<REnv, ROut> : Combiner<REnv, ROut>
+        where REnv : Resolution.Operation
+        where ROut : class, ResObj
+    {
+        public IToken<ROut> SubToken { get; init; }
+        protected SubEnvironment(IEnumerable<IToken<REnv>> envModifiers) : base(envModifiers) { }
+        public sealed override bool IsFallibleFunction => SubToken.IsFallible;
+        protected sealed override ITask<ROut?> Evaluate(Context context, IEnumerable<REnv> _)
+        {
+            return SubToken.ResolveWithRules(context);
+        }
+    }
+
     #region Functions
     // ---- [ Functions ] ----
 

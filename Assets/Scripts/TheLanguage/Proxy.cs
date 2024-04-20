@@ -71,11 +71,14 @@ namespace Proxy.Creator
     public struct Base<TFor, R> : IBase<TFor, TFor, R> where TFor : Token.IToken<R> where R : class, ResObj
     {
         public readonly Proxies.Direct<TFor, R> AsIs(Token.IToken<R> token) => new(token);
-        public readonly Proxies.SubEnvironment<TFor, R> SubEnvironment(params IProxy<TFor, Resolution.Operation>[] envModifiers) => new(envModifiers);
+        public readonly ISubEnvironment<TNew, TNew> TokenEnvironment<TNew>() where TNew : Token.Unsafe.IFunction<R>
+        { return new SubEnvironment<TNew>(); }
         public readonly IFunction<TNew, TNew> TokenFunction<TNew>() where TNew : Token.Unsafe.IFunction<R>
         { return new Function<TNew>(); }
+        public interface ISubEnvironment<out TNew, out TNew_> { }
         public interface IFunction<out TNew, out TNew_> { }
         public struct Function<TNew> : IFunction<TNew, TNew> { }
+        public struct SubEnvironment<TNew> : ISubEnvironment<TNew, TNew> { }
     }
 
     public static class Extensions
@@ -104,7 +107,43 @@ namespace Proxy.Creator
             where RArg3 : class, ResObj
             where ROut : class, ResObj
         { return new(arg1, arg2, arg3); }
-        // SHAKY
+        public static Proxies.CombinerTransform<TNew, TOrig, RArgs, ROut> WithOriginalArgs<TNew, TOrig, RArgs, ROut>
+            (this Base<TOrig, ROut>.IFunction<Token.ICombiner<RArgs, ROut>, TNew> _)
+            where TNew : Token.ICombiner<RArgs, ROut>
+            where TOrig : Token.ICombiner<RArgs, ROut>
+            where RArgs : class, ResObj
+            where ROut : class, ResObj
+        { return new(); }
+        public static Proxies.Combiner<TNew, TOrig, RArgs, ROut> WithArgs<TNew, TOrig, RArgs, ROut>
+            (this Base<TOrig, ROut>.IFunction<Token.ICombiner<RArgs, ROut>, TNew> _, params IProxy<TOrig, RArgs>[] args)
+            where TNew : Token.ICombiner<RArgs, ROut>
+            where TOrig : Token.IToken<ROut>
+            where RArgs : class, ResObj
+            where ROut : class, ResObj
+        { return new(args); }
+        public static Proxies.Combiner<TNew, TOrig, RArgs, ROut> WithArgs<TNew, TOrig, RArgs, ROut>
+            (this Base<TOrig, ROut>.IFunction<Token.ICombiner<RArgs, ROut>, TNew> _, IEnumerable<IProxy<TOrig, RArgs>> args)
+            where TNew : Token.ICombiner<RArgs, ROut>
+            where TOrig : Token.IToken<ROut>
+            where RArgs : class, ResObj
+            where ROut : class, ResObj
+        { return new(args); }
+        public static Proxies.SubEnvironment<TNew, TOrig, REnv, ROut> Environment<TNew, TOrig, REnv, ROut>
+            (this Base<TOrig, ROut>.ISubEnvironment<Token.SubEnvironment<REnv, ROut>, TNew> _, params IProxy<TOrig, REnv>[] envModifiers)
+            where TNew : Token.SubEnvironment<REnv, ROut>
+            where TOrig : Token.IToken<ROut>
+            where REnv : Resolution.Operation
+            where ROut : class, ResObj
+        { return new(envModifiers); }
+        public static Proxies.SubEnvironment<TNew, TOrig, REnv, ROut> Environment<TNew, TOrig, REnv, ROut>
+            (this Base<TOrig, ROut>.ISubEnvironment<Token.SubEnvironment<REnv, ROut>, TNew> _, IEnumerable<IProxy<TOrig, REnv>> envModifiers)
+            where TNew : Token.SubEnvironment<REnv, ROut>
+            where TOrig : Token.IToken<ROut>
+            where REnv : Resolution.Operation
+            where ROut : class, ResObj
+        { return new(envModifiers); }
+        //TODO: combiner transform, combiner, subenvironment.
+
         public static Proxies.OriginalArg1<TOrig, RArg> OriginalArg1<TOrig, RArg, ROut>(this IBase<TOrig, Token.Unsafe.IHasArg1<RArg>, ROut> _)
             where TOrig : Token.Unsafe.IHasArg1<RArg>
             where RArg : class, ResObj

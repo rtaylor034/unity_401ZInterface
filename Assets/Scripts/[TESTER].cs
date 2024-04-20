@@ -20,7 +20,7 @@ public class TESTER : MonoBehaviour
     async void Start()
     {
         //this beats herion
-        var token_monster = new SubEnvironment<INT>(new Variable<INT>("scope1", new Multiply(new Constant(4), new Constant(8))))
+        var token_monster = new Scope<INT>(new Variable<INT>("scope1", new Multiply(new Constant(4), new Constant(8))))
         {
             SubToken = new Add(new MultTwo(new Subtract(new Reference<INT>("scope1"), new Constant(1))), new MultTwo(new Reference<INT>("scope1")))
         };
@@ -30,9 +30,10 @@ public class TESTER : MonoBehaviour
         });
         var rule_alias = Rule.Create.For<MultTwo, INT>(P =>
         {
-            return P.TokenFunction<MultTwo>()
-            .WithArgs(P.TokenFunction<MultTwo>()
-                .WithArgs(P.AsIs(new Constant(5))));
+            return P.TokenEnvironment<Scope<INT>>().Environment(P.AsIs(new Variable<INT>("scope2", new Constant(5))))
+            {
+                SubTokenProxy
+            }
         });
         var context = new Context()
         {
