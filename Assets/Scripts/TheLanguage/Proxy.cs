@@ -142,7 +142,7 @@ namespace Proxy.Creator
             where REnv : Resolution.Operation
             where ROut : class, ResObj
         { return new(envModifiers); }
-        public static Proxies.Accumulator<TNew, TOrig, RElement, RGen, RInto> WithEnvironment<TNew, TOrig, RElement, RGen, RInto>
+        public static Proxies.Accumulator<TNew, TOrig, RElement, RGen, RInto> OverTokens<TNew, TOrig, RElement, RGen, RInto>
             (this Base<TOrig, RInto>.IMaker<Token.Accumulator<RElement, RGen, RInto>, TNew> _, IProxy<TOrig, Resolution.IMulti<RElement>> iterator, string elementLabel, IProxy<TOrig, RGen> generator)
             where TNew : Token.Accumulator<RElement, RGen, RInto>
             where TOrig : IToken

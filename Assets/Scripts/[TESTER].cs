@@ -28,16 +28,18 @@ public class TESTER : MonoBehaviour
             new Tokens.Multi.Union<r.Number>(
                 Iter.Over(1, 6, 4, 3, 8, 7, 2, 9, 5).Map(x => new Fixed<r.Number>(x).YieldToken()))
             .FilterToken("x", new Tokens.Number.Compare.GreaterThan(new Reference<r.Number>("x"), new Fixed<r.Number>(4)));
+        var token_union =
+            new Tokens.Multi.Union<r.Number>(Iter.Over(1, 6, 4, 3, 8, 7, 2, 9, 5).Map(x => new Fixed<r.Number>(x).YieldToken()));
         var rule_co = Rule.Create.For<Fixed<r.Number>, r.Number>(P =>
         {
             return P.AsIs(new Fixed<r.Number>(2));
         });
-        var rule_alias = Rule.Create.For<MultTwo, r.Number>(P =>
+        var rule_alias = Rule.Create.For<Union<r.Number>, r.Multi<r.Number>>(P =>
         {
-            return P.Construct<Scope<r.Number>>().WithEnvironment(P.AsIs(new Variable<r.Number>("scope2", new Fixed<r.Number>(8)))) with
+            return P.Construct<Scope<r.Multi<r.Number>>>().WithEnvironment(P.AsIs(new Variable<r.Number>("y", new Fixed<r.Number>(8)))) with
             {
-                SubTokenProxy = P.Construct<Add>()
-                .WithArgs(P.AsIs(new Reference<r.Number>("scope2")), P.AsIs(new Reference<r.Number>("scope1")))
+                SubTokenProxy = P.Construct<Filter<r.Number>>().OverTokens(P.Construct<Union<r.Number>>().WithOriginalArgs(),
+                "x", P.AsIs(new Tokens.Number.Compare.GreaterThan(new Reference<r.Number>("x"), new Reference<r.Number>("y"))))
             };
         });
 
@@ -48,8 +50,8 @@ public class TESTER : MonoBehaviour
             Rules = new(),
             Variables = new(7)
         };
-        var my_rules = Iter.Over(rule_alias).Take(0);
-        Debug.Log(await token_accu.ResolveWithRules(context with { Rules = new() { Elements = my_rules } } ));
+        var my_rules = Iter.Over(rule_alias).Take(1);
+        Debug.Log(await token_union.ResolveWithRules(context with { Rules = new() { Elements = my_rules } } ));
         In<AClass> a = null;
         In<BClass> b = null;
         b = a;
