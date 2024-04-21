@@ -76,7 +76,25 @@ namespace Proxies
 
         private readonly PList<IProxy<TOrig, REnv>> _envModifiers;
     }
-
+    public sealed record Accumulator<TNew, TOrig, RElement, RGen, RInto> : FunctionProxy<TOrig, RInto>
+        where TNew : Token.Accumulator<RElement, RGen, RInto>
+        where TOrig : IToken
+        where RElement : class, ResObj
+        where RGen : class, ResObj
+        where RInto : class, ResObj
+    {
+        public Accumulator(IProxy<TOrig, Resolution.IMulti<RElement>> iterator, string elementLabel, IProxy<TOrig, RGen> generator) : base(iterator, generator)
+        {
+            _elementLabel = elementLabel;
+        }
+        protected override IToken<RInto> ConstructFromArgs(List<IToken> tokens)
+        {
+            return (Token.Accumulator<RElement, RGen, RInto>)typeof(TNew)
+                .GetConstructor(new Type[] { typeof(IToken<Resolution.IMulti<RElement>>), typeof(string), typeof(IToken<RGen>) })
+                .Invoke(new object[] { tokens[0], _elementLabel, tokens[1] });
+        }
+        private readonly string _elementLabel;
+    }
     public sealed record Variable<TOrig, R> : Proxy<TOrig, Resolutions.DeclareVariable>
         where TOrig : IToken
         where R : class, ResObj

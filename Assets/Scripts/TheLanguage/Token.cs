@@ -60,14 +60,14 @@ namespace Token
     /// <code>(IEnumerable&lt;IToken&lt;<typeparamref name="REnv"/>&gt;&gt;)</code>
     /// </summary>
     /// <typeparam name="REnv"></typeparam>
-    public abstract record SubEnvironment<REnv, ROut> : Combiner<REnv, ROut>
+    public abstract record SubEnvironment<REnv, ROut> : Token.Unsafe.TokenFunction<ROut>
         where REnv : Resolution.Operation
         where ROut : class, ResObj
     {
         public IToken<ROut> SubToken { get; init; }
         protected SubEnvironment(IEnumerable<IToken<REnv>> envModifiers) : base(envModifiers) { }
         public sealed override bool IsFallibleFunction => SubToken.IsFallible;
-        protected sealed override ITask<ROut?> Evaluate(Context context, IEnumerable<REnv> _)
+        protected sealed override ITask<ROut?> TransformTokens(Context context, List<ResObj> _)
         {
             return SubToken.ResolveWithRules(context);
         }

@@ -19,7 +19,7 @@ public class TESTER : MonoBehaviour
     // Start is called before the first frame update
     async void Start()
     {
-        //this beats herion
+        // its important to rememeber that P.AsIs() will work just fine unless a proxies' arguements will have OriginalArgs somewhere.
         var token_monster = new Scope<INT>(new Variable<INT>("scope1", new Multiply(new Constant(4), new Constant(8))))
         {
             SubToken = new Add(new MultTwo(new Subtract(new Reference<INT>("scope1"), new Constant(1))), new MultTwo(new Reference<INT>("scope1")))
@@ -30,9 +30,9 @@ public class TESTER : MonoBehaviour
         });
         var rule_alias = Rule.Create.For<MultTwo, INT>(P =>
         {
-            return P.TokenEnvironment<Scope<INT>>().Environment(P.AsIs(new Variable<INT>("scope2", new Constant(8)))) with
+            return P.Construct<Scope<INT>>().WithEnvironment(P.AsIs(new Variable<INT>("scope2", new Constant(8)))) with
             {
-                SubTokenProxy = P.TokenFunction<Add>()
+                SubTokenProxy = P.Construct<Add>()
                 .WithArgs(P.AsIs(new Reference<INT>("scope2")), P.AsIs(new Reference<INT>("scope1")))
             };
         });
@@ -49,6 +49,7 @@ public class TESTER : MonoBehaviour
         In<AClass> a = null;
         In<BClass> b = null;
         b = a;
+
     }
 
     // Update is called once per frame
