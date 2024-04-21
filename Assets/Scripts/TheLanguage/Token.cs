@@ -75,35 +75,52 @@ namespace Token
 
     // IMPORTANT: tokens now MUST be absolutely pure stateless in order for this to work.
     // 'Lambda' is resolved multiple times as the same object.
-    public abstract record Accumulator<RElement, RGen, ROut> : Unsafe.TokenFunction<ROut>
+    public abstract record Accumulator<RElement, RGen, RInto> : Unsafe.TokenFunction<RInto>
         where RElement : class, ResObj
         where RGen : class, ResObj
-        where ROut : class, ResObj
+        where RInto : class, ResObj
     {
-        public string ElementLabel { get; init; }
-        public IToken<RGen> Lambda { get; init; }
-        public override bool IsFallibleFunction => Lambda.IsFallible;
+        public override bool IsFallibleFunction => _lambda.IsFallible;
 
-        protected abstract ITask<ROut?> Accumulate(Context context, IEnumerable<(RElement element, RGen output)> outputs);
-        protected Accumulator(IToken<Resolution.IMulti<RElement>> iterator) : base(iterator) { }
-        protected override async ITask<ROut?> TransformTokens(Context context, List<ResObj> resolutions)
+        protected abstract ITask<RInto?> Accumulate(Context context, IEnumerable<(RElement element, RGen output)> outputs);
+        protected Accumulator(IToken<Resolution.IMulti<RElement>> iterator, string elementLabel, IToken<RGen> lambda) : base(iterator)
+        {
+            _elementLabel = elementLabel;
+            _lambda = lambda;
+        }
+        protected override async ITask<RInto?> TransformTokens(Context context, List<ResObj> resolutions)
         {
             var iterValues = ((Resolution.IMulti<RElement>)resolutions[0]).Values;
             var generatorTokens = iterValues
-                .Map(x => new Tokens.Scope<Resolutions.Multi<RGen>>(new Tokens.Variable<RElement>(ElementLabel, new Tokens.Determined<RElement>(x)))
+                .Map(x => new Tokens.Scope<Resolutions.Multi<RGen>>(new Tokens.Variable<RElement>(_elementLabel, new Tokens.Determined<RElement>(x)))
                 {
-                    SubToken = new Tokens.Multi.Yield<RGen>(Lambda)
+                    SubToken = new Tokens.Multi.Yield<RGen>(_lambda)
                 });
             var union = new Tokens.Multi.Union<RGen>(generatorTokens);
-            return (await union.Resolve(context) is Resolution.IMulti<RGen> generatorOutputs) ?
-                await Accumulate(context, Iter.Zip(iterValues, generatorOutputs.Values)) :
-                null;
+            var tryGenerate = await union.Resolve(context);
+            while (tryGenerate is Resolution.IMulti<RGen> generatorOutputs)
+            {
+                if (await Accumulate(context, Iter.Zip(iterValues, generatorOutputs.Values)) is RInto o) return o;
+                tryGenerate = await union.Resolve(context);
+            }
+            return null;
         }
+        private readonly string _elementLabel;
+        private readonly IToken<RGen> _lambda;
+    }
+    public abstract record PureAccumulator<RElement, RGen, RInto> : Accumulator<RElement, RGen, RInto>
+        where RElement : class, ResObj
+        where RGen : class, ResObj
+        where RInto : class, ResObj
+    {
+        protected abstract RInto PureAccumulate(IEnumerable<(RElement element, RGen output)> outputs);
+        protected PureAccumulator(IToken<Resolution.IMulti<RElement>> iterator, string elementLabel, IToken<RGen> lambda) : base(iterator, elementLabel, lambda) { }
+        protected override ITask<RInto?> Accumulate(Context _, IEnumerable<(RElement element, RGen output)> outputs) { return Task.FromResult(PureAccumulate(outputs)).AsITask(); }
         
     }
 
     #region Functions
-    // ---- [ Functions ] ----
+        // ---- [ Functions ] ----
 
     public interface IFunction<RArg1, ROut> : Unsafe.IHasArg1<RArg1>, Unsafe.IFunction<ROut>
         where RArg1 : class, ResObj
