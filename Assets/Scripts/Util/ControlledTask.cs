@@ -5,7 +5,7 @@ using MC = MorseCode.ITask;
 
 // Made with duct tape and dreams.
 
-namespace GStructures
+namespace ControlledTask
 {
     public class ControlledTask : MC.ITask
     {

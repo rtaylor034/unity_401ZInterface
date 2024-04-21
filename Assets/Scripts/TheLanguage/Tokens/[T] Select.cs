@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using ResObj = Resolution.IResolution;
 using Token;
 using Perfection;
-using r_ = Resolutions;
+using r = Resolutions;
 using MorseCode.ITask;
 #nullable enable
 namespace Tokens.Select
@@ -15,18 +15,20 @@ namespace Tokens.Select
 
         protected override ITask<R?> Evaluate(Context context, Resolution.IMulti<R> in1)
         {
-            throw new System.NotImplementedException();
+            return context.InputProvider.GetSelection(in1.Values);
         }
     }
 
-    public sealed record Multiple<R> : Function<Resolution.IMulti<R>, r_.Multi<R>> where R : class, ResObj
+    public sealed record Multiple<R> : Function<Resolution.IMulti<R>, r.Number, r.Multi<R>> where R : class, ResObj
     {
         public override bool IsFallibleFunction => true;
-        public Multiple(IToken<Resolution.IMulti<R>> from) : base(from) { }
+        public Multiple(IToken<Resolution.IMulti<R>> from, IToken<r.Number> count) : base(from, count) { }
 
-        protected override ITask<r_.Multi<R>?> Evaluate(Context context, Resolution.IMulti<R> in1)
+        protected override async ITask<r.Multi<R>?> Evaluate(Context context, Resolution.IMulti<R> from, r.Number count)
         {
-            throw new System.NotImplementedException();
+            return (await context.InputProvider.GetMultiSelection(from.Values, count.Value) is IEnumerable<R> selections) ?
+                new() { Values = selections } :
+                null;
         }
     }
 }

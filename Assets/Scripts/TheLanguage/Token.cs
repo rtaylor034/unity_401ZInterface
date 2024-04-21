@@ -10,7 +10,11 @@ namespace Token
 {
     #region Structures
 #nullable enable
-    public interface IInputProvider { }
+    public interface IInputProvider
+    {
+        public ITask<R?> GetSelection<R>(IEnumerable<R> outOf) where R : class, ResObj;
+        public ITask<IEnumerable<R>?> GetMultiSelection<R>(IEnumerable<R> outOf, int count) where R : class, ResObj;
+    }
     public record Context
     {
         public IInputProvider InputProvider { get; init; }
