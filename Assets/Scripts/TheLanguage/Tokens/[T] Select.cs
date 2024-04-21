@@ -13,9 +13,9 @@ namespace Tokens.Select
         public override bool IsFallibleFunction => true;
         public One(IToken<Resolution.IMulti<R>> from) : base(from) { }
 
-        protected override ITask<R?> Evaluate(Context context, Resolution.IMulti<R> in1)
+        protected override ITask<R?> Evaluate(Context context, Resolution.IMulti<R> from)
         {
-            return context.InputProvider.GetSelection(in1.Values);
+            return context.InputProvider.ReadSelection(from.Values);
         }
     }
 
@@ -26,7 +26,7 @@ namespace Tokens.Select
 
         protected override async ITask<r.Multi<R>?> Evaluate(Context context, Resolution.IMulti<R> from, r.Number count)
         {
-            return (await context.InputProvider.GetMultiSelection(from.Values, count.Value) is IEnumerable<R> selections) ?
+            return (await context.InputProvider.ReadMultiSelection(from.Values, count.Value) is IEnumerable<R> selections) ?
                 new() { Values = selections } :
                 null;
         }

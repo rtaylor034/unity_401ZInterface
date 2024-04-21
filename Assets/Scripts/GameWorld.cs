@@ -6,14 +6,20 @@ using System.Threading.Tasks;
 using MorseCode.ITask;
 
 #nullable enable
-public class GameWorld : MonoBehaviour, Token.IInputProvider
+public class GameWorld : MonoBehaviour, Token.IInputProvider, Token.IOutputProvider
 {
-    ITask<IEnumerable<R>?> IInputProvider.GetMultiSelection<R>(IEnumerable<R> outOf, int count)
+
+    ITask<IEnumerable<R>?> IInputProvider.ReadMultiSelection<R>(IEnumerable<R> outOf, int count)
     {
         throw new System.NotImplementedException();
     }
 
-    ITask<R?> IInputProvider.GetSelection<R>(IEnumerable<R> outOf) where R : class
+    ITask<R?> IInputProvider.ReadSelection<R>(IEnumerable<R> outOf) where R : class
+    {
+        throw new System.NotImplementedException();
+    }
+
+    void IOutputProvider.WriteState(Context context)
     {
         throw new System.NotImplementedException();
     }

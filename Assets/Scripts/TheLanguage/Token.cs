@@ -12,12 +12,17 @@ namespace Token
 #nullable enable
     public interface IInputProvider
     {
-        public ITask<R?> GetSelection<R>(IEnumerable<R> outOf) where R : class, ResObj;
-        public ITask<IEnumerable<R>?> GetMultiSelection<R>(IEnumerable<R> outOf, int count) where R : class, ResObj;
+        public ITask<R?> ReadSelection<R>(IEnumerable<R> outOf) where R : class, ResObj;
+        public ITask<IEnumerable<R>?> ReadMultiSelection<R>(IEnumerable<R> outOf, int count) where R : class, ResObj;
+    }
+    public interface IOutputProvider
+    {
+        public void WriteState(Context context);
     }
     public record Context
     {
         public IInputProvider InputProvider { get; init; }
+        public IOutputProvider OutputProvider { get; init; }
         public GameState State { get; init; }
         public Updater<GameState> dState { init => State = value(State); }
         public PMap<string, ResObj> Variables { get; init; }
