@@ -73,6 +73,23 @@ namespace Token
         }
     }
 
+    public abstract record Accumulator<RElement, RGen, ROut> : Token<ROut>
+        where RElement : class, ResObj
+        where RGen : class, ResObj
+        where ROut : class, ResObj
+    {
+        protected Accumulator(string elementLabel, IToken<Resolution.IMulti<RElement>> iterator, IToken<RGen> lambda)
+        {
+            _elementLabel = elementLabel;
+            _iterator = iterator;
+            _lambda = lambda;
+        }
+
+        private readonly string _elementLabel;
+        private readonly IToken<Resolution.IMulti<RElement>> _iterator;
+        private readonly IToken<RGen> _lambda;
+    }
+
     #region Functions
     // ---- [ Functions ] ----
 

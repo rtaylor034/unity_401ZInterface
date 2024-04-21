@@ -12,6 +12,11 @@ namespace Resolutions
         public int Value { get; init; }
         public Updater<int> dValue { init => Value = value(Value); }
     }
+    public sealed record Bool : NoOp
+    {
+        public bool IsTrue { get; init; }
+        public Updater<bool> dIsTrue { init => IsTrue = value(IsTrue); }
+    }
 
     public sealed record Multi<R> : Operation, IMulti<R> where R : ResObj
     {
