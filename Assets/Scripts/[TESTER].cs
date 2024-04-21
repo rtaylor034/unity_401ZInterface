@@ -7,35 +7,40 @@ using Proxy;
 using UnityEngine;
 using System.Threading.Tasks;
 using MorseCode.ITask;
-using r_ = Resolutions;
+using r = Resolutions;
 using Proxy.Creator;
 using Perfection;
 using Tokens;
 using Tokens.Number;
-using INT = Resolutions.Number;
 using Tokens.Alias;
+using Tokens.Multi;
 public class TESTER : MonoBehaviour
 {
     // Start is called before the first frame update
     async void Start()
     {
         // its important to rememeber that P.AsIs() will work just fine unless a proxies' arguements will have OriginalArgs somewhere.
-        var token_monster = new Scope<INT>(new Variable<INT>("scope1", new Multiply(new Constant(4), new Constant(8))))
+        var token_monster = new Scope<r.Number>(new Variable<r.Number>("scope1", new Multiply(new Fixed<r.Number>(4), new Fixed<r.Number>(8))))
         {
-            SubToken = new Add(new MultTwo(new Subtract(new Reference<INT>("scope1"), new Constant(1))), new MultTwo(new Reference<INT>("scope1")))
+            SubToken = new Add(new MultTwo(new Subtract(new Reference<r.Number>("scope1"), new Fixed<r.Number>(5))), new MultTwo(new Reference<r.Number>("scope1")))
         };
-        var rule_co = Rule.Create.For<Constant, INT>(P =>
+        var token_accu =
+            new Tokens.Multi.Union<r.Number>(
+                Iter.Over(1, 6, 4, 3, 8, 7, 2, 9, 5).Map(x => new Fixed<r.Number>(x).YieldToken()))
+            .FilterToken("x", new Tokens.Number.Compare.GreaterThan(new Reference<r.Number>("x"), new Fixed<r.Number>(4)));
+        var rule_co = Rule.Create.For<Fixed<r.Number>, r.Number>(P =>
         {
-            return P.AsIs(new Constant(2));
+            return P.AsIs(new Fixed<r.Number>(2));
         });
-        var rule_alias = Rule.Create.For<MultTwo, INT>(P =>
+        var rule_alias = Rule.Create.For<MultTwo, r.Number>(P =>
         {
-            return P.Construct<Scope<INT>>().WithEnvironment(P.AsIs(new Variable<INT>("scope2", new Constant(8)))) with
+            return P.Construct<Scope<r.Number>>().WithEnvironment(P.AsIs(new Variable<r.Number>("scope2", new Fixed<r.Number>(8)))) with
             {
                 SubTokenProxy = P.Construct<Add>()
-                .WithArgs(P.AsIs(new Reference<INT>("scope2")), P.AsIs(new Reference<INT>("scope1")))
+                .WithArgs(P.AsIs(new Reference<r.Number>("scope2")), P.AsIs(new Reference<r.Number>("scope1")))
             };
         });
+
         var context = new Context()
         {
             InputProvider = null,
@@ -43,9 +48,8 @@ public class TESTER : MonoBehaviour
             Rules = new(),
             Variables = new(7)
         };
-        var bruh = 1.Sequence(x => x + 1).ContinueAfter(x => x.Take(10).Also(0.Yield(5))).Take(20);
-        Debug.Log(new PList<int>() { Elements = bruh });
-        Debug.Log(await token_monster.ResolveWithRules(context with { Rules = new() { Elements = Iter.Over(rule_alias) } } ));
+        var my_rules = Iter.Over(rule_alias).Take(0);
+        Debug.Log(await token_accu.ResolveWithRules(context with { Rules = new() { Elements = my_rules } } ));
         In<AClass> a = null;
         In<BClass> b = null;
         b = a;

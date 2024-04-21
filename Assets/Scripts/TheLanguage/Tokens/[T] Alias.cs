@@ -3,18 +3,18 @@ using System.Collections.Generic;
 using ResObj = Resolution.IResolution;
 using Token;
 using Perfection;
-using r_ = Resolutions;
+using r = Resolutions;
 using Proxy.Creator;
 using Proxy;
 namespace Tokens.Alias
 {
-    public record MultTwo : Token.Alias.OneArg<r_.Number, r_.Number>
+    public record MultTwo : Token.Alias.OneArg<r.Number, r.Number>
     {
-        private readonly static IProxy<MultTwo, r_.Number> PROXY = Create.For<MultTwo, r_.Number>(P =>
+        private readonly static IProxy<MultTwo, r.Number> PROXY = Create.For<MultTwo, r.Number>(P =>
         {
             return P.Construct<Number.Multiply>()
-                .WithArgs(P.OriginalArg1(), P.AsIs(new Number.Constant(2)));
+                .WithArgs(P.OriginalArg1(), P.AsIs(new Fixed<r.Number>(2)));
         });
-        public MultTwo(IToken<r_.Number> to) : base(to, PROXY) { }
+        public MultTwo(IToken<r.Number> to) : base(to, PROXY) { }
     }
 }

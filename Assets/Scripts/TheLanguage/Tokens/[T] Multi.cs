@@ -36,4 +36,15 @@ namespace Tokens.Multi
             return new() { Values = outputs.Filter(x => x.output.IsTrue).Map(x => x.element) };
         }
     }
+    public static class _Extensions
+    {
+        public static Filter<R> FilterToken<R>(this IToken<Res.IMulti<R>> iterator, string elementLabel, IToken<r.Bool> lambda) where R : class, ResObj
+        {
+            return new(iterator, elementLabel, lambda);
+        }
+        public static Yield<R> YieldToken<R>(this IToken<R> token) where R : class, ResObj
+        {
+            return new(token);
+        }
+    }
 }

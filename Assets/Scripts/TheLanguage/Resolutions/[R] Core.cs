@@ -11,11 +11,13 @@ namespace Resolutions
     {
         public int Value { get; init; }
         public Updater<int> dValue { init => Value = value(Value); }
+        public static implicit operator Number(int value) => new() { Value = value };
     }
     public sealed record Bool : NoOp
     {
         public bool IsTrue { get; init; }
         public Updater<bool> dIsTrue { init => IsTrue = value(IsTrue); }
+        public static implicit operator Bool(bool value) => new() { IsTrue = value };
     }
 
     public sealed record Multi<R> : Operation, IMulti<R> where R : ResObj
@@ -26,6 +28,10 @@ namespace Resolutions
         protected override Context UpdateContext(Context context) => Values.AccumulateInto(context, (p, x) => p.WithResolution(x));
 
         private readonly PList<R> _list;
+        public override string ToString()
+        {
+            return $"[Multi<{typeof(R).Name}> : {_list}]";
+        }
     }
 
     public sealed record DeclareVariable : Operation

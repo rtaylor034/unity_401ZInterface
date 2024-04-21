@@ -92,7 +92,7 @@ namespace Token
         {
             var iterValues = ((Resolution.IMulti<RElement>)resolutions[0]).Values;
             var generatorTokens = iterValues
-                .Map(x => new Tokens.Scope<Resolutions.Multi<RGen>>(new Tokens.Variable<RElement>(_elementLabel, new Tokens.Determined<RElement>(x)))
+                .Map(x => new Tokens.Scope<Resolutions.Multi<RGen>>(new Tokens.Variable<RElement>(_elementLabel, new Tokens.Fixed<RElement>(x)))
                 {
                     SubToken = new Tokens.Multi.Yield<RGen>(_lambda)
                 });
