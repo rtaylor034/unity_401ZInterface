@@ -211,6 +211,12 @@ namespace Perfection
                 if (i >= amount) yield break;
             }
         }
+        public static IEnumerable<(T1 a, T2 b)> Zip<T1, T2>(this IEnumerable<T1> enumerableA, IEnumerable<T2> enumerableB)
+        {
+            var iter1 = enumerableA.GetEnumerator();
+            var iter2 = enumerableB.GetEnumerator();
+            while (iter1.MoveNext() && iter2.MoveNext()) yield return (iter1.Current, iter2.Current);
+        }
         public static IEnumerable<T> Skip<T>(this IEnumerable<T> enumerable, int amount)
         {
             var iter = enumerable.GetEnumerator();

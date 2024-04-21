@@ -73,21 +73,33 @@ namespace Token
         }
     }
 
-    public abstract record Accumulator<RElement, RGen, ROut> : Token<ROut>
+    // IMPORTANT: tokens now MUST be absolutely pure stateless in order for this to work.
+    // 'Lambda' is resolved multiple times as the same object.
+    public abstract record Accumulator<RElement, RGen, ROut> : Unsafe.TokenFunction<ROut>
         where RElement : class, ResObj
         where RGen : class, ResObj
         where ROut : class, ResObj
     {
-        protected Accumulator(string elementLabel, IToken<Resolution.IMulti<RElement>> iterator, IToken<RGen> lambda)
-        {
-            _elementLabel = elementLabel;
-            _iterator = iterator;
-            _lambda = lambda;
-        }
+        public string ElementLabel { get; init; }
+        public IToken<RGen> Lambda { get; init; }
+        public override bool IsFallibleFunction => Lambda.IsFallible;
 
-        private readonly string _elementLabel;
-        private readonly IToken<Resolution.IMulti<RElement>> _iterator;
-        private readonly IToken<RGen> _lambda;
+        protected abstract ITask<ROut?> Accumulate(Context context, IEnumerable<(RElement element, RGen output)> outputs);
+        protected Accumulator(IToken<Resolution.IMulti<RElement>> iterator) : base(iterator) { }
+        protected override async ITask<ROut?> TransformTokens(Context context, List<ResObj> resolutions)
+        {
+            var iterValues = ((Resolution.IMulti<RElement>)resolutions[0]).Values;
+            var generatorTokens = iterValues
+                .Map(x => new Tokens.Scope<Resolutions.Multi<RGen>>(new Tokens.Variable<RElement>(ElementLabel, new Tokens.Determined<RElement>(x)))
+                {
+                    SubToken = new Tokens.Multi.Yield<RGen>(Lambda)
+                });
+            var union = new Tokens.Multi.Union<RGen>(generatorTokens);
+            return (await union.Resolve(context) is Resolution.IMulti<RGen> generatorOutputs) ?
+                await Accumulate(context, Iter.Zip(iterValues, generatorOutputs.Values)) :
+                null;
+        }
+        
     }
 
     #region Functions
@@ -188,7 +200,6 @@ namespace Token
 
         protected abstract ITask<ROut?> Evaluate(Context context, IEnumerable<RArg> inputs);
         protected Combiner(IEnumerable<IToken<RArg>> tokens) : base(tokens) { }
-        protected Combiner(params IToken<RArg>[] tokens) : this(tokens as IEnumerable<IToken<RArg>>) { }
         protected sealed override ITask<ROut?> TransformTokens(Context context, List<ResObj> tokens) { return Evaluate(context, tokens.Map(x => (RArg)x)); }
     }
     #region Pure Functions
@@ -234,7 +245,6 @@ namespace Token
 
         protected abstract ROut EvaluatePure(IEnumerable<RArg> inputs);
         protected PureCombiner(IEnumerable<IToken<RArg>> tokens) : base(tokens) { }
-        protected PureCombiner(params IToken<RArg>[] tokens) : this(tokens as IEnumerable<IToken<RArg>>) { }
         protected sealed override ITask<ROut?> Evaluate(Context _, IEnumerable<RArg> inputs) => Task.FromResult(EvaluatePure(inputs)).AsITask();
     }
     // ----
@@ -326,7 +336,7 @@ namespace Token.Unsafe
         }
 
         protected readonly PList<IToken> ArgTokens;
-        protected abstract ITask<R?> TransformTokens(Context context, List<ResObj> tokens);
+        protected abstract ITask<R?> TransformTokens(Context context, List<ResObj> resolutions);
         protected TokenFunction(IEnumerable<IToken> tokens)
         {
             ArgTokens = new() { Elements = tokens };

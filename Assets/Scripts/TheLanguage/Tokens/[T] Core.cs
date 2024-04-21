@@ -47,7 +47,15 @@ namespace Tokens
 
         private readonly Rule.IRule _rule;
     }
-
+    public sealed record Determined<R> : Infallible<R> where R : class, ResObj
+    {
+        public Determined(R resolution)
+        {
+            _resolution = resolution;
+        }
+        protected override R InfallibleResolve(Context _) { return _resolution; }
+        private readonly R _resolution;
+    }
     public sealed record Reference<R> : Infallible<R> where R : class, ResObj
     {
         public Reference(string toLabel) => _toLabel = toLabel;
