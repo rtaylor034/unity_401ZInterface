@@ -28,9 +28,9 @@ namespace Tokens.Multi
             return new() { Values = in1.Yield() };
         }
     }
-    public sealed record Where<R> : PureAccumulator<R, r.Bool, r.Multi<R>> where R : class, ResObj
+    public sealed record Filter<R> : PureAccumulator<R, r.Bool, r.Multi<R>> where R : class, ResObj
     {
-        public Where(IToken<Res.IMulti<R>> iterator, string elementLabel, IToken<r.Bool> lambda) : base(iterator, elementLabel, lambda) { }
+        public Filter(IToken<Res.IMulti<R>> iterator, string elementLabel, IToken<r.Bool> lambda) : base(iterator, elementLabel, lambda) { }
         protected override r.Multi<R> PureAccumulate(IEnumerable<(R element, r.Bool output)> outputs)
         {
             return new() { Values = outputs.Filter(x => x.output.IsTrue).Map(x => x.element) };
