@@ -23,12 +23,6 @@ namespace Tokens
         }
     }
 
-    public sealed record Scope<R> : SubEnvironment<r_.DeclareVariable, R> where R : class, ResObj
-    {
-        public Scope(IEnumerable<IToken<r_.DeclareVariable>> variables) : base(variables) { }
-        public Scope(params IToken<r_.DeclareVariable>[] variables) : base(variables) { }
-    }
-
     public sealed record Variable<R> : Token<r_.DeclareVariable> where R : class, ResObj
     {
         public Variable(string label, IToken<R> token)
