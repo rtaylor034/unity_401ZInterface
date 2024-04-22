@@ -55,6 +55,15 @@ namespace Generated
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""cancel"",
+                    ""type"": ""Button"",
+                    ""id"": ""a81ef7f9-b45d-4441-9adb-036c6c3e2682"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -71,8 +80,30 @@ namespace Generated
                 },
                 {
                     ""name"": """",
+                    ""id"": ""a71a3a29-fa6a-4008-bed4-5bbe55bd7c21"",
+                    ""path"": ""<Keyboard>/s"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""left"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
                     ""id"": ""9462b248-fe2d-46cd-8c13-fed37473bf7d"",
                     ""path"": ""<Keyboard>/rightArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""right"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""039ed47a-2bc6-416a-bbc3-f444b5a6a38f"",
+                    ""path"": ""<Keyboard>/d"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
@@ -94,11 +125,33 @@ namespace Generated
                 {
                     ""name"": """",
                     ""id"": ""500729c4-2cd5-4664-b0ae-52d83a2c3dc8"",
-                    ""path"": ""<Keyboard>/w"",
+                    ""path"": ""<Keyboard>/j"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""enter"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""33c716c0-652e-42fa-a013-3118cf9166b9"",
+                    ""path"": ""<Keyboard>/escape"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""cancel"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""f6b648c5-82d4-4ca6-a8f5-34e827aa4928"",
+                    ""path"": ""<Keyboard>/q"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""cancel"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -112,6 +165,7 @@ namespace Generated
             m_Selection_left = m_Selection.FindAction("left", throwIfNotFound: true);
             m_Selection_right = m_Selection.FindAction("right", throwIfNotFound: true);
             m_Selection_enter = m_Selection.FindAction("enter", throwIfNotFound: true);
+            m_Selection_cancel = m_Selection.FindAction("cancel", throwIfNotFound: true);
         }
 
         public void Dispose()
@@ -176,6 +230,7 @@ namespace Generated
         private readonly InputAction m_Selection_left;
         private readonly InputAction m_Selection_right;
         private readonly InputAction m_Selection_enter;
+        private readonly InputAction m_Selection_cancel;
         public struct SelectionActions
         {
             private @TestInput m_Wrapper;
@@ -183,6 +238,7 @@ namespace Generated
             public InputAction @left => m_Wrapper.m_Selection_left;
             public InputAction @right => m_Wrapper.m_Selection_right;
             public InputAction @enter => m_Wrapper.m_Selection_enter;
+            public InputAction @cancel => m_Wrapper.m_Selection_cancel;
             public InputActionMap Get() { return m_Wrapper.m_Selection; }
             public void Enable() { Get().Enable(); }
             public void Disable() { Get().Disable(); }
@@ -201,6 +257,9 @@ namespace Generated
                 @enter.started += instance.OnEnter;
                 @enter.performed += instance.OnEnter;
                 @enter.canceled += instance.OnEnter;
+                @cancel.started += instance.OnCancel;
+                @cancel.performed += instance.OnCancel;
+                @cancel.canceled += instance.OnCancel;
             }
 
             private void UnregisterCallbacks(ISelectionActions instance)
@@ -214,6 +273,9 @@ namespace Generated
                 @enter.started -= instance.OnEnter;
                 @enter.performed -= instance.OnEnter;
                 @enter.canceled -= instance.OnEnter;
+                @cancel.started -= instance.OnCancel;
+                @cancel.performed -= instance.OnCancel;
+                @cancel.canceled -= instance.OnCancel;
             }
 
             public void RemoveCallbacks(ISelectionActions instance)
@@ -236,6 +298,7 @@ namespace Generated
             void OnLeft(InputAction.CallbackContext context);
             void OnRight(InputAction.CallbackContext context);
             void OnEnter(InputAction.CallbackContext context);
+            void OnCancel(InputAction.CallbackContext context);
         }
     }
 }

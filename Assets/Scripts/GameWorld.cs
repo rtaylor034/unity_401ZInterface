@@ -37,7 +37,7 @@ public class GameWorld : MonoBehaviour, FourZeroOne.IInputProvider, FourZeroOne.
 
     async ITask<R> IInputProvider.ReadSelection<R>(IEnumerable<R> outOf) where R : class
     {
-        return (await SelectionLogic(outOf, 1))[0];
+        return (await SelectionLogic(outOf, 1))?[0];
     }
     private async ITask<List<R>> SelectionLogic<R>(IEnumerable<R> outOf, int count)
     {
@@ -64,6 +64,7 @@ public class GameWorld : MonoBehaviour, FourZeroOne.IInputProvider, FourZeroOne.
         input.Selection.left.performed += _ => __Left();
         input.Selection.right.performed += _ => __Right();
         input.Selection.enter.performed += _ => __Select();
+        input.Selection.cancel.performed += _ => __Cancel();
         input.Enable();
         __Hover();
 
@@ -71,7 +72,7 @@ public class GameWorld : MonoBehaviour, FourZeroOne.IInputProvider, FourZeroOne.
         foreach (var (visual, _) in options) Destroy(visual);
         input.Disable();
         input.Dispose();
-        Debug.Log($"SELECTED: {new PList<R>() { Elements = o }}");
+        Debug.Log($"SELECTED: {new PList<R>() { Elements = o.Or(new()) }}");
         return o;
 
         void __Left()
@@ -103,6 +104,11 @@ public class GameWorld : MonoBehaviour, FourZeroOne.IInputProvider, FourZeroOne.
                 o.Add(sel.data);
                 if (o.Count >= count) resolveOnAllSelected.Resolve();
             }
+        }
+        void __Cancel()
+        {
+            o = null;
+            resolveOnAllSelected.Resolve();
         }
     }
 

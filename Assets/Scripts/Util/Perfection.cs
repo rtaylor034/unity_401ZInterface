@@ -249,7 +249,7 @@ namespace Perfection
             foreach (var v in arr) yield return v;
         }
     }
-    public static class Misc_ext
+    public static class Misc
     {
         public static List<T> Reversed<T>(this List<T> list)
         {
@@ -263,7 +263,18 @@ namespace Perfection
             return list;
         }
     }
-    public static class Math_ext
+    public static class Null
+    {
+        public static T Or<T>(this T? obj, T nullAlternative) where T : class
+        {
+            return (obj is null) ? nullAlternative : obj;
+        }
+        public static T OrElse<T>(this T? obj, Func<T> nullAlternative) where T : class
+        {
+            return (obj is null) ? nullAlternative() : obj;
+        }
+    }
+    public static class Integer
     {
         public static int Abs(this int value) => Math.Abs(value);
     }
