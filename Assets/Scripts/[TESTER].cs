@@ -20,7 +20,7 @@ public class TESTER : MonoBehaviour
     async void Start()
     {
         // its important to rememeber that P.AsIs() will work just fine unless a proxies' arguements will have OriginalArgs somewhere.
-        var token_monster = new Scope<r.Number>(new Variable<r.Number>("scope1", new Multiply(new Fixed<r.Number>(4), new Fixed<r.Number>(8))))
+        var token_monster = new SubEnvironment<r.Number>(new Variable<r.Number>("scope1", new Multiply(new Fixed<r.Number>(4), new Fixed<r.Number>(8))))
         {
             SubToken = new Add(new MultTwo(new Subtract(new Reference<r.Number>("scope1"), new Fixed<r.Number>(5))), new MultTwo(new Reference<r.Number>("scope1")))
         };
@@ -36,22 +36,23 @@ public class TESTER : MonoBehaviour
         });
         var rule_alias = Rule.Create.For<Union<r.Number>, r.Multi<r.Number>>(P =>
         {
-            return P.Construct<Scope<r.Multi<r.Number>>>().WithEnvironment(P.AsIs(new Variable<r.Number>("y", new Fixed<r.Number>(8)))) with
+            return P.Construct<SubEnvironment<r.Multi<r.Number>>>().WithEnvironment(P.AsIs(new Variable<r.Number>("y", new Fixed<r.Number>(8)))) with
             {
                 SubTokenProxy = P.Construct<Filter<r.Number>>().OverTokens(P.Construct<Union<r.Number>>().WithOriginalArgs(),
                 "x", P.AsIs(new Tokens.Number.Compare.GreaterThan(new Reference<r.Number>("x"), new Reference<r.Number>("y"))))
             };
         });
 
-        var context = new Context()
+        var context = new Context(null, null)
         {
-            InputProvider = null,
-            State = null,
-            Rules = new(),
-            Variables = new(7)
+            State = new()
+            {
+                Rules = new() { Elements = Iter.Over(rule_alias).Take(0) },
+                Variables = new(7),
+                Board = new() { }
+            }
         };
-        var my_rules = Iter.Over(rule_alias).Take(1);
-        Debug.Log(await token_union.ResolveWithRules(context with { Rules = new() { Elements = my_rules } } ));
+        Debug.Log(await token_monster.ResolveWithRules(context));
         In<AClass> a = null;
         In<BClass> b = null;
         b = a;

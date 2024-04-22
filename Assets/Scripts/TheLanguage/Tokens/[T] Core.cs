@@ -15,7 +15,8 @@ namespace Tokens
         where ROut : class, ResObj
     {
         public IToken<ROut> SubToken { get; init; }
-        protected SubEnvironment(IEnumerable<Token.Unsafe.IToken> envModifiers) : base(envModifiers) { }
+        public SubEnvironment(IEnumerable<Token.Unsafe.IToken> envModifiers) : base(envModifiers) { }
+        public SubEnvironment(params Token.Unsafe.IToken[] envModifiers) : base(envModifiers) { }
         public sealed override bool IsFallibleFunction => SubToken.IsFallible;
         protected sealed override ITask<ROut?> TransformTokens(Context context, List<ResObj> _)
         {
@@ -69,13 +70,13 @@ namespace Tokens
 
         protected override R InfallibleResolve(Context context)
         {
-            return (context.Variables[_toLabel] is R val) ? val :
+            return (context.State.Variables[_toLabel] is R val) ? val :
                 throw new Exception($"Reference token resolved to non-existent or wrongly-typed object.\n" +
                 $"Label: '{_toLabel}'\n" +
                 $"Expected: {typeof(R).Name}\n" +
-                $"Recieved: {context.Variables[_toLabel]?.GetType().Name}\n" +
+                $"Recieved: {context.State.Variables[_toLabel]?.GetType().Name}\n" +
                 $"Current Scope:\n" +
-                $"{context.Variables.Elements.AccumulateInto("", (msg, x) => msg + $"> '{x.key}' : {x.val}")}");
+                $"{context.State.Variables.Elements.AccumulateInto("", (msg, x) => msg + $"> '{x.key}' : {x.val}")}");
         }
 
         private readonly string _toLabel;

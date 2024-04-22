@@ -13,18 +13,18 @@ namespace Resolution
     /// </summary>
     public interface IResolution
     {
-        public Context ChangeContext(Context context);
+        public GameState ChangeState(GameState context);
     }
 
     public abstract record Operation : Unsafe.Resolution
     {
-        protected abstract Context UpdateContext(Context context);
-        protected override sealed Context ChangeContextInternal(Context before) => UpdateContext(before);
+        protected abstract GameState UpdateState(GameState context);
+        protected override sealed GameState ChangeStateInternal(GameState before) => UpdateState(before);
     }
 
     public abstract record NoOp : Unsafe.Resolution
     {
-        protected override sealed Context ChangeContextInternal(Context context) => context;
+        protected override sealed GameState ChangeStateInternal(GameState context) => context;
     }
 
     public interface IMulti<out R> : ResObj where R : ResObj
@@ -37,12 +37,12 @@ namespace Resolution.Unsafe
     //not actually unsafe, just here because you should either extend 'Operation' or 'NoOp'.
     public abstract record Resolution : IResolution
     {
-        protected abstract Context ChangeContextInternal(Context context);
+        protected abstract GameState ChangeStateInternal(GameState context);
         /// <summary>
-        /// <i>Use <see cref="Context.WithResolution(Resolution)"/> instead.</i>
+        /// <i>Use <see cref="GameState.WithResolution(Resolution)"/> instead.</i>
         /// </summary>
         /// <param name="context"></param>
         /// <returns></returns>
-        public Context ChangeContext(Context before) => ChangeContextInternal(before);
+        public GameState ChangeState(GameState before) => ChangeStateInternal(before);
     }
 }

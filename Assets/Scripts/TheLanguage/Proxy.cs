@@ -128,18 +128,14 @@ namespace Proxy.Creator
             where RArgs : class, ResObj
             where ROut : class, ResObj
         { return new(args); }
-        public static Proxies.SubEnvironment<TNew, TOrig, REnv, ROut> WithEnvironment<TNew, TOrig, REnv, ROut>
-            (this Base<TOrig, ROut>.IMaker<Token.SubEnvironment<REnv, ROut>, TNew> _, params IProxy<TOrig, REnv>[] envModifiers)
-            where TNew : Token.SubEnvironment<REnv, ROut>
+        public static Proxies.SubEnvironment<TOrig, ROut> WithEnvironment<TOrig, ROut>
+            (this Base<TOrig, ROut>.IMaker<Tokens.SubEnvironment<ROut>, Tokens.SubEnvironment<ROut>> _, params IProxy<TOrig, ResObj>[] envModifiers)
             where TOrig : IToken
-            where REnv : Resolution.Operation
             where ROut : class, ResObj
         { return new(envModifiers); }
-        public static Proxies.SubEnvironment<TNew, TOrig, REnv, ROut> WithEnvironment<TNew, TOrig, REnv, ROut>
-            (this Base<TOrig, ROut>.IMaker<Token.SubEnvironment<REnv, ROut>, TNew> _, IEnumerable<IProxy<TOrig, REnv>> envModifiers)
-            where TNew : Token.SubEnvironment<REnv, ROut>
+        public static Proxies.SubEnvironment<TOrig, ROut> WithEnvironment<TOrig, ROut>
+            (this Base<TOrig, ROut>.IMaker<Tokens.SubEnvironment<ROut>, Tokens.SubEnvironment<ROut>> _, IEnumerable<IProxy<TOrig, ResObj>> envModifiers)
             where TOrig : IToken
-            where REnv : Resolution.Operation
             where ROut : class, ResObj
         { return new(envModifiers); }
         public static Proxies.Accumulator<TNew, TOrig, RElement, RGen, RInto> OverTokens<TNew, TOrig, RElement, RGen, RInto>

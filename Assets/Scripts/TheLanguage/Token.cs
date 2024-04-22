@@ -21,15 +21,15 @@ namespace Token
     }
     public record Context
     {
-        public IInputProvider InputProvider { get; init; }
-        public IOutputProvider OutputProvider { get; init; }
-        public GameState State { get; init; }
+        public readonly IInputProvider InputProvider;
+        public readonly IOutputProvider OutputProvider;
+        public GameState State { get; init; } 
         public Updater<GameState> dState { init => State = value(State); }
-        public PMap<string, ResObj> Variables { get; init; }
-        public Updater<PMap<string, ResObj>> dVariables { init => Variables = value(Variables); }
-        public PList<Rule.IRule> Rules { get; init; }
-        public Updater<PList<Rule.IRule>> dRules { init => Rules = value(Rules); }
-        public Context WithResolution(ResObj resolution) { return resolution.ChangeContext(this); }
+        public Context(IInputProvider input, IOutputProvider output)
+        {
+            InputProvider = input;
+            OutputProvider = output;
+        }
     }
     #endregion
 
@@ -45,11 +45,14 @@ namespace Token
         public abstract ITask<R?> Resolve(Context context);
         public async ITask<R?> ResolveWithRules(Context context)
         {
-            return context.Rules.Count == 0
+            return context.State.Rules.Count == 0
                 ? await Resolve(context)
-                : await this.ApplyRules(context.Rules.Elements, out var applied).Resolve(context with
+                : await this.ApplyRules(context.State.Rules.Elements, out var applied).Resolve(context with
                 {
-                    dRules = Q => Q with { dElements = Q => Q.Filter(x => !applied.HasMatch(y => ReferenceEquals(x, y))) }
+                    dState = Q => Q with
+                    {
+                        dRules = Q => Q with { dElements = Q => Q.Filter(x => !applied.HasMatch(y => ReferenceEquals(x, y))) }
+                    }
                 });
         }
         public async ITask<ResObj?> ResolveUnsafe(Context context) { return await Resolve(context); }
@@ -83,7 +86,7 @@ namespace Token
         {
             var iterValues = ((Resolution.IMulti<RElement>)resolutions[0]).Values;
             var generatorTokens = iterValues
-                .Map(x => new Tokens.Scope<Resolutions.Multi<RGen>>(new Tokens.Variable<RElement>(_elementLabel, new Tokens.Fixed<RElement>(x)))
+                .Map(x => new Tokens.SubEnvironment<Resolutions.Multi<RGen>>(new Tokens.Variable<RElement>(_elementLabel, new Tokens.Fixed<RElement>(x)))
                 {
                     SubToken = new Tokens.Multi.Yield<RGen>(_lambda)
                 });
@@ -331,7 +334,7 @@ namespace Token.Unsafe
                 {
                     case ResObj resolution:
                         _state.Inputs[_state.Index] = resolution;
-                        _state.Contexts[_state.Index + 1] = context.WithResolution(resolution);
+                        _state.Contexts[_state.Index + 1] = context with { dState = Q => Q.WithResolution(resolution) };
                         _state.Index++;
                         continue;
                     case null:
