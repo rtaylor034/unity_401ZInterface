@@ -8,7 +8,7 @@ using r = Resolutions;
 using System;
 
 #nullable enable
-namespace Program
+namespace FourZeroOne
 {
     public interface IProgram
     {
@@ -44,6 +44,7 @@ namespace Program
         private readonly IInputProvider _input;
         private readonly IOutputProvider _output;
     }
+
     public record State
     {
         public PMap<string, ResObj> Variables { get; init; }
@@ -66,4 +67,8 @@ namespace Program
             Hexes = new(hex => hex.Position, 133);
         }
     }
+}
+namespace Program.Programs
+{
+    
 }

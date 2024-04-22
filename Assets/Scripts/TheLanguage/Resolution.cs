@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Token;
 using Perfection;
 using ResObj = Resolution.IResolution;
-using Program;
+using FourZeroOne;
 
 #nullable enable
 namespace Resolution

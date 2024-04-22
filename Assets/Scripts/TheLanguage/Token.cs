@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Perfection;
 using MorseCode.ITask;
 using ResObj = Resolution.IResolution;
-using Program;
+using FourZeroOne;
 
 namespace Token
 {

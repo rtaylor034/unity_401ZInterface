@@ -5,8 +5,8 @@ using System.Threading.Tasks;
 using Perfection;
 using MorseCode.ITask;
 using ResObj = Resolution.IResolution;
-using r_ = Resolutions;
-using Program;
+using r = Resolutions;
+using FourZeroOne;
 
 #nullable enable
 namespace Token.Alias

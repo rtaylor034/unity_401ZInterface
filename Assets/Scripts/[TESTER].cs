@@ -14,6 +14,7 @@ using Tokens;
 using Tokens.Number;
 using Tokens.Alias;
 using Tokens.Multi;
+using FourZeroOne;
 public class TESTER : MonoBehaviour
 {
     // Start is called before the first frame update
@@ -42,8 +43,9 @@ public class TESTER : MonoBehaviour
                 "x", P.AsIs(new Tokens.Number.Compare.GreaterThan(new Reference<r.Number>("x"), new Reference<r.Number>("y"))))
             };
         });
-        var IO = new GameWorld();
-        var program = new Program.Program(IO, IO)
+        var g = new GameObject();
+        var IO = g.AddComponent<GameWorld>();
+        var program = new FourZeroOne.Program(IO, IO)
         {
             State = new()
             {

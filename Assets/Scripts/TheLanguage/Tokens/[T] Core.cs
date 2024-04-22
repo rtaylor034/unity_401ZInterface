@@ -7,7 +7,7 @@ using MorseCode.ITask;
 using ResObj = Resolution.IResolution;
 using Token;
 using r_ = Resolutions;
-using Program;
+using FourZeroOne;
 
 #nullable enable
 namespace Tokens
