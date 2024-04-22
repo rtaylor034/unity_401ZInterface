@@ -9,6 +9,8 @@ using UnityEngine.InputSystem;
 using Perfection;
 
 // very placeholder behavior.
+// eventually seperate input and output provider.
+// the input provider should just have a reference to the output provider to get selection objects.
 public class GameWorld : MonoBehaviour, FourZeroOne.IInputProvider, FourZeroOne.IOutputProvider
 {
     ITask<IEnumerable<R>> IInputProvider.ReadMultiSelection<R>(IEnumerable<R> outOf, int count)
@@ -20,6 +22,11 @@ public class GameWorld : MonoBehaviour, FourZeroOne.IInputProvider, FourZeroOne.
     {
         return (await SelectionLogic(outOf, 1))?[0];
     }
+    ITask IOutputProvider.WriteState(State state)
+    {
+        return Task.CompletedTask.AsITask();
+    }
+
     private async ITask<List<R>> SelectionLogic<R>(IEnumerable<R> outOf, int count)
     {
         var o = new List<R>(count);
@@ -93,8 +100,5 @@ public class GameWorld : MonoBehaviour, FourZeroOne.IInputProvider, FourZeroOne.
         }
     }
 
-    ITask IOutputProvider.WriteState(State state)
-    {
-        return Task.CompletedTask.AsITask();
-    }
+    
 }
