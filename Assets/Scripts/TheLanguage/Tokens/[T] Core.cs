@@ -11,6 +11,17 @@ using r_ = Resolutions;
 #nullable enable
 namespace Tokens
 {
+    public record SubEnvironment<ROut> : Token.Unsafe.TokenFunction<ROut>
+        where ROut : class, ResObj
+    {
+        public IToken<ROut> SubToken { get; init; }
+        protected SubEnvironment(IEnumerable<Token.Unsafe.IToken> envModifiers) : base(envModifiers) { }
+        public sealed override bool IsFallibleFunction => SubToken.IsFallible;
+        protected sealed override ITask<ROut?> TransformTokens(Context context, List<ResObj> _)
+        {
+            return SubToken.ResolveWithRules(context);
+        }
+    }
 
     public sealed record Scope<R> : SubEnvironment<r_.DeclareVariable, R> where R : class, ResObj
     {

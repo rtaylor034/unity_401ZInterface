@@ -64,24 +64,6 @@ namespace Token
         protected abstract R InfallibleResolve(Context context);
     }
 
-    /// <summary>
-    /// Tokens that inherit must have a constructor matching: <br></br>
-    /// <code>(IEnumerable&lt;IToken&lt;<typeparamref name="REnv"/>&gt;&gt;)</code>
-    /// </summary>
-    /// <typeparam name="REnv"></typeparam>
-    public abstract record SubEnvironment<REnv, ROut> : Token.Unsafe.TokenFunction<ROut>
-        where REnv : Resolution.Operation
-        where ROut : class, ResObj
-    {
-        public IToken<ROut> SubToken { get; init; }
-        protected SubEnvironment(IEnumerable<IToken<REnv>> envModifiers) : base(envModifiers) { }
-        public sealed override bool IsFallibleFunction => SubToken.IsFallible;
-        protected sealed override ITask<ROut?> TransformTokens(Context context, List<ResObj> _)
-        {
-            return SubToken.ResolveWithRules(context);
-        }
-    }
-
     // IMPORTANT: tokens now MUST be absolutely pure stateless in order for this to work.
     // 'Lambda' is resolved multiple times as the same object.
     public abstract record Accumulator<RElement, RGen, RInto> : Unsafe.TokenFunction<RInto>
