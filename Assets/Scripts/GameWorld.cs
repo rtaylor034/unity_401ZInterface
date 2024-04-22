@@ -11,25 +11,6 @@ using Perfection;
 // very placeholder behavior.
 public class GameWorld : MonoBehaviour, FourZeroOne.IInputProvider, FourZeroOne.IOutputProvider
 {
-
-    public void Awake()
-    {
-    }
-    public void OnEnable()
-    {
-
-    }
-    public void OnDisable()
-    {
-    }
-    public async void Start()
-    {
-        
-    }
-    public void Update()
-    {
-        
-    }
     ITask<IEnumerable<R>> IInputProvider.ReadMultiSelection<R>(IEnumerable<R> outOf, int count)
     {
         return SelectionLogic(outOf, count);
