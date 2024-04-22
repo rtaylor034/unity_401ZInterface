@@ -6,7 +6,7 @@ using Perfection;
 using MorseCode.ITask;
 using ResObj = Resolution.IResolution;
 using r_ = Resolutions;
-using Token;
+using Program;
 
 #nullable enable
 namespace Token.Alias
@@ -15,9 +15,9 @@ namespace Token.Alias
     public record Alias<R> : Token<R> where R : class, ResObj
     {
         public override bool IsFallible => Expand().IsFallible;
-        public override ITask<R?> Resolve(Context context)
+        public override ITask<R?> Resolve(IProgram program)
         {
-            return Expand().ResolveWithRules(context);
+            return Expand().ResolveWithRules(program);
         }
         protected Alias(Proxy.Unsafe.IProxy<R> proxy)
         {

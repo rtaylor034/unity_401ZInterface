@@ -5,6 +5,7 @@ using Token;
 using Perfection;
 using r = Resolutions;
 using MorseCode.ITask;
+using Program;
 #nullable enable
 namespace Tokens.Select
 {
@@ -13,9 +14,9 @@ namespace Tokens.Select
         public override bool IsFallibleFunction => true;
         public One(IToken<Resolution.IMulti<R>> from) : base(from) { }
 
-        protected override ITask<R?> Evaluate(Context context, Resolution.IMulti<R> from)
+        protected override ITask<R?> Evaluate(IProgram program, Resolution.IMulti<R> from)
         {
-            return context.InputProvider.ReadSelection(from.Values);
+            return program.Input.ReadSelection(from.Values);
         }
     }
 
@@ -24,9 +25,9 @@ namespace Tokens.Select
         public override bool IsFallibleFunction => true;
         public Multiple(IToken<Resolution.IMulti<R>> from, IToken<r.Number> count) : base(from, count) { }
 
-        protected override async ITask<r.Multi<R>?> Evaluate(Context context, Resolution.IMulti<R> from, r.Number count)
+        protected override async ITask<r.Multi<R>?> Evaluate(IProgram program, Resolution.IMulti<R> from, r.Number count)
         {
-            return (await context.InputProvider.ReadMultiSelection(from.Values, count.Value) is IEnumerable<R> selections) ?
+            return (await program.Input.ReadMultiSelection(from.Values, count.Value) is IEnumerable<R> selections) ?
                 new() { Values = selections } :
                 null;
         }

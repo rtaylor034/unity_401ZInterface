@@ -4,11 +4,11 @@ using Token;
 using UnityEngine;
 using System.Threading.Tasks;
 using MorseCode.ITask;
+using Program;
 
 #nullable enable
-public class GameWorld : MonoBehaviour, Token.IInputProvider, Token.IOutputProvider
+public class GameWorld : MonoBehaviour, Program.IInputProvider, Program.IOutputProvider
 {
-
     ITask<IEnumerable<R>?> IInputProvider.ReadMultiSelection<R>(IEnumerable<R> outOf, int count)
     {
         throw new System.NotImplementedException();
@@ -19,8 +19,8 @@ public class GameWorld : MonoBehaviour, Token.IInputProvider, Token.IOutputProvi
         throw new System.NotImplementedException();
     }
 
-    void IOutputProvider.WriteState(Context context)
+    ITask IOutputProvider.WriteState(State state)
     {
-        throw new System.NotImplementedException();
+        return Task.CompletedTask.AsITask();
     }
 }

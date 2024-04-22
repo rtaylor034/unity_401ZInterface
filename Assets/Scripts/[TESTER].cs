@@ -42,8 +42,8 @@ public class TESTER : MonoBehaviour
                 "x", P.AsIs(new Tokens.Number.Compare.GreaterThan(new Reference<r.Number>("x"), new Reference<r.Number>("y"))))
             };
         });
-
-        var context = new Context(null, null)
+        var IO = new GameWorld();
+        var program = new Program.Program(IO, IO)
         {
             State = new()
             {
@@ -52,7 +52,7 @@ public class TESTER : MonoBehaviour
                 Board = new() { }
             }
         };
-        Debug.Log(await token_monster.ResolveWithRules(context));
+        Debug.Log(await token_monster.ResolveWithRules(program));
         In<AClass> a = null;
         In<BClass> b = null;
         b = a;

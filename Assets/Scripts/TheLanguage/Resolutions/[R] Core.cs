@@ -3,6 +3,7 @@ using Perfection;
 using ResObj = Resolution.IResolution;
 using System.Collections.Generic;
 using Token;
+using Program;
 
 #nullable enable
 namespace Resolutions
@@ -25,7 +26,7 @@ namespace Resolutions
         public IEnumerable<R> Values { get => _list.Elements; init => _list = new() { Elements = value }; }
         public Updater<IEnumerable<R>> dValues { init => Values = value(Values); }
 
-        protected override GameState UpdateState(GameState context) => Values.AccumulateInto(context, (p, x) => p.WithResolution(x));
+        protected override State UpdateState(State state) => Values.AccumulateInto(state, (p, x) => p.WithResolution(x));
 
         private readonly PList<R> _list;
         public override string ToString()
@@ -41,7 +42,7 @@ namespace Resolutions
         public ResObj Object { get; init; }
         public Updater<ResObj> dObject { init => Object = value(Object); }
 
-        protected override GameState UpdateState(GameState context) => context with
+        protected override State UpdateState(State state) => state with
         {
             dVariables = Q => Q with { dElements = Q => Q.Also((Label, Object).Yield()) }
         };
@@ -52,7 +53,7 @@ namespace Resolutions
         public Rule.IRule Rule { get; init; } 
         public Updater<Rule.IRule> dRule { init => Rule = value(Rule); }
 
-        protected override GameState UpdateState(GameState context) => context with
+        protected override State UpdateState(State state) => state with
         {
             dRules = Q => Q with { dElements = Q => Q.Also(Rule.Yield()) }
         };
