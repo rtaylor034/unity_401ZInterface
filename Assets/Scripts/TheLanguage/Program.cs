@@ -37,6 +37,7 @@ namespace Program
         public async ITask<IProgram> WithState(Updater<State> stateUpdater)
         {
             State newState = stateUpdater(State);
+            if (newState.Equals(State)) return this;
             await _output.WriteState(newState);
             return this with { State = newState };
         }
