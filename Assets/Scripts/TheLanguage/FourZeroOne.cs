@@ -18,8 +18,7 @@ namespace FourZeroOne
     }
     public interface IInputProvider
     {
-        public ITask<R?> ReadSelection<R>(IEnumerable<R> outOf) where R : class, ResObj;
-        public ITask<IEnumerable<R>?> ReadMultiSelection<R>(IEnumerable<R> outOf, int count) where R : class, ResObj;
+        public ITask<IEnumerable<R>?> ReadSelection<R>(IEnumerable<R> outOf, int count) where R : class, ResObj;
     }
     public interface IOutputProvider
     {

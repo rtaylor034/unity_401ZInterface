@@ -13,14 +13,9 @@ using Perfection;
 // the input provider should just have a reference to the output provider to get selection objects.
 public class GameWorld : MonoBehaviour, FourZeroOne.IInputProvider, FourZeroOne.IOutputProvider
 {
-    ITask<IEnumerable<R>> IInputProvider.ReadMultiSelection<R>(IEnumerable<R> outOf, int count)
+    ITask<IEnumerable<R>> IInputProvider.ReadSelection<R>(IEnumerable<R> outOf, int count) where R : class
     {
         return SelectionLogic(outOf, count);
-    }
-
-    async ITask<R> IInputProvider.ReadSelection<R>(IEnumerable<R> outOf) where R : class
-    {
-        return (await SelectionLogic(outOf, 1))?[0];
     }
     ITask IOutputProvider.WriteState(State state)
     {
