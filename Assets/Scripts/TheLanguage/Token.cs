@@ -23,25 +23,33 @@ namespace Token
     public abstract record Token<R> : IToken<R> where R : class, ResObj
     {
         public abstract bool IsFallible { get; }
-        public abstract ITask<IOption<R>?> Resolve(IProgram program);
+        public async ITask<IOption<R>?> Resolve(IProgram program)
+        {
+            program.Output.WriteToken(this);
+            var o = await ResolveInternal(program);
+            program.Output.WriteResolution(o);
+            return o;
+        }
         public async ITask<IOption<R>?> ResolveWithRules(IProgram program)
         {
-            return program.State.Rules.Count == 0
-                ? await Resolve(program)
-                : await this.ApplyRules(program.State.Rules.Elements, out var applied).Resolve(
-                    await program.dState(Q => Q with
-                {
-                    dRules = Q => Q with { dElements = Q => Q.Filter(x => !applied.HasMatch(y => ReferenceEquals(x, y))) }
-                }));
+            if (program.State.Rules.Count == 0) return await Resolve(program);
+            var resolvingToken = this.ApplyRules(program.State.Rules.Elements, out var applied);
+            program.Output.WriteRuleSteps(applied.Map(x => ((Unsafe.IToken)x.fromToken, x.rule)));
+            return await resolvingToken.Resolve(program.dState(Q => Q with
+            {
+                dRules = Q => Q with { dElements = Q => Q.Filter(x => !applied.HasMatch(y => ReferenceEquals(x, y))) }
+            }));
         }
-        public async ITask<IOption<ResObj>?> ResolveUnsafe(IProgram program) { return await Resolve(program); }
+        public async ITask<IOption<ResObj>?> ResolveUnsafe(IProgram program) { return await ResolveInternal(program); }
         public async ITask<IOption<ResObj>?> ResolveWithRulesUnsafe(IProgram program) { return await ResolveWithRules(program); }
+
+        protected abstract ITask<IOption<R>?> ResolveInternal(IProgram program);
     }
 
     public abstract record Infallible<R> : Token<R> where R : class, ResObj
     {
         public sealed override bool IsFallible => false;
-        public sealed override ITask<IOption<R>?> Resolve(IProgram program) { return Task.FromResult(InfallibleResolve(program)).AsITask(); }
+        protected sealed override ITask<IOption<R>?> ResolveInternal(IProgram program) { return Task.FromResult(InfallibleResolve(program)).AsITask(); }
 
         protected abstract IOption<R> InfallibleResolve(IProgram program);
     }
@@ -253,9 +261,9 @@ namespace Token
     // --------
     #endregion
 
-    public static class Extensions
+    public static class _Extensions
     {
-        public static IToken<R> ApplyRules<R>(this IToken<R> token, IEnumerable<Rule.IRule> rules, out List<Rule.IRule> appliedRules) where R : class, ResObj
+        public static IToken<R> ApplyRules<R>(this IToken<R> token, IEnumerable<Rule.IRule> rules, out List<(IToken<R> fromToken, Rule.IRule rule)> appliedRules) where R : class, ResObj
         {
             var o = token;
             appliedRules = new();
@@ -263,8 +271,8 @@ namespace Token
             {
                 if (rule.TryApplyTyped(o) is IToken<R> newToken)
                 {
+                    appliedRules.Add((o, rule));
                     o = newToken;
-                    appliedRules.Add(rule);
                 }
             }
             return o;
@@ -308,7 +316,7 @@ namespace Token.Unsafe
     {
         public abstract bool IsFallibleFunction { get; }
         public sealed override bool IsFallible => IsFallibleFunction || ArgTokens.Elements.Map(x => x.IsFallible).HasMatch(x => x == true);
-        public sealed override async ITask<IOption<R>?> Resolve(IProgram program)
+        protected sealed override async ITask<IOption<R>?> ResolveInternal(IProgram program)
         {
             // stateless behavior for now. (non-linear backwards timeline with nested functions)
             // this whole thing needs to be rewritten tbh
@@ -326,7 +334,7 @@ namespace Token.Unsafe
                     case IOption<ResObj> resOpt:
                         _state.Inputs[_state.Index] = resOpt;
                         var prev = _state.Programs[_state.Index];
-                        _state.Programs[_state.Index + 1] = resOpt.Check(out var res) ? await prev.dState(Q => Q.WithResolution(res)) : prev;
+                        _state.Programs[_state.Index + 1] = resOpt.Check(out var res) ? prev.dState(Q => Q.WithResolution(res)) : prev;
                         _state.Index++;
                         continue;
                     case null:
