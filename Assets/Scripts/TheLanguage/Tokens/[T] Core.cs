@@ -33,10 +33,10 @@ namespace Tokens
             _label = label;
         }
         public override bool IsFallible => _objectToken.IsFallible;
-        public override async ITask<IOption<r.DeclareVariable>?> Resolve(IProgram program)
+        protected override async ITask<IOption<r.DeclareVariable>?> ResolveInternal(IProgram program)
         {
-            return (await _objectToken.ResolveWithRules(program) is R res) ?
-                new r.DeclareVariable() { Label = _label, Object = res }.AsSome() : null;
+            return (await _objectToken.ResolveWithRules(program) is IOption<R> resOpt) ?
+                new r.DeclareVariable() { Label = _label, Object = resOpt }.AsSome() : null;
         }
 
         private readonly IToken<R> _objectToken;

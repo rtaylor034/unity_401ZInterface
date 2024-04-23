@@ -96,9 +96,9 @@ namespace Token
         where RGen : class, ResObj
         where RInto : class, ResObj
     {
-        protected abstract IOption<RInto> PureAccumulate(IEnumerable<(RElement element, RGen output)> outputs);
+        protected abstract RInto PureAccumulate(IEnumerable<(RElement element, RGen output)> outputs);
         protected PureAccumulator(IToken<Resolution.IMulti<RElement>> iterator, string elementLabel, IToken<RGen> lambda) : base(iterator, elementLabel, lambda) { }
-        protected override ITask<IOption<RInto>?> Accumulate(IProgram _, IEnumerable<(RElement element, RGen output)> outputs) { return Task.FromResult(PureAccumulate(outputs)).AsITask(); }
+        protected override ITask<IOption<RInto>?> Accumulate(IProgram _, IEnumerable<(RElement element, RGen output)> outputs) { return Task.FromResult(PureAccumulate(outputs).AsSome()).AsITask(); }
         
     }
 
@@ -140,7 +140,7 @@ namespace Token
         protected abstract ITask<IOption<ROut>?> Evaluate(IProgram program, IOption<RArg1> in1);
         protected override ITask<IOption<ROut>?> TransformTokens(IProgram program, List<IOption<ResObj>> args)
         {
-            return Evaluate(program, args[0].Map(x => (RArg1)x));
+            return Evaluate(program, args[0].RemapAs(x => (RArg1)x));
         }
     }
 
@@ -163,7 +163,7 @@ namespace Token
         protected Function(IToken<RArg1> in1, IToken<RArg2> in2) : base(in1, in2) { }
         protected override ITask<IOption<ROut>?> TransformTokens(IProgram program, List<IOption<ResObj>> args)
         {
-            return Evaluate(program, args[0].Map(x => (RArg1)x), args[1].Map(x => (RArg2)x));
+            return Evaluate(program, args[0].RemapAs(x => (RArg1)x), args[1].RemapAs(x => (RArg2)x));
         }
     }
 
@@ -189,7 +189,7 @@ namespace Token
         protected Function(IToken<RArg1> in1, IToken<RArg2> in2, IToken<RArg3> in3) : base(in1, in2, in3) { }
         protected override ITask<IOption<ROut>?> TransformTokens(IProgram program, List<IOption<ResObj>> args)
         {
-            return Evaluate(program, args[0].Map(x => (RArg1)x), args[1].Map(x => (RArg2)x), args[2].Map(x => (RArg3)x));
+            return Evaluate(program, args[0].RemapAs(x => (RArg1)x), args[1].RemapAs(x => (RArg2)x), args[2].RemapAs(x => (RArg3)x));
         }
     }
 
@@ -208,7 +208,7 @@ namespace Token
         protected Combiner(IEnumerable<IToken<RArg>> tokens) : base(tokens) { }
         protected sealed override ITask<IOption<ROut>?> TransformTokens(IProgram program, List<IOption<ResObj>> tokens)
         {
-            return Evaluate(program, tokens.Map(x => x.Map(x => (RArg)x)));
+            return Evaluate(program, tokens.Map(x => x.RemapAs(x => (RArg)x)));
         }
     }
     #region Pure Functions
@@ -219,9 +219,14 @@ namespace Token
     {
         public sealed override bool IsFallibleFunction => false;
 
-        protected abstract IOption<ROut> EvaluatePure(IOption<RArg1> in1);
+        protected abstract ROut EvaluatePure(RArg1 in1);
         protected PureFunction(IToken<RArg1> in1) : base(in1) { }
-        protected sealed override ITask<IOption<ROut>?> Evaluate(IProgram _, IOption<RArg1> in1) => Task.FromResult(EvaluatePure(in1)).AsITask();
+        protected sealed override ITask<IOption<ROut>?> Evaluate(IProgram _, IOption<RArg1> in1)
+        {
+            IOption<ROut> o = (in1.CheckNone(out var a)) ? new None<ROut>() :
+                EvaluatePure(a).AsSome();
+            return Task.FromResult(o).AsITask();
+        }
     }
     public abstract record PureFunction<RArg1, RArg2, ROut> : Function<RArg1, RArg2, ROut>
         where RArg1 : class, ResObj
@@ -230,9 +235,14 @@ namespace Token
     {
         public sealed override bool IsFallibleFunction => false;
 
-        protected abstract IOption<ROut> EvaluatePure(IOption<RArg1> in1, IOption<RArg2> in2);
+        protected abstract ROut EvaluatePure(RArg1 in1, RArg2 in2);
         protected PureFunction(IToken<RArg1> in1, IToken<RArg2> in2) : base(in1, in2) { }
-        protected sealed override ITask<IOption<ROut>?> Evaluate(IProgram _, IOption<RArg1> in1, IOption<RArg2> in2) => Task.FromResult(EvaluatePure(in1, in2)).AsITask();
+        protected sealed override ITask<IOption<ROut>?> Evaluate(IProgram _, IOption<RArg1> in1, IOption<RArg2> in2)
+        {
+            IOption<ROut> o = (in1.CheckNone(out var a) || in2.CheckNone(out var b)) ? new None<ROut>() :
+                EvaluatePure(a, b).AsSome();
+            return Task.FromResult(o).AsITask();
+        }
     }
     public abstract record PureFunction<RArg1, RArg2, RArg3, ROut> : Function<RArg1, RArg2, RArg3, ROut>
         where RArg1 : class, ResObj
@@ -242,9 +252,14 @@ namespace Token
     {
         public sealed override bool IsFallibleFunction => false;
 
-        protected abstract IOption<ROut> EvaluatePure(IOption<RArg1> in1, IOption<RArg2> in2, IOption<RArg3> in3);
+        protected abstract ROut EvaluatePure(RArg1 in1, RArg2 in2, RArg3 in3);
         protected PureFunction(IToken<RArg1> in1, IToken<RArg2> in2, IToken<RArg3> in3) : base(in1, in2, in3) { }
-        protected sealed override ITask<IOption<ROut>?> Evaluate(IProgram _, IOption<RArg1> in1, IOption<RArg2> in2, IOption<RArg3> in3) => Task.FromResult(EvaluatePure(in1, in2, in3)).AsITask();
+        protected sealed override ITask<IOption<ROut>?> Evaluate(IProgram _, IOption<RArg1> in1, IOption<RArg2> in2, IOption<RArg3> in3)
+        {
+            IOption<ROut> o = (in1.CheckNone(out var a) || in2.CheckNone(out var b) || in3.CheckNone(out var c)) ? new None<ROut>() :
+                EvaluatePure(a, b, c).AsSome();
+            return Task.FromResult(o).AsITask();
+        }
     }
     public abstract record PureCombiner<RArg, ROut> : Combiner<RArg, ROut>
         where RArg : class, ResObj
@@ -252,9 +267,9 @@ namespace Token
     {
         public sealed override bool IsFallibleFunction => false;
 
-        protected abstract IOption<ROut> EvaluatePure(IEnumerable<IOption<RArg>> inputs);
+        protected abstract ROut EvaluatePure(IEnumerable<RArg> inputs);
         protected PureCombiner(IEnumerable<IToken<RArg>> tokens) : base(tokens) { }
-        protected sealed override ITask<IOption<ROut>?> Evaluate(IProgram _, IEnumerable<IOption<RArg>> inputs) => Task.FromResult(EvaluatePure(inputs)).AsITask();
+        protected sealed override ITask<IOption<ROut>?> Evaluate(IProgram _, IEnumerable<IOption<RArg>> inputs) => Task.FromResult(EvaluatePure(inputs.Filter(x => x.IsSome()).Map(x => x.Unwrap())).AsSome()).AsITask();
     }
     // ----
     #endregion

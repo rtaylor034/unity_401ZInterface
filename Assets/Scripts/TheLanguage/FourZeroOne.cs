@@ -21,7 +21,7 @@ namespace FourZeroOne
     }
     public interface IInputInterface
     {
-        public ITask<IEnumerable<R>?> ReadSelection<R>(IEnumerable<R> outOf, int count) where R : class, ResObj;
+        public ITask<IOption<IEnumerable<R>>?> ReadSelection<R>(IEnumerable<R> outOf, int count) where R : class, ResObj;
     }
     public interface IOutputInterface
     {
@@ -32,8 +32,8 @@ namespace FourZeroOne
     
     public record State
     {
-        public PMap<string, ResObj> Variables { get; init; }
-        public Updater<PMap<string, ResObj>> dVariables { init => Variables = value(Variables); }
+        public PMap<string, IOption<ResObj>> Variables { get; init; }
+        public Updater<PMap<string, IOption<ResObj>>> dVariables { init => Variables = value(Variables); }
         public PList<Rule.IRule> Rules { get; init; }
         public Updater<PList<Rule.IRule>> dRules { init => Rules = value(Rules); }
         public BoardState Board { get; init; }
@@ -63,9 +63,11 @@ namespace FourZeroOne.Programs
             public IProgram dState(Updater<State> updater) => this with { State = updater(State) };
             public IInputInterface Input => _io;
             public IOutputInterface Output => _io;
-            public Program(IO io)
+            public Program()
             {
-                _io = io;
+                var gameObject = new GameObject("Standard Program IO");
+                _io = gameObject.AddComponent<IO>();
+
             }
             private readonly IO _io;
             private readonly State _state;

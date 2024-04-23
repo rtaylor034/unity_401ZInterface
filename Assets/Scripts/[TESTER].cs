@@ -43,9 +43,7 @@ public class TESTER : MonoBehaviour
                 "x", P.AsIs(new Tokens.Number.Compare.GreaterThan(new Reference<r.Number>("x"), new Reference<r.Number>("y"))))
             };
         });
-        var g = new GameObject();
-        var IO = g.AddComponent<GameWorld>();
-        var program = new FourZeroOne.Program(IO, IO)
+        var program = new FourZeroOne.Programs.Standard.Program()
         {
             State = new()
             {

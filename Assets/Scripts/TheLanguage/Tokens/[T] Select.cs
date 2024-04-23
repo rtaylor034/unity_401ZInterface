@@ -14,23 +14,25 @@ namespace Tokens.Select
         public override bool IsFallibleFunction => true;
         public One(IToken<Resolution.IMulti<R>> from) : base(from) { }
 
-        protected async override ITask<R?> Evaluate(IProgram program, Resolution.IMulti<R> from)
+        protected async override ITask<IOption<R>?> Evaluate(IProgram program, IOption<Resolution.IMulti<R>> fromOpt)
         {
-            // nolla is needed. its joever.
-            return (await program.Input.ReadSelection(from.Values, 1))?.First();
+            if (fromOpt.CheckNone(out var from)) return new None<R>();
+            if (await program.Input.ReadSelection(from.Values, 1) is not IOption<IEnumerable<R>> selOpt) return null;
+            return (selOpt.Check(out var sel)) ? sel.First()?.AsSome() : new None<R>();
         }
     }
 
+    //make range instead of single int count
     public sealed record Multiple<R> : Function<Resolution.IMulti<R>, r.Number, r.Multi<R>> where R : class, ResObj
     {
         public override bool IsFallibleFunction => true;
         public Multiple(IToken<Resolution.IMulti<R>> from, IToken<r.Number> count) : base(from, count) { }
 
-        protected override async ITask<r.Multi<R>?> Evaluate(IProgram program, Resolution.IMulti<R> from, r.Number count)
+        protected override async ITask<IOption<r.Multi<R>>?> Evaluate(IProgram program, IOption<Resolution.IMulti<R>> fromOpt, IOption<r.Number> countOpt)
         {
-            return (await program.Input.ReadSelection(from.Values, count.Value) is IEnumerable<R> selections) ?
-                new() { Values = selections } :
-                null;
+            if (fromOpt.CheckNone(out var from) || countOpt.CheckNone(out var count)) return new None<r.Multi<R>>();
+            if (await program.Input.ReadSelection(from.Values, 1) is not IOption<IEnumerable<R>> selOpt) return null;
+            return selOpt.RemapAs(v => new r.Multi<R>() { Values = v });
         }
     }
 }

@@ -18,7 +18,7 @@ namespace FourZeroOne.Programs.Standard
 {
     public class IO : MonoBehaviour, IInputInterface, IOutputInterface
     {
-        public ITask<IEnumerable<R>?> ReadSelection<R>(IEnumerable<R> outOf, int count) where R : class, ResObj
+        public ITask<IOption<IEnumerable<R>>?> ReadSelection<R>(IEnumerable<R> outOf, int count) where R : class, ResObj
         {
             return SelectionLogic(outOf, count);
         }
@@ -41,10 +41,10 @@ namespace FourZeroOne.Programs.Standard
 
         }
 
-        private async ITask<List<R>> SelectionLogic<R>(IEnumerable<R> outOf, int count)
+        private async ITask<IOption<List<R>>> SelectionLogic<R>(IEnumerable<R> outOf, int count)
         {
             var o = new List<R>(count);
-            if (0 >= count) return o;
+            if (0 >= count) return new None<List<R>>();
             var options = new List<(Renderer visual, R data)>();
             int index = 0;
             int _total = 0;
@@ -75,7 +75,7 @@ namespace FourZeroOne.Programs.Standard
             input.Disable();
             input.Dispose();
             Debug.Log($"SELECTED: {new PList<R>() { Elements = o.Or(new()) }}");
-            return o;
+            return o.AsSome();
 
             void __Left()
             {

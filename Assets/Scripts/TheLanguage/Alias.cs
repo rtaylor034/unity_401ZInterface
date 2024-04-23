@@ -15,7 +15,7 @@ namespace Token.Alias
     public record Alias<R> : Token<R> where R : class, ResObj
     {
         public override bool IsFallible => Expand().IsFallible;
-        public override ITask<IOption<R>?> Resolve(IProgram program)
+        protected override ITask<IOption<R>?> ResolveInternal(IProgram program)
         {
             return Expand().ResolveWithRules(program);
         }

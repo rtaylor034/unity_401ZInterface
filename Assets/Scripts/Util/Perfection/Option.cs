@@ -14,8 +14,18 @@ namespace Perfection
         public T Value => _value;
         public Some(T value) => _value = value;
         private readonly T _value;
+        public override string ToString()
+        {
+            return $"| {_value} |";
+        }
     }
-    public record None<T> : IOption<T> { }
+    public record None<T> : IOption<T>
+    {
+        public override string ToString()
+        {
+            return $"(None<{typeof(T).Name}>)";
+        }
+    }
     public static class Option
     {
         public static T Unwrap<T>(this IOption<T> option)
@@ -41,7 +51,7 @@ namespace Perfection
             return false;
         }
         public static bool CheckNone<T>(this IOption<T> option, out T val) => !Check(option, out val);
-        public static IOption<TOut> Map<TIn, TOut>(this IOption<TIn> option, Func<TIn, TOut> func)
+        public static IOption<TOut> RemapAs<TIn, TOut>(this IOption<TIn> option, Func<TIn, TOut> func)
         {
             return CheckNone(option, out var o) ? new None<TOut>() : func(o).AsSome();
         }
@@ -49,6 +59,7 @@ namespace Perfection
         {
             return new None<T>();
         }
+        public static bool IsSome<T>(this IOption<T> option) { return option.Check(out var _); }
     }
     
 }
