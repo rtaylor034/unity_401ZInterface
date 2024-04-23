@@ -14,7 +14,7 @@ namespace FourZeroOne
     {
         public IInputProvider Input { get; }
         public State State { get; }
-        public ITask<IProgram> WithState(Updater<State> stateUpdater);
+        public ITask<IProgram> dState(Updater<State> stateUpdater);
     }
     public interface IInputProvider
     {
@@ -33,7 +33,7 @@ namespace FourZeroOne
             _input = input;
             _output = output;
         }
-        public async ITask<IProgram> WithState(Updater<State> stateUpdater)
+        public async ITask<IProgram> dState(Updater<State> stateUpdater)
         {
             State newState = stateUpdater(State);
             if (newState.Equals(State)) return this;

@@ -4,9 +4,8 @@ using System;
 
 namespace Perfection
 {
-    using Options;
     public interface IOption<out T> { }
-    public interface ISome<T> : IOption<T>
+    public interface ISome<out T> : IOption<T>
     {
         public T Value { get; }
     }
@@ -17,7 +16,7 @@ namespace Perfection
         private readonly T _value;
     }
     public record None<T> : IOption<T> { }
-    public static class _Option
+    public static class Option
     {
         public static T Unwrap<T>(this IOption<T> option)
         {
@@ -42,11 +41,11 @@ namespace Perfection
             return false;
         }
         public static bool CheckNone<T>(this IOption<T> option, out T val) => !Check(option, out val);
-        public static IOption<T> Map<T>(this IOption<T> option, Func<T, T> func)
+        public static IOption<TOut> Map<TIn, TOut>(this IOption<TIn> option, Func<TIn, TOut> func)
         {
-            return CheckNone(option, out var o) ? option : func(o).AsSome();
+            return CheckNone(option, out var o) ? new None<TOut>() : func(o).AsSome();
         }
-        public static IOption<T> AsNone<T>(this T _)
+        public static IOption<T> None<T>(this T _)
         {
             return new None<T>();
         }

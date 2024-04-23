@@ -6,7 +6,7 @@ using Perfection;
 using MorseCode.ITask;
 using ResObj = Resolution.IResolution;
 using Token;
-using r_ = Resolutions;
+using r = Resolutions;
 using FourZeroOne;
 
 #nullable enable
@@ -19,13 +19,13 @@ namespace Tokens
         public SubEnvironment(IEnumerable<Token.Unsafe.IToken> envModifiers) : base(envModifiers) { }
         public SubEnvironment(params Token.Unsafe.IToken[] envModifiers) : base(envModifiers) { }
         public sealed override bool IsFallibleFunction => SubToken.IsFallible;
-        protected sealed override ITask<ROut?> TransformTokens(IProgram program, List<ResObj> _)
+        protected sealed override ITask<IOption<ROut>?> TransformTokens(IProgram program, List<IOption<ResObj>> _)
         {
             return SubToken.ResolveWithRules(program);
         }
     }
 
-    public sealed record Variable<R> : Token<r_.DeclareVariable> where R : class, ResObj
+    public sealed record Variable<R> : Token<r.DeclareVariable> where R : class, ResObj
     {
         public Variable(string label, IToken<R> token)
         {
@@ -33,24 +33,24 @@ namespace Tokens
             _label = label;
         }
         public override bool IsFallible => _objectToken.IsFallible;
-        public override async ITask<r_.DeclareVariable?> Resolve(IProgram program)
+        public override async ITask<IOption<r.DeclareVariable>?> Resolve(IProgram program)
         {
             return (await _objectToken.ResolveWithRules(program) is R res) ?
-                new() { Label = _label, Object = res } : null;
+                new r.DeclareVariable() { Label = _label, Object = res }.AsSome() : null;
         }
 
         private readonly IToken<R> _objectToken;
         private readonly string _label;
     }
 
-    public sealed record Rule<R> : Infallible<r_.DeclareRule> where R : class, ResObj
+    public sealed record Rule<R> : Infallible<r.DeclareRule> where R : class, ResObj
     {
         public Rule(Rule.IRule rule)
         {
             _rule = rule;
         }
 
-        protected override r_.DeclareRule InfallibleResolve(IProgram program) { return new() { Rule = _rule }; }
+        protected override IOption<r.DeclareRule> InfallibleResolve(IProgram program) { return new r.DeclareRule() { Rule = _rule }.AsSome(); }
 
         private readonly Rule.IRule _rule;
     }
@@ -62,16 +62,16 @@ namespace Tokens
         }
         // kinda spicy
         public static implicit operator Fixed<R>(R resolution) => new(resolution);
-        protected override R InfallibleResolve(IProgram _) { return _resolution; }
+        protected override IOption<R> InfallibleResolve(IProgram _) { return _resolution.AsSome(); }
         private readonly R _resolution;
     }
     public sealed record Reference<R> : Infallible<R> where R : class, ResObj
     {
         public Reference(string toLabel) => _toLabel = toLabel;
 
-        protected override R InfallibleResolve(IProgram program)
+        protected override IOption<R> InfallibleResolve(IProgram program)
         {
-            return (program.State.Variables[_toLabel] is R val) ? val :
+            return (program.State.Variables[_toLabel] is IOption<R> val) ? val :
                 throw new Exception($"Reference token resolved to non-existent or wrongly-typed object.\n" +
                 $"Label: '{_toLabel}'\n" +
                 $"Expected: {typeof(R).Name}\n" +

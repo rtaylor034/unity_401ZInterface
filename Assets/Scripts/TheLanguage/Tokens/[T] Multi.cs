@@ -14,9 +14,9 @@ namespace Tokens.Multi
     {
         public Union(IEnumerable<IToken<Res.IMulti<R>>> elements) : base(elements) { }
         public Union(params IToken<Res.IMulti<R>>[] elements) : base(elements) { }
-        protected override r.Multi<R> EvaluatePure(IEnumerable<Res.IMulti<R>> inputs)
+        protected override IOption<r.Multi<R>> EvaluatePure(IEnumerable<IOption<Res.IMulti<R>>> inputs)
         {
-            return new() { Values = inputs.Map(x => x.Values).Flatten() };
+            return new r.Multi<R>() { Values = inputs.Filter(x => x.Check(out var _)).Map(x => x.Unwrap().Values).Flatten() }.AsOption();
         }
     }
     

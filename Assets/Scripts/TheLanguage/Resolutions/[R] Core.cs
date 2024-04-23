@@ -25,8 +25,17 @@ namespace Resolutions
     {
         public IEnumerable<R> Values { get => _list.Elements; init => _list = new() { Elements = value }; }
         public Updater<IEnumerable<R>> dValues { init => Values = value(Values); }
+        public IOption<Multi<R>> AsOption()
+        {
+            return (_list.Count > 0) ? this.AsSome() : new None<Multi<R>>();
+        }
 
-        protected override State UpdateState(State state) => Values.AccumulateInto(state, (p, x) => p.WithResolution(x));
+        protected override State UpdateState(State state)
+        {
+            // a *little* fucking retarded that we have to cast here
+            // possible codesmell??
+            return Values.AccumulateInto(state, (p, x) => p.WithResolution(((ResObj)x).AsSome()));
+        }
 
         private readonly PList<R> _list;
         public override string ToString()
