@@ -49,7 +49,7 @@ namespace Proxies
         protected override IToken<ROut> ConstructFromArgs(List<IToken> tokens)
         {
             return (IToken<ROut>)typeof(TNew).GetConstructor(new Type[] { typeof(IEnumerable<IToken<RArgs>>) })
-                .Invoke(new object[] { tokens });
+                .Invoke(new object[] { tokens.Map(x => (IToken<RArgs>)x) });
         }
     }
 
@@ -88,7 +88,7 @@ namespace Proxies
         {
             return (Token.Accumulator<RElement, RGen, RInto>)typeof(TNew)
                 .GetConstructor(new Type[] { typeof(IToken<Resolution.IMulti<RElement>>), typeof(string), typeof(IToken<RGen>) })
-                .Invoke(new object[] { tokens[0], _elementLabel, tokens[1] });
+                .Invoke(new object[] { (IToken<Resolution.IMulti<RElement>>)tokens[0], _elementLabel, (IToken<RGen>)tokens[1] });
         }
         private readonly string _elementLabel;
     }

@@ -18,6 +18,8 @@ namespace FourZeroOne.Programs.Standard
 {
     public class IO : MonoBehaviour, IInputInterface, IOutputInterface
     {
+        private int depth = 0;
+        private string depthPad => "--".Yield(depth).AccumulateInto("", (msg, x) => msg + x);
         public ITask<IOption<IEnumerable<R>>?> ReadSelection<R>(IEnumerable<R> outOf, int count) where R : class, ResObj
         {
             return SelectionLogic(outOf, count);
@@ -25,16 +27,18 @@ namespace FourZeroOne.Programs.Standard
 
         public void WriteRuleSteps(IEnumerable<(IToken fromToken, Rule.IRule rule)> pairs)
         {
-
+            Debug.Log($"{depthPad}+ {pairs.AccumulateInto("", (msg, x) => msg + x.fromToken + $"\n")}");
         }
 
         public void WriteToken(IToken token)
         {
-
+            Debug.Log($"{depthPad}: {token}");
+            depth++;
         }
         public void WriteResolution(IOption<ResObj>? resolution)
         {
-
+            Debug.Log($"{depthPad}* {resolution}");
+            depth--;
         }
         public void WriteState(State state)
         {

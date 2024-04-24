@@ -31,11 +31,12 @@ public class TESTER : MonoBehaviour
             .FilterToken("x", new Tokens.Number.Compare.GreaterThan(new Reference<r.Number>("x"), new Fixed<r.Number>(4)));
         var token_union =
             new Tokens.Multi.Union<r.Number>(Iter.Over(1, 6, 4, 3, 8, 7, 2, 9, 5).Map(x => new Fixed<r.Number>(x).YieldToken()));
-        var rule_co = Rule.Create.For<Fixed<r.Number>, r.Number>(P =>
+        var token_test = new Add(new Fixed<r.Number>(8), new Fixed<r.Number>(8));
+        var rule_co = Rule.Create.For<Add, r.Number>(P =>
         {
-            return P.AsIs(new Fixed<r.Number>(2));
+            return P.Construct<Add>().WithArgs(P.OriginalArg1(), P.AsIs(new Fixed<r.Number>(4)));
         });
-        var rule_alias = Rule.Create.For<Union<r.Number>, r.Multi<r.Number>>(P =>
+        var rule_union = Rule.Create.For<Union<r.Number>, r.Multi<r.Number>>(P =>
         {
             return P.Construct<SubEnvironment<r.Multi<r.Number>>>().WithEnvironment(P.AsIs(new Variable<r.Number>("y", new Fixed<r.Number>(8)))) with
             {
@@ -43,16 +44,20 @@ public class TESTER : MonoBehaviour
                 "x", P.AsIs(new Tokens.Number.Compare.GreaterThan(new Reference<r.Number>("x"), new Reference<r.Number>("y"))))
             };
         });
+        var rule_sub = Rule.Create.For<Union<r.Number>, r.Multi<r.Number>>(P =>
+        {
+            return P.Construct<Union<r.Number>>().WithArgs(P.AsIs(new Fixed<r.Number>(4).YieldToken()));
+        });
         var program = new FourZeroOne.Programs.Standard.Program()
         {
             State = new()
             {
-                Rules = new() { Elements = Iter.Over(rule_alias).Take(0) },
+                Rules = new() { Elements = Iter.Over(rule_union).Take(1) },
                 Variables = new(7),
                 Board = new() { }
             }
         };
-        Debug.Log(await token_monster.ResolveWithRules(program));
+        Debug.Log(await token_union.ResolveWithRules(program));
         In<AClass> a = null;
         In<BClass> b = null;
         b = a;

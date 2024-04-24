@@ -37,7 +37,7 @@ namespace Token
             program.Output.WriteRuleSteps(applied.Map(x => ((Unsafe.IToken)x.fromToken, x.rule)));
             return await resolvingToken.Resolve(program.dState(Q => Q with
             {
-                dRules = Q => Q with { dElements = Q => Q.Filter(x => !applied.HasMatch(y => ReferenceEquals(x, y))) }
+                dRules = Q => Q with { dElements = Q => Q.Filter(x => !applied.HasMatch(y => ReferenceEquals(x, y.rule))) }
             }));
         }
         public async ITask<IOption<ResObj>?> ResolveUnsafe(IProgram program) { return await ResolveInternal(program); }
@@ -83,7 +83,7 @@ namespace Token
             while (tryGenerate is IOption<Resolution.IMulti<RGen>> generatorOutOption)
             {
                 if (generatorOutOption.CheckNone(out var generatorOutputs)) return new None<RInto>();
-                if (await Accumulate(program, Iter.Zip(iterValues, generatorOutputs.Values)) is RInto o) return o.AsSome();
+                if (await Accumulate(program, Iter.Zip(iterValues, generatorOutputs.Values)) is IOption<RInto> o) return o;
                 tryGenerate = await union.Resolve(program);
             }
             return null;
