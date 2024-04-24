@@ -31,7 +31,7 @@ namespace Tokens.Select
         protected override async ITask<IOption<r.Multi<R>>?> Evaluate(IProgram program, IOption<Resolution.IMulti<R>> fromOpt, IOption<r.Number> countOpt)
         {
             if (fromOpt.CheckNone(out var from) || countOpt.CheckNone(out var count)) return new None<r.Multi<R>>();
-            if (await program.Input.ReadSelection(from.Values, 1) is not IOption<IEnumerable<R>> selOpt) return null;
+            if (await program.Input.ReadSelection(from.Values, count.Value) is not IOption<IEnumerable<R>> selOpt) return null;
             return selOpt.RemapAs(v => new r.Multi<R>() { Values = v });
         }
     }
