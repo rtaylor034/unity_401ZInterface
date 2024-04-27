@@ -22,7 +22,14 @@ public class TESTER : MonoBehaviour
     async void Start()
     {
         // its important to rememeber that P.AsIs() will work just fine unless a proxies' arguements will have OriginalArgs somewhere.
-        
+
+        var token = new Add(new Fixed<r.Number>(5),
+            new Select.One<r.Number>(new Union<r.Number>(new Fixed<r.Number>(5).YieldToken(), new Fixed<r.Number>(10).YieldToken())));
+
+        var rule = Rule.Create.For<Select.One<r.Number>, r.Number>(P =>
+        {
+            return P.AsIs(new Fixed<r.Number>(100));
+        });
         
         var program = new FourZeroOne.Programs.Standard.Program()
         {
