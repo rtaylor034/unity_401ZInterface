@@ -6,6 +6,13 @@ using Token;
 using FourZeroOne;
 
 #nullable enable
+namespace Resolution
+{
+    public interface IMulti<out R> : ResObj where R : ResObj
+    {
+        public IEnumerable<R> Values { get; }
+    }
+}
 namespace Resolutions
 {
     public sealed record Number : NoOp

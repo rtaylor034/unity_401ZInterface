@@ -27,11 +27,6 @@ namespace Resolution
     {
         protected override sealed State ChangeStateInternal(State context) => context;
     }
-
-    public interface IMulti<out R> : ResObj where R : ResObj
-    {
-        public IEnumerable<R> Values { get; }
-    }
 }
 namespace Resolution.Unsafe
 {

@@ -1,7 +1,15 @@
 using Perfection;
 using Resolution;
-namespace Resolutions
+namespace Resolution.Board
 {
+    public interface IPositioned : IResolution
+    {
+        public Resolutions.Board.Coordinates Position { get; }
+    }
+}
+namespace Resolutions.Board
+{
+    using Resolution.Board;
     public sealed record Coordinates : NoOp
     {
         public int R { get; init; }
@@ -17,13 +25,13 @@ namespace Resolutions
         public override string ToString() => $"({R}.{U}.{D})";
     }
 
-    public abstract record Hex : NoOp
+    public abstract record Hex : NoOp, IPositioned
     {
         public Coordinates Position { get; init; }
         public Updater<Coordinates> dPosition { init => Position = value(Position); }
     }
 
-    public sealed record Unit : NoOp
+    public sealed record Unit : NoOp, IPositioned
     {
         public readonly int UUID;
         public int HP { get; init; }

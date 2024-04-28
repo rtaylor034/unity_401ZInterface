@@ -5,6 +5,7 @@ using MorseCode.ITask;
 using Perfection;
 using ResObj = Resolution.IResolution;
 using r = Resolutions;
+using rb = Resolutions.Board;
 using System;
 using Token.Unsafe;
 using Rule;
@@ -42,10 +43,10 @@ namespace FourZeroOne
     }
     public record BoardState
     {
-        public readonly PIndexedSet<int, r.Unit> Units;
-        public readonly PIndexedSet<r.Coordinates, r.Hex> Hexes;
-        public Updater<PIndexedSet<int, r.Unit>> dUnits { init => Units = value(Units); }
-        public Updater<PIndexedSet<r.Coordinates, r.Hex>> dHexes { init => Hexes = value(Hexes); }
+        public readonly PIndexedSet<int, rb.Unit> Units;
+        public readonly PIndexedSet<rb.Coordinates, rb.Hex> Hexes;
+        public Updater<PIndexedSet<int, rb.Unit>> dUnits { init => Units = value(Units); }
+        public Updater<PIndexedSet<rb.Coordinates, rb.Hex>> dHexes { init => Hexes = value(Hexes); }
         public BoardState()
         {
             Units = new(unit => unit.UUID, 13);
