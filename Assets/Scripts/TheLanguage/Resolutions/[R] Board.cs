@@ -23,6 +23,18 @@ namespace Resolutions.Board
             _ => throw new System.IndexOutOfRangeException("Attempted to index Coordinates out of 0..2 range.")
         };
         public override string ToString() => $"({R}.{U}.{D})";
+        public Coordinates Add(Coordinates b) => new()
+        {
+            R = R + b.R,
+            U = U + b.U,
+            D = D + b.D,
+        };
+        public Coordinates ScalarManipulate(System.Func<int, int> scalarFunction) => new()
+        {
+            R = scalarFunction(R),
+            U = scalarFunction(U),
+            D = scalarFunction(D)
+        };
     }
 
     public abstract record Hex : NoOp, IPositioned

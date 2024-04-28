@@ -14,6 +14,8 @@ namespace Tokens.Multi
     {
         public Union(IEnumerable<IToken<Res.IMulti<R>>> elements) : base(elements) { }
         public Union(params IToken<Res.IMulti<R>>[] elements) : base(elements) { }
+        public Union(IEnumerable<IToken<R>> elements) : base(elements.Map(x => new Yield<R>(x))) { }
+        public Union(params IToken<R>[] elements) : base(elements.Map(x => new Yield<R>(x))) { }
         protected override r.Multi<R> EvaluatePure(IEnumerable<Res.IMulti<R>> inputs)
         {
             return new() { Values = inputs.Map(x => x.Values).Flatten() };
@@ -34,17 +36,6 @@ namespace Tokens.Multi
         protected override r.Multi<R> PureAccumulate(IEnumerable<(R element, r.Bool output)> outputs)
         {
             return new() { Values = outputs.Filter(x => x.output.IsTrue).Map(x => x.element) };
-        }
-    }
-    public static class _Extensions
-    {
-        public static Filter<R> FilterToken<R>(this IToken<Res.IMulti<R>> iterator, string elementLabel, IToken<r.Bool> lambda) where R : class, ResObj
-        {
-            return new(iterator, elementLabel, lambda);
-        }
-        public static Yield<R> YieldToken<R>(this IToken<R> token) where R : class, ResObj
-        {
-            return new(token);
         }
     }
 }
