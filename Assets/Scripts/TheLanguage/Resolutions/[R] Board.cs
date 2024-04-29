@@ -41,6 +41,10 @@ namespace Resolutions.Board
     {
         public Coordinates Position { get; init; }
         public Updater<Coordinates> dPosition { init => Position = value(Position); }
+        public override bool ResEqual(IResolution other)
+        {
+            return (other is Hex h && Position.ResEqual(h.Position));
+        }
     }
 
     public sealed record Unit : NoOp, IPositioned
@@ -53,6 +57,10 @@ namespace Resolutions.Board
         public Unit(int id)
         {
             UUID = id;
+        }
+        public override bool ResEqual(IResolution other)
+        {
+            return (other is Unit u && UUID == u.UUID);
         }
     }
 }

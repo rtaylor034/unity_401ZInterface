@@ -18,11 +18,11 @@ public static class Misc
 }
 public static class Null
 {
-    public static T Or<T>(this T? obj, T nullAlternative) where T : class
+    public static T Or<T>(this T? obj, T nullAlternative)
     {
         return (obj is null) ? nullAlternative : obj;
     }
-    public static T OrElse<T>(this T? obj, Func<T> nullAlternative) where T : class
+    public static T OrElse<T>(this T? obj, Func<T> nullAlternative)
     {
         return (obj is null) ? nullAlternative() : obj;
     }

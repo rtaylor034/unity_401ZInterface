@@ -32,7 +32,12 @@ namespace Resolutions
     {
         public IEnumerable<R> Values { get => _list.Elements; init => _list = new() { Elements = value }; }
         public Updater<IEnumerable<R>> dValues { init => Values = value(Values); }
-
+        public override bool ResEqual(ResObj? other)
+        {
+            if (other is not IMulti<R> othermulti) return false;
+            foreach (var (a, b) in Values.LongZip(othermulti.Values)) if (a is not null && a.ResEqual(b)) return false;
+            return true;
+        }
         protected override State UpdateState(State state)
         {
             return Values.AccumulateInto(state, (p, x) => p.WithResolution(x));
