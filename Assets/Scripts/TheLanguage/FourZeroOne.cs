@@ -8,7 +8,6 @@ using r = Resolutions;
 using rb = Resolutions.Board;
 using System;
 using Token.Unsafe;
-using Rule;
 
 #nullable enable
 namespace FourZeroOne
@@ -37,6 +36,8 @@ namespace FourZeroOne
         public Updater<PMap<string, IOption<ResObj>>> dVariables { init => Variables = value(Variables); }
         public PList<Rule.IRule> Rules { get; init; }
         public Updater<PList<Rule.IRule>> dRules { init => Rules = value(Rules); }
+        public PIndexedSet<ResObj, Rule.IRule> Effects { get; init; } 
+        public Updater<PIndexedSet<ResObj, Rule.IRule>> dEffects { init => Effects = value(Effects); }
         public BoardState Board { get; init; }
         public Updater<BoardState> dBoard { init => Board = value(Board); }
         public State WithResolution(ResObj resolution) { return resolution.ChangeState(this); }

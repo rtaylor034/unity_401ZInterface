@@ -333,60 +333,42 @@ namespace Token.Unsafe
         public sealed override bool IsFallible => IsFallibleFunction || ArgTokens.Elements.Map(x => x.IsFallible).HasMatch(x => x == true);
         protected sealed override async ITask<IOption<R>?> ResolveInternal(IProgram program)
         {
-            // stateless behavior for now. (non-linear backwards timeline with nested functions)
-            // this whole thing needs to be rewritten tbh
-            _state.Index = 0;
-            _state.Programs[_state.Index] = program;
-            while (_state.Index >= 0)
+            var tempStates = new IProgram[ArgTokens.Count + 1];
+            var resolvedInputs = new IOption<ResObj>[ArgTokens.Count];
+            tempStates[0] = program;
+            for (int i = 0; i >= 0; i++)
             {
-                if (_state.Index == ArgTokens.Count)
+                if (i == ArgTokens.Count)
                 {
-                    if (await TransformTokens(_state.Programs[_state.Index], _state.Inputs) is IOption<R> o) return o;
-                    _state.Index--;
+                    if (await TransformTokens(tempStates[i], resolvedInputs) is IOption<R> o) return o;
+                    i--;
                 }
-                switch (await ArgTokens[_state.Index].ResolveWithRulesUnsafe(_state.Programs[_state.Index]))
+                if (await ArgTokens[i].ResolveWithRulesUnsafe(tempStates[i]) is not IOption<ResObj> resOpt)
                 {
-                    case IOption<ResObj> resOpt:
-                        _state.Inputs[_state.Index] = resOpt;
-                        var prev = _state.Programs[_state.Index];
-                        _state.Programs[_state.Index + 1] = resOpt.Check(out var res) ? prev.dState(Q => Q.WithResolution(res)) : prev;
-                        _state.Index++;
-                        continue;
-                    case null:
-                        while (--_state.Index >= 0 && !ArgTokens[_state.Index].IsFallible) { }
-                        continue;
+                    i--;
+                    while (i-- >= 0 && !ArgTokens[i].IsFallible) { }
+                    continue;
                 }
+                if (resOpt.CheckNone(out var res))
+                {
+                    tempStates[i] = 
+                }
+                resolvedInputs[i] = resOpt;
+                var prev = tempStates[i];
+                tempStates[i + 1] = resOpt.Check(out var res) ? prev.dState(Q => Q.WithResolution(res)) : prev;
+                continue;
+
             }
             _state.Index = 0;
             return null;
         }
 
         protected readonly PList<IToken> ArgTokens;
-        protected abstract ITask<IOption<R>?> TransformTokens(IProgram program, List<IOption<ResObj>> resolutions);
+        protected abstract ITask<IOption<R>?> TransformTokens(IProgram program, IOption<ResObj>[] resolutions);
         protected TokenFunction(IEnumerable<IToken> tokens)
         {
             ArgTokens = new() { Elements = tokens };
-            _state = new(ArgTokens.Count);
         }
         protected TokenFunction(params IToken[] tokens) : this(tokens as IEnumerable<IToken>) { }
-
-        private class State
-        {
-            public int Index { get; set; }
-            public List<IProgram> Programs { get; set; }
-            public List<IOption<ResObj>> Inputs { get; set; }
-            public State(int argCount)
-            {
-                Index = 0;
-                Programs = new((null as IProgram).Sequence(_ => null).Take(argCount + 1));
-                Inputs = new((null as IOption<ResObj>).Sequence(_ => null).Take(argCount));
-            }
-        }
-        private State _state;
-        public TokenFunction(TokenFunction<R> original) : base(original)
-        {
-            ArgTokens = original.ArgTokens;
-            _state = new(ArgTokens.Count);
-        }
     }
 }
