@@ -22,9 +22,17 @@ namespace Tokens.Board.Unit
         public sealed record HP : PureFunction<rb.Unit, r.Number>
         {
             public HP(IToken<rb.Unit> of) : base(of) { }
-            protected override r.Number EvaluatePure(rb.Unit in1)
+            protected override r.Number EvaluatePure(rb.Unit unit)
             {
-                return in1.HP;
+                return unit.HP;
+            }
+        }
+        public sealed record Effects : PureFunction<rb.Unit, r.Multi<rb.Unit.Effect>>
+        {
+            public Effects(IToken<rb.Unit> of) : base(of) { }
+            protected override r.Multi<rb.Unit.Effect> EvaluatePure(rb.Unit unit)
+            {
+                return unit.Effects;
             }
         }
     }

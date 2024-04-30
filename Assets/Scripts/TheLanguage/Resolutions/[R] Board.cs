@@ -50,10 +50,12 @@ namespace Resolutions.Board
     public sealed record Unit : NoOp, IPositioned
     {
         public readonly int UUID;
-        public int HP { get; init; }
-        public Updater<int> dHP { init => HP = value(HP); }
+        public Number HP { get; init; }
+        public Updater<Number> dHP { init => HP = value(HP); }
         public Coordinates Position { get; init; }
         public Updater<Coordinates> dPosition { init => Position = value(Position); }
+        public Multi<Effect> Effects { get; init; } 
+        public Updater<Multi<Effect>> dEffects { init => Effects = value(Effects); }
         public Unit(int id)
         {
             UUID = id;
@@ -61,6 +63,10 @@ namespace Resolutions.Board
         public override bool ResEqual(IResolution other)
         {
             return (other is Unit u && UUID == u.UUID);
+        }
+        public sealed record Effect : NoOp
+        {
+            public readonly string Identifier;
         }
     }
 }

@@ -69,7 +69,7 @@ namespace Token
             _elementLabel = elementLabel;
             _lambda = lambda;
         }
-        protected override async ITask<IOption<RInto>?> TransformTokens(IProgram program, List<IOption<ResObj>> resolutions)
+        protected override async ITask<IOption<RInto>?> TransformTokens(IProgram program, IOption<ResObj>[] resolutions)
         {
             if (resolutions[0].CheckNone(out var multi)) return new None<RInto>();
             var iterValues = ((Resolution.IMulti<RElement>)multi).Values;
@@ -83,7 +83,7 @@ namespace Token
             while (tryGenerate is IOption<Resolution.IMulti<RGen>> generatorOutOption)
             {
                 if (generatorOutOption.CheckNone(out var generatorOutputs)) return new None<RInto>();
-                if (await Accumulate(program, Iter.Zip(iterValues, generatorOutputs.Values)) is IOption<RInto> o) return o;
+                if (await Accumulate(program, iterValues.ZipShort(generatorOutputs.Values)) is IOption<RInto> o) return o;
                 tryGenerate = await union.Resolve(program);
             }
             return null;
@@ -138,7 +138,7 @@ namespace Token
 
         protected Function(IToken<RArg1> in1) : base(in1) { }
         protected abstract ITask<IOption<ROut>?> Evaluate(IProgram program, IOption<RArg1> in1);
-        protected override ITask<IOption<ROut>?> TransformTokens(IProgram program, List<IOption<ResObj>> args)
+        protected override ITask<IOption<ROut>?> TransformTokens(IProgram program, IOption<ResObj>[] args)
         {
             return Evaluate(program, args[0].RemapAs(x => (RArg1)x));
         }
@@ -161,7 +161,7 @@ namespace Token
 
         protected abstract ITask<IOption<ROut>?> Evaluate(IProgram program, IOption<RArg1> in1, IOption<RArg2> in2);
         protected Function(IToken<RArg1> in1, IToken<RArg2> in2) : base(in1, in2) { }
-        protected override ITask<IOption<ROut>?> TransformTokens(IProgram program, List<IOption<ResObj>> args)
+        protected override ITask<IOption<ROut>?> TransformTokens(IProgram program, IOption<ResObj>[] args)
         {
             return Evaluate(program, args[0].RemapAs(x => (RArg1)x), args[1].RemapAs(x => (RArg2)x));
         }
@@ -187,7 +187,7 @@ namespace Token
 
         protected abstract ITask<IOption<ROut>?> Evaluate(IProgram program, IOption<RArg1> in1, IOption<RArg2> in2, IOption<RArg3> in3);
         protected Function(IToken<RArg1> in1, IToken<RArg2> in2, IToken<RArg3> in3) : base(in1, in2, in3) { }
-        protected override ITask<IOption<ROut>?> TransformTokens(IProgram program, List<IOption<ResObj>> args)
+        protected override ITask<IOption<ROut>?> TransformTokens(IProgram program, IOption<ResObj>[] args)
         {
             return Evaluate(program, args[0].RemapAs(x => (RArg1)x), args[1].RemapAs(x => (RArg2)x), args[2].RemapAs(x => (RArg3)x));
         }
@@ -206,7 +206,7 @@ namespace Token
 
         protected abstract ITask<IOption<ROut>?> Evaluate(IProgram program, IEnumerable<IOption<RArg>> inputs);
         protected Combiner(IEnumerable<IToken<RArg>> tokens) : base(tokens) { }
-        protected sealed override ITask<IOption<ROut>?> TransformTokens(IProgram program, List<IOption<ResObj>> tokens)
+        protected sealed override ITask<IOption<ROut>?> TransformTokens(IProgram program, IOption<ResObj>[] tokens)
         {
             return Evaluate(program, tokens.Map(x => x.RemapAs(x => (RArg)x)));
         }
@@ -346,20 +346,20 @@ namespace Token.Unsafe
                 if (await ArgTokens[i].ResolveWithRulesUnsafe(tempStates[i]) is not IOption<ResObj> resOpt)
                 {
                     i--;
-                    while (i-- >= 0 && !ArgTokens[i].IsFallible) { }
+                    while (i >= 0 && !ArgTokens[i].IsFallible) i--;
+                    i--; //to negate the i++ in the for.
                     continue;
                 }
+                resolvedInputs[i] = resOpt;
                 if (resOpt.CheckNone(out var res))
                 {
-                    tempStates[i] = 
+                    tempStates[i + 1] = tempStates[i];
+                    continue;
                 }
-                resolvedInputs[i] = resOpt;
-                var prev = tempStates[i];
-                tempStates[i + 1] = resOpt.Check(out var res) ? prev.dState(Q => Q.WithResolution(res)) : prev;
+                tempStates[i + 1] = tempStates[i].dState(Q => Q.WithResolution(res));
                 continue;
 
             }
-            _state.Index = 0;
             return null;
         }
 
