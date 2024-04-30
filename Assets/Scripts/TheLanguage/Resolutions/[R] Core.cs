@@ -35,7 +35,7 @@ namespace Resolutions
         public override bool ResEqual(ResObj? other)
         {
             if (other is not IMulti<R> othermulti) return false;
-            foreach (var (a, b) in Values.LongZip(othermulti.Values)) if (a is not null && a.ResEqual(b)) return false;
+            foreach (var (a, b) in Values.ZipLong(othermulti.Values)) if (a is not null && a.ResEqual(b)) return false;
             return true;
         }
         protected override State UpdateState(State state)
