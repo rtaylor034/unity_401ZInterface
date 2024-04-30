@@ -80,33 +80,33 @@ namespace Proxies
         where RGen : class, ResObj
         where RInto : class, ResObj
     {
-        public Accumulator(IProxy<TOrig, Resolution.IMulti<RElement>> iterator, string elementLabel, IProxy<TOrig, RGen> generator) : base(iterator, generator)
+        public Accumulator(IProxy<TOrig, Resolution.IMulti<RElement>> iterator, VariableIdentifier<RElement> elementVariable, IProxy<TOrig, RGen> generator) : base(iterator, generator)
         {
-            _elementLabel = elementLabel;
+            _elementIdentifier = elementVariable;
         }
         protected override IToken<RInto> ConstructFromArgs(List<IToken> tokens)
         {
             return (Token.Accumulator<RElement, RGen, RInto>)typeof(TNew)
                 .GetConstructor(new Type[] { typeof(IToken<Resolution.IMulti<RElement>>), typeof(string), typeof(IToken<RGen>) })
-                .Invoke(new object[] { (IToken<Resolution.IMulti<RElement>>)tokens[0], _elementLabel, (IToken<RGen>)tokens[1] });
+                .Invoke(new object[] { (IToken<Resolution.IMulti<RElement>>)tokens[0], _elementIdentifier, (IToken<RGen>)tokens[1] });
         }
-        private readonly string _elementLabel;
+        private readonly VariableIdentifier<RElement> _elementIdentifier;
     }
-    public sealed record Variable<TOrig, R> : Proxy<TOrig, Resolutions.DeclareVariable>
+    public sealed record Variable<TOrig, R> : Proxy<TOrig, Resolutions.DeclareVariable<R>>
         where TOrig : IToken
         where R : class, ResObj
     {
-        public Variable(string label, IProxy<TOrig, R> proxy)
+        public Variable(VariableIdentifier<R> identifier, IProxy<TOrig, R> proxy)
         {
-            _label = label;
+            _identifier = identifier;
             _objectProxy = proxy;
         }
-        public override IToken<Resolutions.DeclareVariable> Realize(TOrig original, IRule? rule)
+        public override IToken<Resolutions.DeclareVariable<R>> Realize(TOrig original, IRule? rule)
         {
-            return new Tokens.Variable<R>(_label, _objectProxy.Realize(original, rule));
+            return new Tokens.Variable<R>(_identifier, _objectProxy.Realize(original, rule));
         }
 
-        private readonly string _label;
+        private readonly VariableIdentifier<R> _identifier;
         private readonly IProxy<TOrig, R> _objectProxy;
     }
     #region OriginalArgs

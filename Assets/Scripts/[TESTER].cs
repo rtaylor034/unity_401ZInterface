@@ -21,16 +21,6 @@ public class TESTER : MonoBehaviour
     // Start is called before the first frame update
     async void Start()
     {
-        // its important to rememeber that P.AsIs() will work just fine unless a proxies' arguements will have OriginalArgs somewhere.
-
-        var token = new Add(new Fixed<r.Number>(5),
-            new Select.One<r.Number>(new Union<r.Number>(new Fixed<r.Number>(5).YieldToken(), new Fixed<r.Number>(10).YieldToken())));
-
-        var rule = Rule.Create.For<Select.One<r.Number>, r.Number>(P =>
-        {
-            return P.AsIs(new Fixed<r.Number>(100));
-        });
-        
         var program = new FourZeroOne.Programs.Standard.Program()
         {
             State = new()
@@ -40,14 +30,9 @@ public class TESTER : MonoBehaviour
                 Board = new() { }
             }
         };
-        while ((await new Select.One<r.Bool>(new Union<r.Bool>(Iter.Over(true, false).Map(x => new Fixed<r.Bool>(x).YieldToken()))).Resolve(program)).Unwrap().IsTrue)
+        while ((await new Select.One<r.Bool>(new Union<r.Bool>(Iter.Over(true, false).Map(x => new Yield<r.Bool>(new Fixed<r.Bool>(x))))).Resolve(program)).Unwrap().IsTrue)
         {
             Debug.Log("===============================");
-            Debug.Log(await new Select.Multiple<r.Number>(
-                new Union<r.Number>(1.Sequence(x => x + 1).Take(5).Map(x => new Fixed<r.Number>(x).YieldToken())),
-                new Select.One<r.Number>(new Union<r.Number>(1.Sequence(x => x + 1).Take(5).Map(x => new Fixed<r.Number>(x).YieldToken())))
-                )
-                .ResolveWithRules(program));
         }
         UnityEditor.EditorApplication.ExitPlaymode();
         In<AClass> a = null;

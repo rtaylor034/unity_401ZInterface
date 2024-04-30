@@ -19,28 +19,28 @@ namespace Tokens
         public SubEnvironment(IEnumerable<Token.Unsafe.IToken> envModifiers) : base(envModifiers) { }
         public SubEnvironment(params Token.Unsafe.IToken[] envModifiers) : base(envModifiers) { }
         public sealed override bool IsFallibleFunction => SubToken.IsFallible;
-        protected sealed override ITask<IOption<ROut>?> TransformTokens(IProgram program, List<IOption<ResObj>> _)
+        protected sealed override ITask<IOption<ROut>?> TransformTokens(IProgram program, IOption<ResObj>[] _)
         {
             return SubToken.ResolveWithRules(program);
         }
     }
 
-    public sealed record Variable<R> : Token<r.DeclareVariable> where R : class, ResObj
+    public sealed record Variable<R> : Token<r.DeclareVariable<R>> where R : class, ResObj
     {
-        public Variable(string label, IToken<R> token)
+        public Variable(VariableIdentifier<R> identifier, IToken<R> token)
         {
             _objectToken = token;
-            _label = label;
+            _identifier = identifier;
         }
         public override bool IsFallible => _objectToken.IsFallible;
-        protected override async ITask<IOption<r.DeclareVariable>?> ResolveInternal(IProgram program)
+        protected override async ITask<IOption<r.DeclareVariable<R>>?> ResolveInternal(IProgram program)
         {
             return (await _objectToken.ResolveWithRules(program) is IOption<R> resOpt) ?
-                new r.DeclareVariable() { Label = _label, Object = resOpt }.AsSome() : null;
+                new r.DeclareVariable<R>(_identifier) { Object = resOpt }.AsSome() : null;
         }
 
         private readonly IToken<R> _objectToken;
-        private readonly string _label;
+        private readonly VariableIdentifier<R> _identifier;
     }
 
     public sealed record Rule<R> : Infallible<r.DeclareRule> where R : class, ResObj
@@ -70,19 +70,19 @@ namespace Tokens
     }
     public sealed record Reference<R> : Infallible<R> where R : class, ResObj
     {
-        public Reference(string toLabel) => _toLabel = toLabel;
+        public Reference(VariableIdentifier<R> toIdentifier) => _toIdentifier = toIdentifier;
 
         protected override IOption<R> InfallibleResolve(IProgram program)
         {
-            return (program.State.Variables[_toLabel] is IOption<R> val) ? val :
+            return (program.State.Variables[_toIdentifier] is IOption<R> val) ? val :
                 throw new Exception($"Reference token resolved to non-existent or wrongly-typed object.\n" +
-                $"Label: '{_toLabel}'\n" +
+                $"Label: '{_toIdentifier}'\n" +
                 $"Expected: {typeof(R).Name}\n" +
-                $"Recieved: {program.State.Variables[_toLabel]?.GetType().Name}\n" +
+                $"Recieved: {program.State.Variables[_toIdentifier]?.GetType().Name}\n" +
                 $"Current Scope:\n" +
                 $"{program.State.Variables.Elements.AccumulateInto("", (msg, x) => msg + $"> '{x.key}' : {x.val}")}");
         }
 
-        private readonly string _toLabel;
+        private readonly VariableIdentifier<R> _toIdentifier;
     }
 }

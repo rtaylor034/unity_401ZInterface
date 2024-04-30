@@ -139,13 +139,16 @@ namespace Proxy.Creator
             where ROut : class, ResObj
         { return new(envModifiers); }
         public static Proxies.Accumulator<TNew, TOrig, RElement, RGen, RInto> OverTokens<TNew, TOrig, RElement, RGen, RInto>
-            (this Base<TOrig, RInto>.IMaker<Token.Accumulator<RElement, RGen, RInto>, TNew> _, IProxy<TOrig, Resolution.IMulti<RElement>> iterator, string elementLabel, IProxy<TOrig, RGen> generator)
+            (this Base<TOrig, RInto>.IMaker<Token.Accumulator<RElement, RGen, RInto>, TNew> _, IProxy<TOrig, Resolution.IMulti<RElement>> iterator, out VariableIdentifier<RElement> elementIdentifier, IProxy<TOrig, RGen> generator)
             where TNew : Token.Accumulator<RElement, RGen, RInto>
             where TOrig : IToken
             where RElement : class, ResObj
             where RGen : class, ResObj
             where RInto : class, ResObj
-        { return new(iterator, elementLabel, generator); }
+        {
+            elementIdentifier = new();
+            return new(iterator, elementIdentifier, generator);
+        }
 
         public static Proxies.OriginalArg1<TOrig, RArg> OriginalArg1<TOrig, RArg, ROut>(this IBase<TOrig, Token.Unsafe.IHasArg1<RArg>, ROut> _)
             where TOrig : Token.Unsafe.IHasArg1<RArg>
@@ -162,9 +165,12 @@ namespace Proxy.Creator
             where RArg : class, ResObj
             where ROut : class, ResObj
         { return new(); }
-        public static Proxies.Variable<TOrig, R> AsVariable<TOrig, R>(this IProxy<TOrig, R> proxy, string label)
+        public static Proxies.Variable<TOrig, R> AsVariable<TOrig, R>(this IProxy<TOrig, R> proxy, out VariableIdentifier<R> newIdentifier)
             where TOrig : Token.Unsafe.IToken
             where R : class, ResObj
-        { return new(label, proxy); }
+        {
+            newIdentifier = new();
+            return new(newIdentifier, proxy);
+        }
     }
 }

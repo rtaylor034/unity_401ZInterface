@@ -19,7 +19,11 @@ namespace Token
         public ITask<IOption<R>?> ResolveWithRules(IProgram program);
         public ITask<IOption<R>?> Resolve(IProgram program);
     }
-
+    
+    public sealed record VariableIdentifier<R> : Unsafe.VariableIdentifier where R : class, ResObj
+    {
+        public VariableIdentifier() : base() { }
+    }
     public abstract record Token<R> : IToken<R> where R : class, ResObj
     {
         public abstract bool IsFallible { get; }
@@ -64,9 +68,9 @@ namespace Token
         public override bool IsFallibleFunction => _lambda.IsFallible;
 
         protected abstract ITask<IOption<RInto>?> Accumulate(IProgram program, IEnumerable<(RElement element, RGen output)> outputs);
-        protected Accumulator(IToken<Resolution.IMulti<RElement>> iterator, string elementLabel, IToken<RGen> lambda) : base(iterator)
+        protected Accumulator(IToken<Resolution.IMulti<RElement>> iterator, VariableIdentifier<RElement> elementVariable, IToken<RGen> lambda) : base(iterator)
         {
-            _elementLabel = elementLabel;
+            _elementIdentifier = elementVariable;
             _lambda = lambda;
         }
         protected override async ITask<IOption<RInto>?> TransformTokens(IProgram program, IOption<ResObj>[] resolutions)
@@ -74,7 +78,7 @@ namespace Token
             if (resolutions[0].CheckNone(out var multi)) return new None<RInto>();
             var iterValues = ((Resolution.IMulti<RElement>)multi).Values;
             var generatorTokens = iterValues
-                .Map(x => new Tokens.SubEnvironment<Resolutions.Multi<RGen>>(new Tokens.Variable<RElement>(_elementLabel, new Tokens.Fixed<RElement>(x)))
+                .Map(x => new Tokens.SubEnvironment<Resolutions.Multi<RGen>>(new Tokens.Variable<RElement>(_elementIdentifier, new Tokens.Fixed<RElement>(x)))
                 {
                     SubToken = new Tokens.Multi.Yield<RGen>(_lambda)
                 });
@@ -88,7 +92,7 @@ namespace Token
             }
             return null;
         }
-        private readonly string _elementLabel;
+        private readonly VariableIdentifier<RElement> _elementIdentifier;
         private readonly IToken<RGen> _lambda;
     }
     public abstract record PureAccumulator<RElement, RGen, RInto> : Accumulator<RElement, RGen, RInto>
@@ -97,7 +101,7 @@ namespace Token
         where RInto : class, ResObj
     {
         protected abstract RInto PureAccumulate(IEnumerable<(RElement element, RGen output)> outputs);
-        protected PureAccumulator(IToken<Resolution.IMulti<RElement>> iterator, string elementLabel, IToken<RGen> lambda) : base(iterator, elementLabel, lambda) { }
+        protected PureAccumulator(IToken<Resolution.IMulti<RElement>> iterator, VariableIdentifier<RElement> elementVariable, IToken<RGen> lambda) : base(iterator, elementVariable, lambda) { }
         protected override ITask<IOption<RInto>?> Accumulate(IProgram _, IEnumerable<(RElement element, RGen output)> outputs) { return Task.FromResult(PureAccumulate(outputs).AsSome()).AsITask(); }
         
     }
@@ -327,6 +331,17 @@ namespace Token.Unsafe
     public interface IHasArg2 : IHasArg1 { }
     public interface IHasArg3 : IHasArg2 { }
 
+    public abstract record VariableIdentifier
+    {
+        public VariableIdentifier()
+        {
+            _value = _assigner;
+        }
+        public virtual bool Equals(VariableIdentifier? other) => other is not null && _value == other._value;
+        public override int GetHashCode() => _value.GetHashCode();
+        private static int _assigner = 0;
+        private readonly int _value;
+    }
     public abstract record TokenFunction<R> : Token<R> where R : class, ResObj
     {
         public abstract bool IsFallibleFunction { get; }

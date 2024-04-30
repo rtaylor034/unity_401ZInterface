@@ -32,8 +32,8 @@ namespace FourZeroOne
     
     public record State
     {
-        public PMap<string, IOption<ResObj>> Variables { get; init; }
-        public Updater<PMap<string, IOption<ResObj>>> dVariables { init => Variables = value(Variables); }
+        public PMap<VariableIdentifier, IOption<ResObj>> Variables { get; init; }
+        public Updater<PMap<VariableIdentifier, IOption<ResObj>>> dVariables { init => Variables = value(Variables); }
         public PList<Rule.IRule> Rules { get; init; }
         public Updater<PList<Rule.IRule>> dRules { init => Rules = value(Rules); }
         public PIndexedSet<ResObj, Rule.IRule> Effects { get; init; } 

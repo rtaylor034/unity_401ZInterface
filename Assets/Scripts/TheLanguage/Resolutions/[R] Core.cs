@@ -50,16 +50,21 @@ namespace Resolutions
         }
     }
 
-    public sealed record DeclareVariable : Operation
+    public sealed record DeclareVariable<R> : Operation where R : class, ResObj
     {
-        public string Label { get; init; }
-        public Updater<string> dLabel { init => Label = value(Label); }
-        public IOption<ResObj> Object { get; init; }
-        public Updater<IOption<ResObj>> dObject { init => Object = value(Object); }
-
+        public readonly VariableIdentifier<R> Identifier;
+        public IOption<R> Object { get; init; }
+        public Updater<IOption<R>> dObject { init => Object = value(Object); }
+        public DeclareVariable(VariableIdentifier<R> identifier)
+        {
+            Identifier = identifier;
+        }
         protected override State UpdateState(State state) => state with
         {
-            dVariables = Q => Q with { dElements = Q => Q.Also((Label, Object).Yield()) }
+            dVariables = Q => Q with
+            {
+                dElements = Q => Q.Also(((Token.Unsafe.VariableIdentifier)Identifier, Object.RemapAs(x => (ResObj)x)).Yield())
+            }
         };
     }
 
