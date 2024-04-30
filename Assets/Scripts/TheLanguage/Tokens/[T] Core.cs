@@ -50,7 +50,10 @@ namespace Tokens
             _rule = rule;
         }
 
-        protected override IOption<r.DeclareRule> InfallibleResolve(IProgram program) { return new r.DeclareRule() { Rule = _rule }.AsSome(); }
+        protected override IOption<r.DeclareRule> InfallibleResolve(IProgram program)
+        {
+            return new r.DeclareRule() { Rule = _rule }.AsSome();
+        }
 
         private readonly Rule.IRule _rule;
     }
