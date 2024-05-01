@@ -69,7 +69,7 @@ namespace Tokens
         private readonly R _resolution;
     }
     public sealed record Reference<R> : Infallible<R> where R : class, ResObj
-    {
+    { 
         public Reference(VariableIdentifier<R> toIdentifier) => _toIdentifier = toIdentifier;
 
         protected override IOption<R> InfallibleResolve(IProgram program)

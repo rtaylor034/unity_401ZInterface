@@ -15,22 +15,30 @@ using Tokens.Number;
 using Tokens.Alias;
 using Tokens.Multi;
 using Select = Tokens.Select;
-using Token.Syntax;
+using Token.Creator;
 using FourZeroOne;
 public class TESTER : MonoBehaviour
 {
     // Start is called before the first frame update
     async void Start()
     {
-        var token1 = new SubEnvironment<r.Number>(new Fixed<r.Number>(10).AsVariableT(out var x), new Fixed<r.Number>(5).AsVariableT(out var y))
+        var token1 = new SubEnvironment<r.Number>(new Fixed<r.Number>(10).AsVariable(out var x), new Fixed<r.Number>(5).AsVariable(out var y))
         {
-            SubToken = new Add(x.ReferenceT(), y.ReferenceT())
+            SubToken = new Add(new Reference<r.Number>(x), new Reference<r.Number>(y))
         };
+
+        var rule1 = Rule.Create.For<Add, r.Number>(P =>
+        {
+            return P.Construct<SubEnvironment<r.Number>>().WithEnvironment(P.AsIs(new Fixed<r.Number>(88).AsVariable(out var x))) with
+            {
+                SubTokenProxy = P.Construct<Add>().WithArgs(P.OriginalArg2(), P.AsIs(new Reference<r.Number>(x)))
+            };
+        });
         var program = new FourZeroOne.Programs.Standard.Program()
         {
             State = new()
             {
-                Rules = new(),
+                Rules = new() { Elements = Iter.Over(rule1) },
                 Variables = new(7),
                 Board = new() { }
             }
