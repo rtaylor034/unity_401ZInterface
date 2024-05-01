@@ -15,12 +15,17 @@ using Tokens.Number;
 using Tokens.Alias;
 using Tokens.Multi;
 using Select = Tokens.Select;
+using Token.Syntax;
 using FourZeroOne;
 public class TESTER : MonoBehaviour
 {
     // Start is called before the first frame update
     async void Start()
     {
+        var token1 = new SubEnvironment<r.Number>(new Fixed<r.Number>(10).AsVariableT(out var x), new Fixed<r.Number>(5).AsVariableT(out var y))
+        {
+            SubToken = new Add(x.ReferenceT(), y.ReferenceT())
+        };
         var program = new FourZeroOne.Programs.Standard.Program()
         {
             State = new()
@@ -32,6 +37,8 @@ public class TESTER : MonoBehaviour
         };
         while ((await new Select.One<r.Bool>(new Union<r.Bool>(Iter.Over(true, false).Map(x => new Yield<r.Bool>(new Fixed<r.Bool>(x))))).Resolve(program)).Unwrap().IsTrue)
         {
+            Debug.Log("===============================");
+            Debug.Log(await token1.ResolveWithRules(program));
             Debug.Log("===============================");
         }
         UnityEditor.EditorApplication.ExitPlaymode();

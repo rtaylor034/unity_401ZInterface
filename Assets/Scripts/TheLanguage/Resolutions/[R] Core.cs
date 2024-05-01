@@ -63,7 +63,7 @@ namespace Resolutions
         {
             dVariables = Q => Q with
             {
-                dElements = Q => Q.Also(((Token.Unsafe.VariableIdentifier)Identifier, Object.RemapAs(x => (ResObj)x)).Yield())
+                dElements = Q => Q.Also(((Token.Unsafe.VariableIdentifier)Identifier, (IOption<ResObj>)Object).Yield())
             }
         };
     }

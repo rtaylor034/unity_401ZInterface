@@ -23,6 +23,10 @@ namespace Token
     public sealed record VariableIdentifier<R> : Unsafe.VariableIdentifier where R : class, ResObj
     {
         public VariableIdentifier() : base() { }
+        public override string ToString()
+        {
+            return $"[&{typeof(R).Name}:{_value}]";
+        }
     }
     public abstract record Token<R> : IToken<R> where R : class, ResObj
     {
@@ -336,11 +340,12 @@ namespace Token.Unsafe
         public VariableIdentifier()
         {
             _value = _assigner;
+            _assigner++;
         }
         public virtual bool Equals(VariableIdentifier? other) => other is not null && _value == other._value;
         public override int GetHashCode() => _value.GetHashCode();
-        private static int _assigner = 0;
-        private readonly int _value;
+        protected static int _assigner = 0;
+        protected readonly int _value;
     }
     public abstract record TokenFunction<R> : Token<R> where R : class, ResObj
     {
@@ -385,5 +390,35 @@ namespace Token.Unsafe
             ArgTokens = new() { Elements = tokens };
         }
         protected TokenFunction(params IToken[] tokens) : this(tokens as IEnumerable<IToken>) { }
+    }
+}
+namespace Token.Syntax
+{
+    using Tokens;
+    using Tokens.Multi;
+    using r = Resolutions;
+    public static class Syntax
+    {
+        public static Variable<R> AsVariableT<R>(this IToken<R> token, out VariableIdentifier<R> identifier) where R : class, ResObj
+        {
+            identifier = new();
+            return new(identifier, token);
+        }
+        public static Reference<R> ReferenceT<R>(this VariableIdentifier<R> identifier) where R : class, ResObj
+        {
+            return new(identifier);
+        }
+        public static Yield<R> YieldT<R>(this IToken<R> token) where R : class, ResObj
+        {
+            return new(token);
+        }
+        public static Union<R> UnionedT<R>(IEnumerable<IToken<R>> tokens) where R : class, ResObj
+        {
+            return new(tokens.Map(x => x.YieldT()));
+        }
+        public static Union<R> UnionedT<R>(IEnumerable<IToken<r.Multi<R>>> tokens) where R : class, ResObj
+        {
+            return new(tokens);
+        }
     }
 }

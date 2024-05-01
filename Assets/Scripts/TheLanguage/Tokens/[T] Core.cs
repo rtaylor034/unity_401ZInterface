@@ -76,11 +76,11 @@ namespace Tokens
         {
             return (program.State.Variables[_toIdentifier] is IOption<R> val) ? val :
                 throw new Exception($"Reference token resolved to non-existent or wrongly-typed object.\n" +
-                $"Label: '{_toIdentifier}'\n" +
+                $"Identifier: {_toIdentifier}\n" +
                 $"Expected: {typeof(R).Name}\n" +
-                $"Recieved: {program.State.Variables[_toIdentifier]?.GetType().Name}\n" +
+                $"Recieved: {program.State.Variables[_toIdentifier]}\n" +
                 $"Current Scope:\n" +
-                $"{program.State.Variables.Elements.AccumulateInto("", (msg, x) => msg + $"> '{x.key}' : {x.val}")}");
+                $"{program.State.Variables.Elements.AccumulateInto("", (msg, x) => msg + $"> '{x.key}' : {x.val}\n")}");
         }
 
         private readonly VariableIdentifier<R> _toIdentifier;
