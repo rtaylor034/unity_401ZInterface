@@ -63,10 +63,13 @@ namespace Tokens
         {
             _resolution = resolution;
         }
-        // kinda spicy
-        public static implicit operator Fixed<R>(R resolution) => new(resolution);
         protected override IOption<R> InfallibleResolve(IProgram _) { return _resolution.AsSome(); }
         private readonly R _resolution;
+    }
+    public sealed record Nolla<R> : Infallible<R> where R : class, ResObj
+    {
+        public Nolla() { }
+        protected override IOption<R> InfallibleResolve(IProgram _) { return new None<R>(); }
     }
     public sealed record Reference<R> : Infallible<R> where R : class, ResObj
     { 

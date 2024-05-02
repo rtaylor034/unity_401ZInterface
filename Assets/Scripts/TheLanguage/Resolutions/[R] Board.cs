@@ -66,7 +66,11 @@ namespace Resolutions.Board
         }
         public sealed record Effect : NoOp
         {
-            public readonly string Identifier;
+            public readonly string Identity;
+            public Effect(string identity)
+            {
+                Identity = identity;
+            }
         }
     }
 }
