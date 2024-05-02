@@ -25,6 +25,40 @@ namespace Tokens
         }
     }
 
+    public record Recursive<RArg1, ROut> : Token.Alias.OneArg<RArg1, ROut>
+        where RArg1 : class, ResObj
+        where ROut : class, ResObj
+    {
+        public readonly Proxy.IProxy<Recursive<RArg1, ROut>, ROut> RecursiveProxy;
+        public Recursive(IToken<RArg1> arg1, Proxy.IProxy<Recursive<RArg1, ROut>, ROut> recursiveProxy) : base(arg1, recursiveProxy)
+        {
+            RecursiveProxy = recursiveProxy;
+        }
+    }
+    public record Recursive<RArg1, RArg2, ROut> : Token.Alias.TwoArg<RArg1, RArg2, ROut>
+        where RArg1 : class, ResObj
+        where RArg2 : class, ResObj
+        where ROut : class, ResObj
+    {
+        public readonly Proxy.IProxy<Recursive<RArg1, RArg2, ROut>, ROut> RecursiveProxy;
+        public Recursive(IToken<RArg1> arg1, IToken<RArg2> arg2, Proxy.IProxy<Recursive<RArg1, RArg2, ROut>, ROut> recursiveProxy) : base(arg1, arg2, recursiveProxy)
+        {
+            RecursiveProxy = recursiveProxy;
+        }
+    }
+    public record Recursive<RArg1, RArg2, RArg3, ROut> : Token.Alias.ThreeArg<RArg1, RArg2, RArg3, ROut>
+        where RArg1 : class, ResObj
+        where RArg2 : class, ResObj
+        where RArg3 : class, ResObj
+        where ROut : class, ResObj
+    {
+        public readonly Proxy.IProxy<Recursive<RArg1, RArg2, RArg3, ROut>, ROut> RecursiveProxy;
+        public Recursive(IToken<RArg1> arg1, IToken<RArg2> arg2, IToken<RArg3> arg3, Proxy.IProxy<Recursive<RArg1, RArg2, RArg3, ROut>, ROut> recursiveProxy) : base(arg1, arg2, arg3, recursiveProxy)
+        {
+            RecursiveProxy = recursiveProxy;
+        }
+    }
+
     public sealed record Variable<R> : Token<r.DeclareVariable<R>> where R : class, ResObj
     {
         public Variable(VariableIdentifier<R> identifier, IToken<R> token)

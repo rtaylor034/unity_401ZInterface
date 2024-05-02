@@ -46,7 +46,7 @@ namespace Proxies
     {
         public Combiner(IEnumerable<IProxy<TOrig, RArgs>> proxies) : base(proxies) { }
 
-        protected override IToken<ROut> ConstructFromArgs(List<IToken> tokens)
+        protected override IToken<ROut> ConstructFromArgs(TOrig _, List<IToken> tokens)
         {
             return (IToken<ROut>)typeof(TNew).GetConstructor(new Type[] { typeof(IEnumerable<IToken<RArgs>>) })
                 .Invoke(new object[] { tokens.Map(x => (IToken<RArgs>)x) });
@@ -84,7 +84,7 @@ namespace Proxies
         {
             _elementIdentifier = elementVariable;
         }
-        protected override IToken<RInto> ConstructFromArgs(List<IToken> tokens)
+        protected override IToken<RInto> ConstructFromArgs(TOrig _, List<IToken> tokens)
         {
             return (Token.Accumulator<RElement, RGen, RInto>)typeof(TNew)
                 .GetConstructor(new Type[] { typeof(IToken<Resolution.IMulti<RElement>>), typeof(string), typeof(IToken<RGen>) })
@@ -109,7 +109,6 @@ namespace Proxies
         private readonly VariableIdentifier<R> _identifier;
         private readonly IProxy<TOrig, R> _objectProxy;
     }
-    #region OriginalArgs
     // ---- [ OriginalArgs ] ----
     public sealed record OriginalArg1<TOrig, RArg> : Proxy<TOrig, RArg> where TOrig : IHasArg1<RArg> where RArg : class, ResObj
     {
@@ -124,8 +123,7 @@ namespace Proxies
         public override IToken<RArg> Realize(TOrig original, Rule.IRule? rule) { return original.Arg3.ApplyRule(rule); }
     }
     // --------
-    #endregion
-    #region Functions
+
     // ---- [ Functions ] ----
     public record Function<TNew, TOrig, RArg1, ROut> : FunctionProxy<TOrig, ROut>
         where TOrig : IToken
@@ -134,7 +132,7 @@ namespace Proxies
         where ROut : class, ResObj
     {
         public Function(IProxy<TOrig, RArg1> in1) : base(in1) { }
-        protected override IToken<ROut> ConstructFromArgs(List<IToken> tokens)
+        protected override IToken<ROut> ConstructFromArgs(TOrig _, List<IToken> tokens)
         {
             return (IToken<ROut>)
                 typeof(TNew).GetConstructor(new Type[] { typeof(IToken<RArg1>) })
@@ -149,7 +147,7 @@ namespace Proxies
         where ROut : class, ResObj
     {
         public Function(IProxy<TOrig, RArg1> in1, IProxy<TOrig, RArg2> in2) : base(in1, in2) { }
-        protected override IToken<ROut> ConstructFromArgs(List<IToken> tokens)
+        protected override IToken<ROut> ConstructFromArgs(TOrig _, List<IToken> tokens)
         {
             return (IToken<ROut>)
                 typeof(TNew).GetConstructor(new Type[] { typeof(IToken<RArg1>), typeof(IToken<RArg2>) })
@@ -165,7 +163,7 @@ namespace Proxies
         where ROut : class, ResObj
     {
         public Function(IProxy<TOrig, RArg1> in1, IProxy<TOrig, RArg2> in2, IProxy<TOrig, RArg2> in3) : base(in1, in2, in3) { }
-        protected override IToken<ROut> ConstructFromArgs(List<IToken> tokens)
+        protected override IToken<ROut> ConstructFromArgs(TOrig _, List<IToken> tokens)
         {
             return (IToken<ROut>)
                 typeof(TNew).GetConstructor(new Type[] { typeof(IToken<RArg1>), typeof(IToken<RArg2>), typeof(IToken<RArg3>) })
@@ -173,6 +171,47 @@ namespace Proxies
         }
     }
     // --------
-    #endregion
 
+    // ---- [ Recursive Call] ----
+    public record RecursiveCall<RArg1, ROut> : FunctionProxy<Tokens.Recursive<RArg1, ROut>, ROut>
+        where RArg1 : class, ResObj
+        where ROut : class, ResObj
+    {
+        protected override IToken<ROut> ConstructFromArgs(Tokens.Recursive<RArg1, ROut> original, List<IToken> tokens)
+        {
+            return new Tokens.Recursive<RArg1, ROut>(
+                (IToken<RArg1>)tokens[0],
+                original.RecursiveProxy);
+        }
+    }
+    public record RecursiveCall<RArg1, RArg2, ROut> : FunctionProxy<Tokens.Recursive<RArg1, RArg2, ROut>, ROut>
+        where RArg1 : class, ResObj
+        where RArg2 : class, ResObj
+        where ROut : class, ResObj
+    {
+        protected override IToken<ROut> ConstructFromArgs(Tokens.Recursive<RArg1, RArg2, ROut> original, List<IToken> tokens)
+        {
+            return new Tokens.Recursive<RArg1, RArg2, ROut>(
+                (IToken<RArg1>)tokens[0],
+                (IToken<RArg2>)tokens[1],
+                original.RecursiveProxy);
+        }
+    }
+    public record RecursiveCall<RArg1, RArg2, RArg3, ROut> : FunctionProxy<Tokens.Recursive<RArg1, RArg2, RArg3, ROut>, ROut>
+        where RArg1 : class, ResObj
+        where RArg2 : class, ResObj
+        where RArg3 : class, ResObj
+        where ROut : class, ResObj
+    {
+        protected override IToken<ROut> ConstructFromArgs(Tokens.Recursive<RArg1, RArg2, RArg3, ROut> original, List<IToken> tokens)
+        {
+            return new Tokens.Recursive<RArg1, RArg2, RArg3, ROut>(
+                (IToken<RArg1>)tokens[0],
+                (IToken<RArg2>)tokens[1],
+                (IToken<RArg3>)tokens[2],
+                original.RecursiveProxy);
+        }
+    }
+
+    // --------
 }

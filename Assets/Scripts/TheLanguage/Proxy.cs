@@ -45,10 +45,10 @@ namespace Proxy.Unsafe
         where TOrig : IToken
         where R : class, ResObj
     {
-        public sealed override IToken<R> Realize(TOrig original, Rule.IRule? rule) { return ConstructFromArgs(MakeSubstitutions(original, rule)); }
+        public sealed override IToken<R> Realize(TOrig original, Rule.IRule? rule) { return ConstructFromArgs(original, MakeSubstitutions(original, rule)); }
 
         protected readonly PList<IProxy> ArgProxies;
-        protected abstract IToken<R> ConstructFromArgs(List<IToken> tokens);
+        protected abstract IToken<R> ConstructFromArgs(TOrig original, List<IToken> tokens);
         protected FunctionProxy(IEnumerable<IProxy> proxies)
         {
             ArgProxies = new() { Elements = proxies };

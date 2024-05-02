@@ -26,11 +26,12 @@ namespace Token.Alias
         }
         private IToken<R> Expand()
         {
-            return (_cachedRealization is null) ? _proxy.UnsafeTypedRealize(this, null) : _cachedRealization;
+            _cachedRealization ??= _proxy.UnsafeTypedRealize(this, null);
+            return _cachedRealization;
         }
         private readonly Proxy.Unsafe.IProxy<R> _proxy;
         //NOTE: this only works under the assumption that proxies are perfect pure (stateless immutable).
-        private readonly IToken<R>? _cachedRealization;
+        private IToken<R>? _cachedRealization;
         
     }
 
