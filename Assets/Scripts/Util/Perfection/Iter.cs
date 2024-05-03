@@ -17,15 +17,18 @@ namespace Perfection
             foreach (var v in enumerable) yield return v;
             foreach (var v in also) yield return v;
         }
+
         public static IEnumerable<T> Filter<T>(this IEnumerable<T> enumerable, Func<T, bool> predicate)
         {
             foreach (var v in enumerable) if (predicate(v)) yield return v;
         }
+
         public static IEnumerable<(int index, T value)> Enumerate<T>(this IEnumerable<T> enumerable)
         {
             int i = 0;
             foreach (var v in enumerable) yield return (i++, v);
         }
+
         /// <summary>
         /// WARNING: generates INFINITE iterator. meant to be used with <see cref="Until{T}(IEnumerable{T}, Predicate{T})"/>
         /// </summary>
@@ -39,6 +42,7 @@ namespace Perfection
                 o = function(o);
             }
         }
+
         public static TResult AccumulateInto<TIn, TResult>(this IEnumerable<TIn> enumerable, TResult startingValue, Func<TResult, TIn, TResult> function)
         {
             TResult o = startingValue;
@@ -48,6 +52,7 @@ namespace Perfection
             }
             return o;
         }
+
         public static IEnumerable<T> Until<T>(this IEnumerable<T> enumerable, Predicate<T> breakCondition)
         {
             foreach (var v in enumerable)
@@ -56,6 +61,7 @@ namespace Perfection
                 if (breakCondition(v)) yield break;
             }
         }
+
         public static IEnumerable<T> After<T>(this IEnumerable<T> enumerable, Predicate<T> startCondition)
         {
             var iter = enumerable.GetEnumerator();
@@ -69,20 +75,24 @@ namespace Perfection
             }
             while (iter.MoveNext()) yield return iter.Current;
         }
+
         public static IEnumerable<T> Flatten<T>(this IEnumerable<IEnumerable<T>> enumerable)
         {
             foreach (var list in enumerable)
                 foreach (var e in list) yield return e;
         }
+
         public static bool HasMatch<T>(this IEnumerable<T> enumerable, Predicate<T> matchCondition)
         {
             foreach (var v in enumerable) if (matchCondition(v)) return true;
             return false;
         }
+
         public static IEnumerable<T> Yield<T>(this T value, int amount = 1)
         {
             for (int i = 0; i < amount; i++) yield return value;
         }
+
         public static IEnumerable<T> Take<T>(this IEnumerable<T> enumerable, int amount)
         {
             if (amount == 0) yield break;
@@ -94,12 +104,14 @@ namespace Perfection
                 if (i >= amount) yield break;
             }
         }
+
         public static IEnumerable<(T1 a, T2 b)> ZipShort<T1, T2>(this IEnumerable<T1> enumerableA, IEnumerable<T2> enumerableB)
         {
             var iter1 = enumerableA.GetEnumerator();
             var iter2 = enumerableB.GetEnumerator();
             while (iter1.MoveNext() && iter2.MoveNext()) yield return (iter1.Current, iter2.Current);
         }
+
         public static IEnumerable<(T1? a, T2? b)> ZipLong<T1, T2>(this IEnumerable<T1> enumerableA, IEnumerable<T2> enumerableB)
         {
             var iter1 = enumerableA.GetEnumerator();
@@ -108,27 +120,32 @@ namespace Perfection
             while (iter1.MoveNext()) yield return (iter1.Current, default);
             while (iter2.MoveNext()) yield return (default, iter2.Current);
         }
+
         public static IEnumerable<T> Skip<T>(this IEnumerable<T> enumerable, int amount)
         {
             var iter = enumerable.GetEnumerator();
             for (int i = -1; i < amount; i++) iter.MoveNext();
             while (iter.MoveNext()) yield return iter.Current;
         }
+
         public static IEnumerable<T> ContinueAfter<T>(this IEnumerable<T> enumerable, Func<IEnumerable<T>, IEnumerable<T>> consumer)
         {
             var iter = enumerable.GetEnumerator();
             foreach (var v in consumer(iter.AsEnumerable())) yield return v;
             foreach (var v in iter.AsEnumerable()) yield return v;
         }
+
         public static IEnumerable<T> AsEnumerable<T>(this IEnumerator<T> enumerator)
         {
             while (enumerator.MoveNext()) yield return enumerator.Current;
         }
+
         public static T? First<T>(this IEnumerable<T> enumerable) where T : class
         {
             var iter = enumerable.GetEnumerator();
             return iter.MoveNext() ? iter.Current : null;
         }
+
         public static List<T> ToMutList<T>(this IEnumerable<T> enumerable) { return new List<T>(enumerable); }
         public static PList<T> ToList<T>(this IEnumerable<T> enumerable) { return new() { Elements = enumerable }; }
         public static PSet<T> ToSet<T>(this IEnumerable<T> enumerable, int modulo) { return new(modulo) { Elements = enumerable }; }

@@ -145,6 +145,7 @@ namespace Proxy.Creator
             where RArgs : class, ResObj
             where ROut : class, ResObj
         { return new(args); }
+
         public static Proxies.SubEnvironment<TOrig, ROut> WithEnvironment<TOrig, ROut>
             (this Base<TOrig, ROut>.IMaker<Tokens.SubEnvironment<ROut>, Tokens.SubEnvironment<ROut>> _, params IProxy<TOrig, ResObj>[] envModifiers)
             where TOrig : IToken
@@ -155,6 +156,7 @@ namespace Proxy.Creator
             where TOrig : IToken
             where ROut : class, ResObj
         { return new(envModifiers); }
+
         public static Proxies.Accumulator<TNew, TOrig, RElement, RGen, RInto> OverTokens<TNew, TOrig, RElement, RGen, RInto>
             (this Base<TOrig, RInto>.IMaker<Token.Accumulator<RElement, RGen, RInto>, TNew> _, IProxy<TOrig, Resolution.IMulti<RElement>> iterator, out VariableIdentifier<RElement> elementIdentifier, IProxy<TOrig, RGen> generator)
             where TNew : Token.Accumulator<RElement, RGen, RInto>
@@ -182,6 +184,7 @@ namespace Proxy.Creator
             where RArg : class, ResObj
             where ROut : class, ResObj
         { return new(); }
+
         public static Proxies.Variable<TOrig, R> AsVariable<TOrig, R>(this IProxy<TOrig, R> proxy, out VariableIdentifier<R> newIdentifier)
             where TOrig : Token.Unsafe.IToken
             where R : class, ResObj

@@ -54,4 +54,13 @@ namespace Tokens.Multi
             return new() { Values = outputs.Filter(x => x.output.IsTrue).Map(x => x.element) };
         }
     }
+
+    public sealed record Count : PureFunction<Res.IMulti<ResObj>, r.Number>
+    {
+        public Count(IToken<Res.IMulti<ResObj>> of) : base(of) { }
+        protected override r.Number EvaluatePure(Res.IMulti<ResObj> in1)
+        {
+            return new() { Value = in1.Count };
+        }
+    }
 }

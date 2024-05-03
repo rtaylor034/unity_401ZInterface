@@ -11,6 +11,7 @@ namespace Resolution
     public interface IMulti<out R> : ResObj where R : ResObj
     {
         public IEnumerable<R> Values { get; }
+        public int Count { get; }
     }
 }
 namespace Resolutions
@@ -30,6 +31,7 @@ namespace Resolutions
 
     public sealed record Multi<R> : Operation, IMulti<R> where R : ResObj
     {
+        public int Count => _list.Count;
         public IEnumerable<R> Values { get => _list.Elements; init => _list = new() { Elements = value }; }
         public Updater<IEnumerable<R>> dValues { init => Values = value(Values); }
         public override bool ResEqual(ResObj? other)
