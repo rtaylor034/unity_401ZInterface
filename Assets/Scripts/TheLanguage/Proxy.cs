@@ -83,6 +83,22 @@ namespace Proxy.Creator
 
     public static class Extensions
     {
+        public static Proxies.RecursiveCall<RArg1, ROut> Recurse<RArg1, ROut>(this Base<Tokens.Recursive<RArg1, ROut>, ROut> _, IProxy<Tokens.Recursive<RArg1, ROut>, RArg1> arg1)
+            where RArg1 : class, ResObj
+            where ROut : class, ResObj
+        { return new(arg1); }
+        public static Proxies.RecursiveCall<RArg1, RArg2, ROut> Recurse<RArg1, RArg2, ROut>(this Base<Tokens.Recursive<RArg1, RArg2, ROut>, ROut> _, IProxy<Tokens.Recursive<RArg1, RArg2, ROut>, RArg1> arg1, IProxy<Tokens.Recursive<RArg1, RArg2, ROut>, RArg2> arg2)
+            where RArg1 : class, ResObj
+            where RArg2 : class, ResObj
+            where ROut : class, ResObj
+        { return new(arg1, arg2); }
+        public static Proxies.RecursiveCall<RArg1, RArg2, RArg3, ROut> Recurse<RArg1, RArg2, RArg3, ROut>(this Base<Tokens.Recursive<RArg1, RArg2, RArg3, ROut>, ROut> _, IProxy<Tokens.Recursive<RArg1, RArg2, RArg3, ROut>, RArg1> arg1, IProxy<Tokens.Recursive<RArg1, RArg2, RArg3, ROut>, RArg2> arg2, IProxy<Tokens.Recursive<RArg1, RArg2, RArg3, ROut>, RArg3> arg3)
+            where RArg1 : class, ResObj
+            where RArg2 : class, ResObj
+            where RArg3 : class, ResObj
+            where ROut : class, ResObj
+        { return new(arg1, arg2, arg3); }
+
         public static Proxies.Function<TNew, TOrig, RArg1, ROut> WithArgs<TNew, TOrig, RArg1, ROut>
             (this Base<TOrig, ROut>.IMaker<Token.IFunction<RArg1, ROut>, TNew> _, IProxy<TOrig, RArg1> arg1)
             where TNew : Token.IFunction<RArg1, ROut>
@@ -107,6 +123,7 @@ namespace Proxy.Creator
             where RArg3 : class, ResObj
             where ROut : class, ResObj
         { return new(arg1, arg2, arg3); }
+
         public static Proxies.CombinerTransform<TNew, TOrig, RArgs, ROut> WithOriginalArgs<TNew, TOrig, RArgs, ROut>
             (this Base<TOrig, ROut>.IMaker<Token.ICombiner<RArgs, ROut>, TNew> _)
             where TNew : Token.ICombiner<RArgs, ROut>

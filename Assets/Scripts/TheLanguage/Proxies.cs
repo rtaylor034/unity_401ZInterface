@@ -177,6 +177,7 @@ namespace Proxies
         where RArg1 : class, ResObj
         where ROut : class, ResObj
     {
+        public RecursiveCall(IProxy<Tokens.Recursive<RArg1, ROut>, RArg1> in1) : base(in1) { }
         protected override IToken<ROut> ConstructFromArgs(Tokens.Recursive<RArg1, ROut> original, List<IToken> tokens)
         {
             return new Tokens.Recursive<RArg1, ROut>(
@@ -189,6 +190,7 @@ namespace Proxies
         where RArg2 : class, ResObj
         where ROut : class, ResObj
     {
+        public RecursiveCall(IProxy<Tokens.Recursive<RArg1, RArg2, ROut>, RArg1> in1, IProxy<Tokens.Recursive<RArg1, RArg2, ROut>, RArg2> in2) : base(in1, in2) { }
         protected override IToken<ROut> ConstructFromArgs(Tokens.Recursive<RArg1, RArg2, ROut> original, List<IToken> tokens)
         {
             return new Tokens.Recursive<RArg1, RArg2, ROut>(
@@ -203,6 +205,7 @@ namespace Proxies
         where RArg3 : class, ResObj
         where ROut : class, ResObj
     {
+        public RecursiveCall(IProxy<Tokens.Recursive<RArg1, RArg2, RArg3, ROut>, RArg1> in1, IProxy<Tokens.Recursive<RArg1, RArg2, RArg3, ROut>, RArg2> in2, IProxy<Tokens.Recursive<RArg1, RArg2, RArg3, ROut>, RArg3> in3) : base(in1, in2, in3) { }
         protected override IToken<ROut> ConstructFromArgs(Tokens.Recursive<RArg1, RArg2, RArg3, ROut> original, List<IToken> tokens)
         {
             return new Tokens.Recursive<RArg1, RArg2, RArg3, ROut>(
