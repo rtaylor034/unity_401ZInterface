@@ -59,6 +59,25 @@ namespace Tokens
         }
     }
 
+    public record IfElse<R> : Function<r.Bool, R> where R : class, ResObj
+    {
+        // HACK: this should in theory be (condition.Resolve()) ? Pass.IsFallible : Fail.IsFallible, but we obv cant resolve condition here.
+        public override bool IsFallibleFunction => false;
+        public IToken<R> Pass { get; init; }
+        public IToken<R> Fail { get; init; }
+        public IfElse(IToken<r.Bool> condition) : base(condition)
+        {
+            _passedLastResolution = new None<bool>();
+        }
+        protected override async ITask<IOption<R>?> Evaluate(IProgram program, IOption<r.Bool> in1)
+        {
+            if (in1.CheckNone(out var condition)) return new None<R>();
+            _passedLastResolution = condition.IsTrue.AsSome();
+            return await ((condition.IsTrue) ? Pass : Fail).ResolveWithRules(program);
+        }
+        //unused
+        private IOption<bool> _passedLastResolution;
+    }
     public sealed record Variable<R> : Token<r.DeclareVariable<R>> where R : class, ResObj
     {
         public Variable(VariableIdentifier<R> identifier, IToken<R> token)

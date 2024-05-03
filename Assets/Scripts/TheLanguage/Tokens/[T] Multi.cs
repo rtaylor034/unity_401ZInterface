@@ -37,6 +37,15 @@ namespace Tokens.Multi
         }
     }
 
+    public sealed record Exclusion<R> : PureFunction<Res.IMulti<R>, Res.IMulti<R>, r.Multi<R>> where R : class, ResObj
+    {
+        public Exclusion(IToken<Res.IMulti<R>> from, IToken<Res.IMulti<R>> exclude) : base(from, exclude) { }
+        protected override r.Multi<R> EvaluatePure(Res.IMulti<R> in1, Res.IMulti<R> in2)
+        {
+            return new() { Values = in1.Values.Filter(x => !in2.Values.HasMatch(y => y.ResEqual(x))) };
+        }
+    }
+
     public sealed record Yield<R> : PureFunction<R, r.Multi<R>> where R : class, ResObj
     {
         public Yield(IToken<R> value) : base(value) { }

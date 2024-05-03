@@ -8,7 +8,6 @@ using Token;
 using Proxy;
 using Token.Unsafe;
 using Proxy.Unsafe;
-using Rule;
 
 #nullable enable
 namespace Proxies
@@ -101,13 +100,32 @@ namespace Proxies
             _identifier = identifier;
             _objectProxy = proxy;
         }
-        public override IToken<Resolutions.DeclareVariable<R>> Realize(TOrig original, IRule? rule)
+        public override IToken<Resolutions.DeclareVariable<R>> Realize(TOrig original, Rule.IRule? rule)
         {
             return new Tokens.Variable<R>(_identifier, _objectProxy.Realize(original, rule));
         }
 
         private readonly VariableIdentifier<R> _identifier;
         private readonly IProxy<TOrig, R> _objectProxy;
+    }
+
+    public sealed record IfElse<TOrig, R> : Proxy<TOrig, R> where TOrig : IToken where R : class, ResObj
+    {
+        public readonly IProxy<TOrig, Resolutions.Bool> Condition;
+        public IProxy<TOrig, R> PassProxy { get; init; }
+        public IProxy<TOrig, R> FailProxy { get; init; }
+        public IfElse(IProxy<TOrig, Resolutions.Bool> condition)
+        {
+            Condition = condition;
+        }
+        public override IToken<R> Realize(TOrig original, Rule.IRule? rule)
+        {
+            return new Tokens.IfElse<R>(Condition.Realize(original, rule))
+            {
+                Pass = PassProxy.Realize(original, rule),
+                Fail = FailProxy.Realize(original, rule),
+            };
+        }
     }
     // ---- [ OriginalArgs ] ----
     public sealed record OriginalArg1<TOrig, RArg> : Proxy<TOrig, RArg> where TOrig : IHasArg1<RArg> where RArg : class, ResObj

@@ -8,13 +8,10 @@ using UnityEngine;
 using System.Threading.Tasks;
 using MorseCode.ITask;
 using r = Resolutions;
+using t = Tokens;
 using Proxy.Creator;
 using Perfection;
-using Tokens;
 using Tokens.Number;
-using Tokens.Alias;
-using Tokens.Multi;
-using Select = Tokens.Select;
 using Token.Creator;
 using FourZeroOne;
 public class TESTER : MonoBehaviour
@@ -22,31 +19,31 @@ public class TESTER : MonoBehaviour
     // Start is called before the first frame update
     async void Start()
     {
-        var token1 = new SubEnvironment<r.Number>(new Fixed<r.Number>(10).AsVariable(out var x), new Fixed<r.Number>(5).AsVariable(out var y))
+        var token1 = new t.SubEnvironment<r.Number>(new t.Fixed<r.Number>(10).AsVariable(out var x), new t.Fixed<r.Number>(5).AsVariable(out var y))
         {
-            SubToken = new Add(new Reference<r.Number>(x), new Reference<r.Number>(y))
+            SubToken = new Add(new t.Reference<r.Number>(x), new t.Reference<r.Number>(y))
         };
-
-        var rule1 = Rule.Create.For<Add, r.Number>(P =>
+        var token2 = new t.IfElse<r.Number>(new t.Number.Compare.GreaterThan(
+            new t.Select.One<r.Number>(0.Sequence(x => x + 1).Take(10).Map(x => new t.Fixed<r.Number>(x).YieldToken()).UnionToken()),
+            new t.Fixed<r.Number>(5)))
         {
-            return P.Construct<SubEnvironment<r.Number>>().WithEnvironment(P.AsIs(new Fixed<r.Number>(88).AsVariable(out var x))) with
-            {
-                SubTokenProxy = P.Construct<Add>().WithArgs(P.OriginalArg2(), P.AsIs(new Reference<r.Number>(x)))
-            };
-        });
+            Pass = new t.Fixed<r.Number>(100),
+            Fail = new t.Fixed<r.Number>(0)
+        };
+        var token3 = new Token.Creator.Create.
         var program = new FourZeroOne.Programs.Standard.Program()
         {
             State = new()
             {
-                Rules = new() { Elements = Iter.Over(rule1) },
+                Rules = new() { Elements = Iter.Over<Rule.IRule>() },
                 Variables = new(7),
                 Board = new() { }
             }
         };
-        while ((await new Select.One<r.Bool>(new Union<r.Bool>(Iter.Over(true, false).Map(x => new Yield<r.Bool>(new Fixed<r.Bool>(x))))).Resolve(program)).Unwrap().IsTrue)
+        while ((await new t.Select.One<r.Bool>(new t.Multi.Union<r.Bool>(Iter.Over(true, false).Map(x => new t.Multi.Yield<r.Bool>(new t.Fixed<r.Bool>(x))))).Resolve(program)).Unwrap().IsTrue)
         {
             Debug.Log("===============================");
-            Debug.Log(await token1.ResolveWithRules(program));
+            Debug.Log(await token2.ResolveWithRules(program));
             Debug.Log("===============================");
         }
         UnityEditor.EditorApplication.ExitPlaymode();

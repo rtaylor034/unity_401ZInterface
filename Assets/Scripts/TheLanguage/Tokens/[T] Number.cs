@@ -36,7 +36,7 @@ namespace Tokens.Number
         public sealed record GreaterThan : PureFunction<r.Number, r.Number, r.Bool>
         {
             public GreaterThan(IToken<r.Number> a, IToken<r.Number> b) : base(a, b) { }
-            protected override Bool EvaluatePure(r.Number in1, r.Number in2)
+            protected override r.Bool EvaluatePure(r.Number in1, r.Number in2)
             {
                 return new() { IsTrue = in1.Value > in2.Value };
             }

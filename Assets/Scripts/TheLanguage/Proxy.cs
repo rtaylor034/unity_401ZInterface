@@ -75,24 +75,35 @@ namespace Proxy.Creator
         {
             return new(token);
         }
-        public readonly IMaker<TNew, TNew> Construct<TNew>() where TNew : Token.Unsafe.TokenFunction<R>
+        public readonly IMaker<TNew, TNew> Function<TNew>() where TNew : Token.Unsafe.IFunction
         { return new Maker<TNew>(); }
+
+        public readonly Proxies.IfElse<TFor, R> IfElse(IProxy<TFor, Resolutions.Bool> condition)
+        {
+            return new(condition);
+        }
+        public readonly Proxies.SubEnvironment<TFor, R> SubEnvironment(IEnumerable<IProxy<TFor, ResObj>> envModifiers)
+        {
+            return new(envModifiers);
+        }
+        public readonly Proxies.SubEnvironment<TFor, R> SubEnvironment(params IProxy<TFor, ResObj>[] envModifiers)
+            => SubEnvironment((IEnumerable<IProxy<TFor, ResObj>>)envModifiers);
         public interface IMaker<out TNew, out TNew_> { }
         public struct Maker<TNew> : IMaker<TNew, TNew> { }
     }
 
     public static class Extensions
     {
-        public static Proxies.RecursiveCall<RArg1, ROut> Recurse<RArg1, ROut>(this Base<Tokens.Recursive<RArg1, ROut>, ROut> _, IProxy<Tokens.Recursive<RArg1, ROut>, RArg1> arg1)
+        public static Proxies.RecursiveCall<RArg1, ROut> Recurse<RArg1, ROut>(this Base<Tokens.Recursive<RArg1, ROut>, ResObj> _, IProxy<Tokens.Recursive<RArg1, ROut>, RArg1> arg1)
             where RArg1 : class, ResObj
             where ROut : class, ResObj
         { return new(arg1); }
-        public static Proxies.RecursiveCall<RArg1, RArg2, ROut> Recurse<RArg1, RArg2, ROut>(this Base<Tokens.Recursive<RArg1, RArg2, ROut>, ROut> _, IProxy<Tokens.Recursive<RArg1, RArg2, ROut>, RArg1> arg1, IProxy<Tokens.Recursive<RArg1, RArg2, ROut>, RArg2> arg2)
+        public static Proxies.RecursiveCall<RArg1, RArg2, ROut> Recurse<RArg1, RArg2, ROut>(this Base<Tokens.Recursive<RArg1, RArg2, ROut>, ResObj> _, IProxy<Tokens.Recursive<RArg1, RArg2, ROut>, RArg1> arg1, IProxy<Tokens.Recursive<RArg1, RArg2, ROut>, RArg2> arg2)
             where RArg1 : class, ResObj
             where RArg2 : class, ResObj
             where ROut : class, ResObj
         { return new(arg1, arg2); }
-        public static Proxies.RecursiveCall<RArg1, RArg2, RArg3, ROut> Recurse<RArg1, RArg2, RArg3, ROut>(this Base<Tokens.Recursive<RArg1, RArg2, RArg3, ROut>, ROut> _, IProxy<Tokens.Recursive<RArg1, RArg2, RArg3, ROut>, RArg1> arg1, IProxy<Tokens.Recursive<RArg1, RArg2, RArg3, ROut>, RArg2> arg2, IProxy<Tokens.Recursive<RArg1, RArg2, RArg3, ROut>, RArg3> arg3)
+        public static Proxies.RecursiveCall<RArg1, RArg2, RArg3, ROut> Recurse<RArg1, RArg2, RArg3, ROut>(this Base<Tokens.Recursive<RArg1, RArg2, RArg3, ROut>, ResObj> _, IProxy<Tokens.Recursive<RArg1, RArg2, RArg3, ROut>, RArg1> arg1, IProxy<Tokens.Recursive<RArg1, RArg2, RArg3, ROut>, RArg2> arg2, IProxy<Tokens.Recursive<RArg1, RArg2, RArg3, ROut>, RArg3> arg3)
             where RArg1 : class, ResObj
             where RArg2 : class, ResObj
             where RArg3 : class, ResObj
@@ -100,14 +111,14 @@ namespace Proxy.Creator
         { return new(arg1, arg2, arg3); }
 
         public static Proxies.Function<TNew, TOrig, RArg1, ROut> WithArgs<TNew, TOrig, RArg1, ROut>
-            (this Base<TOrig, ROut>.IMaker<Token.IFunction<RArg1, ROut>, TNew> _, IProxy<TOrig, RArg1> arg1)
+            (this Base<TOrig, ResObj>.IMaker<Token.IFunction<RArg1, ROut>, TNew> _, IProxy<TOrig, RArg1> arg1)
             where TNew : Token.IFunction<RArg1, ROut>
             where TOrig : IToken
             where RArg1 : class, ResObj
             where ROut : class, ResObj
         { return new(arg1); }
         public static Proxies.Function<TNew, TOrig, RArg1, RArg2, ROut> WithArgs<TNew, TOrig, RArg1, RArg2, ROut>
-            (this Base<TOrig, ROut>.IMaker<Token.IFunction<RArg1, RArg2, ROut>, TNew> _, IProxy<TOrig, RArg1> arg1, IProxy<TOrig, RArg2> arg2)
+            (this Base<TOrig, ResObj>.IMaker<Token.IFunction<RArg1, RArg2, ROut>, TNew> _, IProxy<TOrig, RArg1> arg1, IProxy<TOrig, RArg2> arg2)
             where TNew : Token.IFunction<RArg1, RArg2, ROut>
             where TOrig : IToken
             where RArg1 : class, ResObj
@@ -115,7 +126,7 @@ namespace Proxy.Creator
             where ROut : class, ResObj
         { return new(arg1, arg2); }
         public static Proxies.Function<TNew, TOrig, RArg1, RArg2, RArg3, ROut> WithArgs<TNew, TOrig, RArg1, RArg2, RArg3, ROut>
-            (this Base<TOrig, ROut>.IMaker<Token.IFunction<RArg1, RArg2, RArg3, ROut>, TNew> _, IProxy<TOrig, RArg1> arg1, IProxy<TOrig, RArg2> arg2, IProxy<TOrig, RArg2> arg3)
+            (this Base<TOrig, ResObj>.IMaker<Token.IFunction<RArg1, RArg2, RArg3, ROut>, TNew> _, IProxy<TOrig, RArg1> arg1, IProxy<TOrig, RArg2> arg2, IProxy<TOrig, RArg2> arg3)
             where TNew : Token.IFunction<RArg1, RArg2, RArg3, ROut>
             where TOrig : IToken
             where RArg1 : class, ResObj
@@ -125,40 +136,29 @@ namespace Proxy.Creator
         { return new(arg1, arg2, arg3); }
 
         public static Proxies.CombinerTransform<TNew, TOrig, RArgs, ROut> WithOriginalArgs<TNew, TOrig, RArgs, ROut>
-            (this Base<TOrig, ROut>.IMaker<Token.ICombiner<RArgs, ROut>, TNew> _)
+            (this Base<TOrig, ResObj>.IMaker<Token.ICombiner<RArgs, ROut>, TNew> _)
             where TNew : Token.ICombiner<RArgs, ROut>
             where TOrig : Token.ICombiner<RArgs, ROut>
             where RArgs : class, ResObj
             where ROut : class, ResObj
         { return new(); }
         public static Proxies.Combiner<TNew, TOrig, RArgs, ROut> WithArgs<TNew, TOrig, RArgs, ROut>
-            (this Base<TOrig, ROut>.IMaker<Token.ICombiner<RArgs, ROut>, TNew> _, params IProxy<TOrig, RArgs>[] args)
+            (this Base<TOrig, ResObj>.IMaker<Token.ICombiner<RArgs, ROut>, TNew> _, params IProxy<TOrig, RArgs>[] args)
             where TNew : Token.ICombiner<RArgs, ROut>
             where TOrig : IToken
             where RArgs : class, ResObj
             where ROut : class, ResObj
         { return new(args); }
         public static Proxies.Combiner<TNew, TOrig, RArgs, ROut> WithArgs<TNew, TOrig, RArgs, ROut>
-            (this Base<TOrig, ROut>.IMaker<Token.ICombiner<RArgs, ROut>, TNew> _, IEnumerable<IProxy<TOrig, RArgs>> args)
+            (this Base<TOrig, ResObj>.IMaker<Token.ICombiner<RArgs, ROut>, TNew> _, IEnumerable<IProxy<TOrig, RArgs>> args)
             where TNew : Token.ICombiner<RArgs, ROut>
             where TOrig : IToken
             where RArgs : class, ResObj
             where ROut : class, ResObj
         { return new(args); }
 
-        public static Proxies.SubEnvironment<TOrig, ROut> WithEnvironment<TOrig, ROut>
-            (this Base<TOrig, ROut>.IMaker<Tokens.SubEnvironment<ROut>, Tokens.SubEnvironment<ROut>> _, params IProxy<TOrig, ResObj>[] envModifiers)
-            where TOrig : IToken
-            where ROut : class, ResObj
-        { return new(envModifiers); }
-        public static Proxies.SubEnvironment<TOrig, ROut> WithEnvironment<TOrig, ROut>
-            (this Base<TOrig, ROut>.IMaker<Tokens.SubEnvironment<ROut>, Tokens.SubEnvironment<ROut>> _, IEnumerable<IProxy<TOrig, ResObj>> envModifiers)
-            where TOrig : IToken
-            where ROut : class, ResObj
-        { return new(envModifiers); }
-
         public static Proxies.Accumulator<TNew, TOrig, RElement, RGen, RInto> OverTokens<TNew, TOrig, RElement, RGen, RInto>
-            (this Base<TOrig, RInto>.IMaker<Token.Accumulator<RElement, RGen, RInto>, TNew> _, IProxy<TOrig, Resolution.IMulti<RElement>> iterator, out VariableIdentifier<RElement> elementIdentifier, IProxy<TOrig, RGen> generator)
+            (this Base<TOrig, ResObj>.IMaker<Token.Accumulator<RElement, RGen, RInto>, TNew> _, IProxy<TOrig, Resolution.IMulti<RElement>> iterator, out VariableIdentifier<RElement> elementIdentifier, IProxy<TOrig, RGen> generator)
             where TNew : Token.Accumulator<RElement, RGen, RInto>
             where TOrig : IToken
             where RElement : class, ResObj
