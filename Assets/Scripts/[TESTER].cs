@@ -30,7 +30,18 @@ public class TESTER : MonoBehaviour
             Pass = new t.Fixed<r.Number>(100),
             Fail = new t.Fixed<r.Number>(0)
         };
-        var token3 = new Token.Creator.Create.
+        var token3 = new t.Recursive<r.Number, r.Multi<r.Number>, r.Number>(new t.Fixed<r.Number>(0), 0.Sequence(x => x + 1).Take(10).Map(x => new t.Fixed<r.Number>(x).YieldToken()).UnionToken(), Proxy.Create.For<t.Recursive<r.Number, r.Multi<r.Number>, r.Number>, r.Number>(P =>
+        {
+            return P.IfElse(P => P.Function<t.Number.Compare.GreaterThan>()
+            .WithArgs(P => P.Function<t.Multi.Count>().WithArgs(P => P.OriginalArg2()),
+            P => P.AsIs(new t.Fixed<r.Number>(1)))) with
+            {
+                PassProxy = P.SubEnvironment(U => U.ForR<r.Number>(P => P.Function<t.Select.One<r.Number>>().WithArgs(P => P.OriginalArg2())).AsVariable(out var selection)) with
+                {
+                    SubTokenProxy =
+                }
+            };
+        }));
         var program = new FourZeroOne.Programs.Standard.Program()
         {
             State = new()

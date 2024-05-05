@@ -146,6 +146,8 @@ namespace Perfection
             return iter.MoveNext() ? iter.Current : null;
         }
 
+        public static IEnumerable<T> IEnumerable<T>(this IEnumerable<T> enumerable) => enumerable;
+
         public static List<T> ToMutList<T>(this IEnumerable<T> enumerable) { return new List<T>(enumerable); }
         public static PList<T> ToList<T>(this IEnumerable<T> enumerable) { return new() { Elements = enumerable }; }
         public static PSet<T> ToSet<T>(this IEnumerable<T> enumerable, int modulo) { return new(modulo) { Elements = enumerable }; }
