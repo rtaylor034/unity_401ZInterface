@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Token;
+using TokenSyntax;
 using Proxy;
 using UnityEngine;
 using System.Threading.Tasks;
@@ -19,34 +20,11 @@ public class TESTER : MonoBehaviour
     // Start is called before the first frame update
     async void Start()
     {
-        var token1 = new t.SubEnvironment<r.Number>(
-            new t.Fixed<r.Number>(10).AsVariable(out var x),
-            new t.Fixed<r.Number>(5).AsVariable(out var y))
+        o.tBoolTo<r.Number>(new()
         {
-            SubToken = new Add(new t.Reference<r.Number>(x), new t.Reference<r.Number>(y))
-        };
-        var token2 = new t.IfElse<r.Number>(new t.Number.Compare.GreaterThan(
-            new t.Select.One<r.Number>(0.Sequence(x => x + 1).Take(10).Map(x => new t.Fixed<r.Number>(x).YieldToken()).UnionToken()),
-            new t.Fixed<r.Number>(5)))
-        {
-            Pass = new t.Fixed<r.Number>(100),
-            Fail = new t.Fixed<r.Number>(0)
-        };
-        var token3 = new t.Recursive<r.Number, r.Multi<r.Number>, r.Number>(new t.Fixed<r.Number>(0), 0.Sequence(x => x + 1).Take(10).Map(x => new t.Fixed<r.Number>(x).YieldToken()).UnionToken(), Proxy.Create.For<t.Recursive<r.Number, r.Multi<r.Number>, r.Number>, r.Number>(P =>
-        {
-            return P.IfElse<r.Number>(
-                P => P.Function<t.Number.Compare.GreaterThan>().WithArgs(
-                    P => P.Function<t.Multi.Count>().WithArgs(
-                        P => P.OriginalArg2()),
-                    P => P.AsIs(new t.Fixed<r.Number>(1))))
-            with
-            {
-                PassProxy = P.SubEnvironment<r.Number>(P => P.Variable(out var VAR_SEL, P => P.AsIs(new t.Fixed<r.Number>(10)))) with
-                {
-                    SubTokenProxy = VAR_SEL;
-                }
-            };
-        }));
+            True = 5.tFixed(),
+            False = 8.tFixed()
+        });
         var program = new FourZeroOne.Programs.Standard.Program()
         {
             State = new()
@@ -66,27 +44,21 @@ public class TESTER : MonoBehaviour
         In<AClass> a = null;
         In<BClass> b = null;
         b = a;
+        MakeToken.tRecursive(new()
+        {
+            A = 5.tFixed()
+        }, ))
     }
 
     // Update is called once per frame
     void Update()
     {
-        new AClass(out var o)
-        {
-            Bruh = new AClass(out var burh),
-            OOO = bur
-        }
+        
     }
 }
 
 public class AClass
 {
-    public int OOO { get; init; }
-    public AClass Bruh { get; init; }
-    public AClass(out int oo)
-    {
-        oo = 4;
-    }
     public virtual string TestA() => "A";
     public string Test() => TestA();
 }

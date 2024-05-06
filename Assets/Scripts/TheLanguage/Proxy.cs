@@ -9,14 +9,15 @@ using Token;
 namespace Proxy
 {
     using Token.Unsafe;
-    public interface IProxy<in TOrig, out R> : Unsafe.IProxy<R> where TOrig : IToken where R : class, ResObj
+    public interface IProxy<in TOrig, out R> : Unsafe.IProxyOf<TOrig>, Unsafe.IProxy<R> where TOrig : IToken where R : class, ResObj
     {
         public IToken<R> Realize(TOrig original, Rule.IRule? realizingRule);
     }
     public abstract record Proxy<TOrig, R> : IProxy<TOrig, R> where TOrig : IToken where R : class, ResObj
     {
         public abstract IToken<R> Realize(TOrig original, Rule.IRule? realizingRule);
-        public IToken<R> UnsafeTypedRealize(IToken original, Rule.IRule? rule) => Realize((TOrig)original, rule);
+        public IToken<R> UnsafeTypedRealize(IToken original, Rule.IRule? rule) { return Realize((TOrig)original, rule); }
+        public IToken UnsafeContextualRealize(TOrig original, Rule.IRule? rule) { return Realize(original, rule); }
         public IToken UnsafeRealize(IToken original, Rule.IRule? rule) => UnsafeTypedRealize(original, rule);
     }
 
@@ -39,6 +40,10 @@ namespace Proxy.Unsafe
     public interface IProxy<out R> : IProxy where R : class, ResObj
     {
         public abstract IToken<R> UnsafeTypedRealize(IToken original, Rule.IRule? rule);
+    }
+    public interface IProxyOf<in TOrig> : IProxy where TOrig : IToken
+    {
+        public abstract IToken UnsafeContextualRealize(TOrig original, Rule.IRule? rule);
     }
 
     public abstract record FunctionProxy<TOrig, R> : Proxy<TOrig, R>
