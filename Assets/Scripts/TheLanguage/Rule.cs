@@ -33,14 +33,5 @@ namespace Rule
         }
         private readonly IProxy<TFor, R> _proxy;
     }
-
-    public static class Create
-    {
-        public static Rule<TFor, R> For<TFor, R>(Func<Proxy.Creator.Base<TFor, R>, IProxy<TFor, R>> createStatement) where TFor : Token.IToken<R> where R : class, ResObj
-        {
-            return new(createStatement(new Proxy.Creator.Base<TFor, R>()));
-        }
-
-    }
     
 }

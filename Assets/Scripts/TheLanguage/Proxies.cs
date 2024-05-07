@@ -57,20 +57,20 @@ namespace Proxies
         where ROut : class, ResObj
     {
         public IProxy<TOrig, ROut> SubTokenProxy { get; init; }
-        public SubEnvironment(IEnumerable<IProxy<TOrig, ResObj>> proxies)
+        public SubEnvironment(IEnumerable<IProxyOf<TOrig>> proxies)
         {
             _envModifiers = new() { Elements = proxies };
         }
         public SubEnvironment(params IProxy<TOrig, ResObj>[] proxies) : this((IEnumerable<IProxy<TOrig, ResObj>>)proxies) { }
         public override IToken<ROut> Realize(TOrig original, Rule.IRule? rule)
         {
-            return new Tokens.SubEnvironment<ROut>(_envModifiers.Elements.Map(x => x.UnsafeRealize(original, rule)))
+            return new Tokens.SubEnvironment<ROut>(_envModifiers.Elements.Map(x => x.UnsafeContextualRealize(original, rule)))
             {
                 SubToken = SubTokenProxy.Realize(original, rule)
             };
         }
 
-        private readonly PList<IProxy<TOrig, ResObj>> _envModifiers;
+        private readonly PList<IProxyOf<TOrig>> _envModifiers;
     }
     public sealed record Accumulator<TNew, TOrig, RElement, RGen, RInto> : FunctionProxy<TOrig, RInto>
         where TNew : Token.Accumulator<RElement, RGen, RInto>

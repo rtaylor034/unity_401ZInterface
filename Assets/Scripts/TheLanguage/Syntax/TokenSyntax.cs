@@ -4,6 +4,7 @@ using Resolutions;
 using Perfection;
 using r = Resolutions;
 using ResObj = Resolution.IResolution;
+using System.Collections.Generic;
 namespace TokenSyntax
 {
 
@@ -17,31 +18,37 @@ namespace TokenSyntax
         }
         public sealed record SubEnvironment<R> where R : class, ResObj
         {
-            public Token.Unsafe.IToken[] Environment { get; init; }
+            public List<Token.Unsafe.IToken> Environment { get; init; }
             public IToken<R> SubToken { get; init; }
         }
-        public sealed record Arguements<RArg1>
+        public sealed record Recursive<RArg1, ROut>
             where RArg1 : class, ResObj
+            where ROut : class, ResObj
         {
             public IToken<RArg1> A { get; init; }
+            public System.Func<ProxySyntax.OriginalHint<Tokens.Recursive<RArg1, ROut>>, Proxy.IProxy<Tokens.Recursive<RArg1, ROut>, ROut>> RecursiveProxyStatement { get; init; }
         }
-        public sealed record Arguements<RArg1, RArg2>
+        public sealed record Recursive<RArg1, RArg2, ROut>
             where RArg1 : class, ResObj
             where RArg2 : class, ResObj
+            where ROut : class, ResObj
         {
             public IToken<RArg1> A { get; init; }
             public IToken<RArg2> B { get; init; }
+            public System.Func<ProxySyntax.OriginalHint<Tokens.Recursive<RArg1, RArg2, ROut>>, Proxy.IProxy<Tokens.Recursive<RArg1, RArg2, ROut>, ROut>> RecursiveProxyStatement { get; init; }
         }
-        public sealed record Arguements<RArg1, RArg2, RArg3>
+        public sealed record Recursive<RArg1, RArg2, RArg3, ROut>
             where RArg1 : class, ResObj
             where RArg2 : class, ResObj
             where RArg3 : class, ResObj
+            where ROut : class, ResObj
         {
             public IToken<RArg1> A { get; init; }
             public IToken<RArg2> B { get; init; }
             public IToken<RArg3> C { get; init; }
+            public System.Func<ProxySyntax.OriginalHint<Tokens.Recursive<RArg1, RArg2, RArg3, ROut>>, Proxy.IProxy<Tokens.Recursive<RArg1, RArg2, RArg3, ROut>, ROut>> RecursiveProxyStatement { get; init; }
         }
-     }
+    }
     public static class MakeToken
     {
         public static Tokens.Board.Unit.AllUnits AllUnits()
@@ -52,31 +59,31 @@ namespace TokenSyntax
         public static SubEnvironment<R> tSubEnvironment<R>(TokenStructure.SubEnvironment<R> block) where R : class, ResObj
         { return new(block.Environment) { SubToken = block.SubToken }; }
 
-        public static Recursive<RArg1, ROut> tRecursive<RArg1, ROut>(IToken<RArg1> a, Proxies.RecursiveCall<RArg1, ROut> recursiveProxy)
+        public static Recursive<RArg1, ROut> tRecursive<RArg1, ROut>(TokenStructure.Recursive<RArg1, ROut> block)
             where RArg1 : class, ResObj
             where ROut : class, ResObj
-        { return new(a, recursiveProxy); }
-        public static Recursive<RArg1, RArg2, ROut> tRecursive<RArg1, RArg2, ROut>(IToken<RArg1> a, IToken<RArg2> b, Proxies.RecursiveCall<RArg1, RArg2, ROut> recursiveProxy)
+        { return new(block.A, block.RecursiveProxyStatement(new())); }
+        public static Recursive<RArg1, RArg2, ROut> tRecursive<RArg1, RArg2, ROut>(TokenStructure.Recursive<RArg1, RArg2, ROut> block)
             where RArg1 : class, ResObj
             where RArg2 : class, ResObj
             where ROut : class, ResObj
-        { return new(a, b, recursiveProxy); }
-        public static Recursive<RArg1, RArg2, RArg3, ROut> tRecursive<RArg1, RArg2, RArg3, ROut>(IToken<RArg1> a, IToken<RArg2> b, IToken<RArg3> c, Proxies.RecursiveCall<RArg1, RArg2, RArg3, ROut> recursiveProxy)
+        { return new(block.A, block.B, block.RecursiveProxyStatement(new())); }
+        public static Recursive<RArg1, RArg2, RArg3, ROut> tRecursive<RArg1, RArg2, RArg3, ROut>(TokenStructure.Recursive<RArg1, RArg2, RArg3, ROut> block)
             where RArg1 : class, ResObj
             where RArg2 : class, ResObj
             where RArg3 : class, ResObj
             where ROut : class, ResObj
-        { return new(a, b, c, recursiveProxy); }
+        { return new(block.A, block.B, block.C, block.RecursiveProxyStatement(new())); }
 
-        public static Nolla<R> Nolla<R>() where R : class, ResObj
+        public static Nolla<R> tNolla<R>() where R : class, ResObj
         { return new(); }
 
-        public static Tokens.Multi.Union<R> tArrayOf<R>(IToken<R>[] tokens) where R : class, ResObj
+        public static Tokens.Multi.Union<R> tArrayOf<R>(List<IToken<R>> tokens) where R : class, ResObj
         { return new(tokens.Map(x => x.tYield())); }
-        public static Tokens.Multi.Union<R> tUnion<R>(IToken<Multi<R>>[] arrays) where R : class, ResObj
-        { return new(arrays); }
-        public static Tokens.Multi.Intersection<R> tIntersection<R>(IToken<Multi<R>>[] arrays) where R : class, ResObj
-        { return new(arrays); }
+        public static Tokens.Multi.Union<R> tUnion<R>(List<IToken<Multi<R>>> sets) where R : class, ResObj
+        { return new(sets); }
+        public static Tokens.Multi.Intersection<R> tIntersection<R>(List<IToken<Multi<R>>> sets) where R : class, ResObj
+        { return new(sets); }
     }
     public static class _Extensions
     {
@@ -113,12 +120,16 @@ namespace TokenSyntax
         { return new(source); }
         public static Tokens.Multi.Yield<R> tYield<R>(this IToken<R> token) where R : class, ResObj
         { return new(token); }
+        public static Tokens.Multi.Union<R> tToMulti<R>(this IEnumerable<IToken<R>> tokens) where R : class, ResObj
+        { return new(tokens.Map(x => x.tYield())); }
+        public static Tokens.Multi.Union<R> tUnioned<R>(this IEnumerable<IToken<Multi<R>>> tokens) where R : class, ResObj
+        { return new(tokens); }
 
-        public static Tokens.Number.Add tAddTo(this IToken<Number> a, IToken<Number> b) 
+        public static Tokens.Number.Add tAdd(this IToken<Number> a, IToken<Number> b) 
         { return new(a, b); }
-        public static Tokens.Number.Subtract tSubtractFrom(this IToken<Number> a, IToken<Number> b) 
+        public static Tokens.Number.Subtract tSubtract(this IToken<Number> a, IToken<Number> b) 
         { return new(a, b); }
-        public static Tokens.Number.Multiply tMultiplyBy(this IToken<Number> a, IToken<Number> b) 
+        public static Tokens.Number.Multiply tMultiply(this IToken<Number> a, IToken<Number> b) 
         { return new(a, b); }
         public static Tokens.Number.Negate tNegative(this IToken<Number> a)
         { return new(a); }

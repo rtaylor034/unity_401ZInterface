@@ -306,34 +306,6 @@ namespace Token
         }
 
     }
-    public static class Create
-    {
-        public static Tokens.Reference<R> Reference<R>(VariableIdentifier<R> identifier) where R : class, ResObj
-        {
-            return new(identifier);
-        }
-        public static Tokens.Recursive<RArg1, ROut> Recursive<RArg1, ROut>(IToken<RArg1> in1, Func<Proxy.Creator.Base<Tokens.Recursive<RArg1, ROut>, ROut>, Proxy.IProxy<Tokens.Recursive<RArg1, ROut>, ROut>> proxyBuild)
-            where RArg1 : class, ResObj
-            where ROut : class, ResObj
-        {
-            return new(in1, proxyBuild.Invoke(new Proxy.Creator.Base<Tokens.Recursive<RArg1, ROut>, ROut>()));
-        }
-        public static Tokens.Recursive<RArg1, RArg2, ROut> Recursive<RArg1, RArg2, ROut>(IToken<RArg1> in1, IToken<RArg2> in2, Func<Proxy.Creator.Base<Tokens.Recursive<RArg1, RArg2, ROut>, ROut>, Proxy.IProxy<Tokens.Recursive<RArg1, RArg2, ROut>, ROut>> proxyBuild)
-            where RArg1 : class, ResObj
-            where RArg2 : class, ResObj
-            where ROut : class, ResObj
-        {
-            return new(in1, in2, proxyBuild.Invoke(new Proxy.Creator.Base<Tokens.Recursive<RArg1, RArg2, ROut>, ROut>()));
-        }
-        public static Tokens.Recursive<RArg1, RArg2, RArg3, ROut> Recursive<RArg1, RArg2, RArg3, ROut>(IToken<RArg1> in1, IToken<RArg2> in2, IToken<RArg3> in3, Func<Proxy.Creator.Base<Tokens.Recursive<RArg1, RArg2, RArg3, ROut>, ROut>, Proxy.IProxy<Tokens.Recursive<RArg1, RArg2, RArg3, ROut>, ROut>> proxyBuild)
-            where RArg1 : class, ResObj
-            where RArg2 : class, ResObj
-            where RArg3 : class, ResObj
-            where ROut : class, ResObj
-        {
-            return new(in1, in2, in3, proxyBuild.Invoke(new Proxy.Creator.Base<Tokens.Recursive<RArg1, RArg2, RArg3, ROut>, ROut>()));
-        }
-    }
 }
 namespace Token.Unsafe
 {
@@ -421,56 +393,4 @@ namespace Token.Unsafe
         protected TokenFunction(params IToken[] tokens) : this(tokens as IEnumerable<IToken>) { }
     }
 
-}
-namespace Token.Creator
-{
-    using Tokens;
-    using Tokens.Multi;
-    using r = Resolutions;
-
-    public static class Extensions
-    {
-        public static Variable<R> AsVariable<R>(this IToken<R> token, out VariableIdentifier<R> identifier) where R : class, ResObj
-        {
-            identifier = new();
-            return new(identifier, token);
-        }
-        public static Reference<R> Reference<R>(VariableIdentifier<R> identifier) where R : class, ResObj
-        {
-            return new(identifier);
-        }
-        public static Yield<R> YieldToken<R>(this IToken<R> token) where R : class, ResObj
-        {
-            return new(token);
-        }
-        public static Union<R> UnionToken<R>(this IEnumerable<IToken<R>> tokens) where R : class, ResObj
-        {
-            return new(tokens.Map(x => YieldToken(x)));
-        }
-        public static Union<R> UnionToken<R>(this IEnumerable<IToken<r.Multi<R>>> tokens) where R : class, ResObj
-        {
-            return new(tokens);
-        }
-        public static Recursive<RArg1, ROut> Recursive<RArg1, ROut>(IToken<RArg1> in1, Func<Proxy.Creator.Base<Recursive<RArg1, ROut>, ROut>, Proxy.IProxy<Recursive<RArg1, ROut>, ROut>> proxyBuild)
-            where RArg1 : class, ResObj
-            where ROut : class, ResObj
-        {
-            return new(in1, proxyBuild.Invoke(new Proxy.Creator.Base<Recursive<RArg1, ROut>, ROut>()));
-        }
-        public static Recursive<RArg1, RArg2, ROut> Recursive<RArg1, RArg2, ROut>(IToken<RArg1> in1, IToken<RArg2> in2, Func<Proxy.Creator.Base<Recursive<RArg1, RArg2, ROut>, ROut>, Proxy.IProxy<Recursive<RArg1, RArg2, ROut>, ROut>> proxyBuild)
-            where RArg1 : class, ResObj
-            where RArg2 : class, ResObj
-            where ROut : class, ResObj
-        {
-            return new(in1, in2, proxyBuild.Invoke(new Proxy.Creator.Base<Recursive<RArg1, RArg2, ROut>, ROut>()));
-        }
-        public static Recursive<RArg1, RArg2, RArg3, ROut> Recursive<RArg1, RArg2, RArg3, ROut>(IToken<RArg1> in1, IToken<RArg2> in2, IToken<RArg3> in3, Func<Proxy.Creator.Base<Recursive<RArg1, RArg2, RArg3, ROut>, ROut>, Proxy.IProxy<Recursive<RArg1, RArg2, RArg3, ROut>, ROut>> proxyBuild)
-            where RArg1 : class, ResObj
-            where RArg2 : class, ResObj
-            where RArg3 : class, ResObj
-            where ROut : class, ResObj
-        {
-            return new(in1, in2, in3, proxyBuild.Invoke(new Proxy.Creator.Base<Recursive<RArg1, RArg2, RArg3, ROut>, ROut>()));
-        }
-    }
 }
