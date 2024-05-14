@@ -54,7 +54,8 @@ namespace ProxySyntax
     {
         public static IProxy<TOrig, ROut> Statement<TOrig, ROut>(System.Func<OriginalHint<TOrig>, IProxy<TOrig, ROut>> statement) where TOrig : IToken where ROut : class, ResObj
         { return statement(new()); }
-        
+        public static Rule.Rule<TOrig, ROut> AsRuleFor<TOrig, ROut>(System.Func<OriginalHint<TOrig>, IProxy<TOrig, ROut>> statement) where TOrig : Token.IToken<ROut> where ROut : class, ResObj
+        { return new(statement(new())); }
     }
     public static class _Extensions
     {

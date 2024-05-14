@@ -78,7 +78,7 @@ namespace FourZeroOne.Programs.Standard
             foreach (var (visual, _) in options) Destroy(visual.gameObject);
             input.Disable();
             input.Dispose();
-            Debug.Log($"SELECTED: {new PList<R>() { Elements = o.Or(new()) }}");
+            //Debug.Log($"SELECTED: {new PList<R>() { Elements = o.Or(new()) }}");
             return o.AsSome();
 
             void __Left()
