@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Token;
 using Perfection;
-using ResObj = Resolution.IResolution;
+using FourZeroOne;
 
 #nullable enable
 namespace Resolution
@@ -13,23 +13,19 @@ namespace Resolution
     /// </summary>
     public interface IResolution
     {
-        public Context ChangeContext(Context context);
+        public State ChangeState(State context);
+        public bool ResEqual(IResolution? other);
     }
 
     public abstract record Operation : Unsafe.Resolution
     {
-        protected abstract Context UpdateContext(Context context);
-        protected override sealed Context ChangeContextInternal(Context before) => UpdateContext(before);
+        protected abstract State UpdateState(State context);
+        protected override sealed State ChangeStateInternal(State before) => UpdateState(before);
     }
 
     public abstract record NoOp : Unsafe.Resolution
     {
-        protected override sealed Context ChangeContextInternal(Context context) => context;
-    }
-
-    public interface IMulti<out R> : ResObj where R : ResObj
-    {
-        public IEnumerable<R> Values { get; }
+        protected override sealed State ChangeStateInternal(State context) => context;
     }
 }
 namespace Resolution.Unsafe
@@ -37,12 +33,13 @@ namespace Resolution.Unsafe
     //not actually unsafe, just here because you should either extend 'Operation' or 'NoOp'.
     public abstract record Resolution : IResolution
     {
-        protected abstract Context ChangeContextInternal(Context context);
+        public virtual bool ResEqual(IResolution? other) => Equals(other);
+        public State ChangeState(State before) => ChangeStateInternal(before);
+        protected abstract State ChangeStateInternal(State context);
         /// <summary>
-        /// <i>Use <see cref="Context.WithResolution(Resolution)"/> instead.</i>
+        /// <i>Use <see cref="State.WithResolution(Resolution)"/> instead.</i>
         /// </summary>
         /// <param name="context"></param>
         /// <returns></returns>
-        public Context ChangeContext(Context before) => ChangeContextInternal(before);
     }
 }

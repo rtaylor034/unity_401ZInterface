@@ -6,68 +6,139 @@ using Perfection;
 using MorseCode.ITask;
 using ResObj = Resolution.IResolution;
 using Token;
-using r_ = Resolutions;
-using Resolutions;
+using r = Resolutions;
+using FourZeroOne;
 
 #nullable enable
 namespace Tokens
 {
-
-    public sealed record SubEnvironment<R> : Token.Unsafe.TokenFunction<R> where R : class, ResObj
+    public record SubEnvironment<ROut> : Token.Unsafe.TokenFunction<ROut>
+        where ROut : class, ResObj
     {
-        public IToken<R> SubToken { get; init; }
-        public SubEnvironment(params IToken<Resolution.Operation>[] envModifiers) : base(envModifiers) { }
+        public IToken<ROut> SubToken { get; init; }
         public SubEnvironment(IEnumerable<Token.Unsafe.IToken> envModifiers) : base(envModifiers) { }
+        public SubEnvironment(params Token.Unsafe.IToken[] envModifiers) : base(envModifiers) { }
         public sealed override bool IsFallibleFunction => SubToken.IsFallible;
-
-        protected sealed override async ITask<R?> TransformTokens(Context context, List<ResObj> _) => await SubToken.ResolveWithRules(context);
+        protected sealed override ITask<IOption<ROut>?> TransformTokens(IProgram program, IOption<ResObj>[] _)
+        {
+            return SubToken.ResolveWithRules(program);
+        }
     }
 
-    public sealed record Variable<R> : Token<r_.DeclareVariable> where R : class, ResObj
+    public record Recursive<RArg1, ROut> : Token.Alias.OneArg<RArg1, ROut>
+        where RArg1 : class, ResObj
+        where ROut : class, ResObj
     {
-        public Variable(string label, IToken<R> token)
+        public readonly Proxy.IProxy<Recursive<RArg1, ROut>, ROut> RecursiveProxy;
+        public Recursive(IToken<RArg1> arg1, Proxy.IProxy<Recursive<RArg1, ROut>, ROut> recursiveProxy) : base(arg1, recursiveProxy)
+        {
+            RecursiveProxy = recursiveProxy;
+        }
+    }
+    public record Recursive<RArg1, RArg2, ROut> : Token.Alias.TwoArg<RArg1, RArg2, ROut>
+        where RArg1 : class, ResObj
+        where RArg2 : class, ResObj
+        where ROut : class, ResObj
+    {
+        public readonly Proxy.IProxy<Recursive<RArg1, RArg2, ROut>, ROut> RecursiveProxy;
+        public Recursive(IToken<RArg1> arg1, IToken<RArg2> arg2, Proxy.IProxy<Recursive<RArg1, RArg2, ROut>, ROut> recursiveProxy) : base(arg1, arg2, recursiveProxy)
+        {
+            RecursiveProxy = recursiveProxy;
+        }
+    }
+    public record Recursive<RArg1, RArg2, RArg3, ROut> : Token.Alias.ThreeArg<RArg1, RArg2, RArg3, ROut>
+        where RArg1 : class, ResObj
+        where RArg2 : class, ResObj
+        where RArg3 : class, ResObj
+        where ROut : class, ResObj
+    {
+        public readonly Proxy.IProxy<Recursive<RArg1, RArg2, RArg3, ROut>, ROut> RecursiveProxy;
+        public Recursive(IToken<RArg1> arg1, IToken<RArg2> arg2, IToken<RArg3> arg3, Proxy.IProxy<Recursive<RArg1, RArg2, RArg3, ROut>, ROut> recursiveProxy) : base(arg1, arg2, arg3, recursiveProxy)
+        {
+            RecursiveProxy = recursiveProxy;
+        }
+    }
+
+    public record IfElse<R> : Function<r.Bool, R> where R : class, ResObj
+    {
+        // HACK: this should in theory be (condition.Resolve()) ? Pass.IsFallible : Fail.IsFallible, but we obv cant resolve condition here.
+        public override bool IsFallibleFunction => false;
+        public IToken<R> Pass { get; init; }
+        public IToken<R> Fail { get; init; }
+        public IfElse(IToken<r.Bool> condition) : base(condition)
+        {
+            _passedLastResolution = new None<bool>();
+        }
+        protected override async ITask<IOption<R>?> Evaluate(IProgram program, IOption<r.Bool> in1)
+        {
+            if (in1.CheckNone(out var condition)) return new None<R>();
+            _passedLastResolution = condition.IsTrue.AsSome();
+            return await ((condition.IsTrue) ? Pass : Fail).ResolveWithRules(program);
+        }
+        //unused
+        private IOption<bool> _passedLastResolution;
+    }
+    public sealed record Variable<R> : Token<r.DeclareVariable<R>> where R : class, ResObj
+    {
+        public Variable(VariableIdentifier<R> identifier, IToken<R> token)
         {
             _objectToken = token;
-            _label = label;
+            _identifier = identifier;
         }
         public override bool IsFallible => _objectToken.IsFallible;
-        public override async ITask<r_.DeclareVariable?> Resolve(Context context)
+        protected override async ITask<IOption<r.DeclareVariable<R>>?> ResolveInternal(IProgram program)
         {
-            return (await _objectToken.ResolveWithRules(context) is R res) ?
-                new() { Label = _label, Object = res } : null;
+            return (await _objectToken.ResolveWithRules(program) is IOption<R> resOpt) ?
+                new r.DeclareVariable<R>(_identifier) { Object = resOpt }.AsSome() : null;
         }
 
         private readonly IToken<R> _objectToken;
-        private readonly string _label;
+        private readonly VariableIdentifier<R> _identifier;
     }
 
-    public sealed record Rule<R> : Infallible<r_.DeclareRule> where R : class, ResObj
+    public sealed record Rule<R> : Infallible<r.DeclareRule> where R : class, ResObj
     {
         public Rule(Rule.IRule rule)
         {
             _rule = rule;
         }
 
-        protected override DeclareRule InfallibleResolve(Context context) { return new() { Rule = _rule }; }
+        protected override IOption<r.DeclareRule> InfallibleResolve(IProgram program)
+        {
+            return new r.DeclareRule() { Rule = _rule }.AsSome();
+        }
 
         private readonly Rule.IRule _rule;
     }
-
-    public sealed record Reference<R> : Infallible<R> where R : class, ResObj
+    public sealed record Fixed<R> : Infallible<R> where R : class, ResObj
     {
-        public Reference(string toLabel) => _toLabel = toLabel;
-
-        protected override R InfallibleResolve(Context context)
+        public Fixed(R resolution)
         {
-            return (context.Variables[_toLabel] is R val) ? val :
+            _resolution = resolution;
+        }
+        protected override IOption<R> InfallibleResolve(IProgram _) { return _resolution.AsSome(); }
+        private readonly R _resolution;
+    }
+    public sealed record Nolla<R> : Infallible<R> where R : class, ResObj
+    {
+        public Nolla() { }
+        protected override IOption<R> InfallibleResolve(IProgram _) { return new None<R>(); }
+    }
+    public sealed record Reference<R> : Infallible<R> where R : class, ResObj
+    { 
+        public Reference(VariableIdentifier<R> toIdentifier) => _toIdentifier = toIdentifier;
+
+        protected override IOption<R> InfallibleResolve(IProgram program)
+        {
+            return (program.State.Variables[_toIdentifier] is IOption<R> val) ? val :
                 throw new Exception($"Reference token resolved to non-existent or wrongly-typed object.\n" +
-                $"Label: '{_toLabel}'\n" +
+                $"Identifier: {_toIdentifier}\n" +
                 $"Expected: {typeof(R).Name}\n" +
-                $"Recieved: {context.Variables[_toLabel]?.GetType().Name}\n" +
+                $"Recieved: {program.State.Variables[_toIdentifier]}\n" +
                 $"Current Scope:\n" +
-                $"{context.Variables.Elements.AccumulateInto("", (msg, x) => msg + $"> '{x.key}' : {x.val}")}");
+                $"{program.State.Variables.Elements.AccumulateInto("", (msg, x) => msg + $"> '{x.key}' : {x.val}\n")}");
         }
 
-        private readonly string _toLabel;
+        private readonly VariableIdentifier<R> _toIdentifier;
     }
 }

@@ -5,8 +5,8 @@ using System.Threading.Tasks;
 using Perfection;
 using MorseCode.ITask;
 using ResObj = Resolution.IResolution;
-using r_ = Resolutions;
-using Token;
+using r = Resolutions;
+using FourZeroOne;
 
 #nullable enable
 namespace Token.Alias
@@ -15,9 +15,9 @@ namespace Token.Alias
     public record Alias<R> : Token<R> where R : class, ResObj
     {
         public override bool IsFallible => Expand().IsFallible;
-        public override ITask<R?> Resolve(Context context)
+        protected override ITask<IOption<R>?> ResolveInternal(IProgram program)
         {
-            return Expand().ResolveWithRules(context);
+            return Expand().ResolveWithRules(program);
         }
         protected Alias(Proxy.Unsafe.IProxy<R> proxy)
         {
@@ -26,11 +26,12 @@ namespace Token.Alias
         }
         private IToken<R> Expand()
         {
-            return (_cachedRealization is null) ? _proxy.UnsafeTypedRealize(this, null) : _cachedRealization;
+            _cachedRealization ??= _proxy.UnsafeTypedRealize(this, null);
+            return _cachedRealization;
         }
         private readonly Proxy.Unsafe.IProxy<R> _proxy;
         //NOTE: this only works under the assumption that proxies are perfect pure (stateless immutable).
-        private readonly IToken<R>? _cachedRealization;
+        private IToken<R>? _cachedRealization;
         
     }
 

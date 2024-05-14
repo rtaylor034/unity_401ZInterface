@@ -1,8 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
-using MorseCode.ITask;
-using UnityEngine;
+using ResObj = Resolution.IResolution;
+using Token;
 using Perfection;
 using r = Resolutions;
-using ResObj = Resolution.IResolution;
+using Resolutions;
+namespace Tokens.Bool
+{
 
+}

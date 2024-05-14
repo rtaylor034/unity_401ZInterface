@@ -5,58 +5,113 @@ using System.Threading.Tasks;
 using Perfection;
 using MorseCode.ITask;
 using ResObj = Resolution.IResolution;
+using FourZeroOne;
 
 namespace Token
 {
     #region Structures
 #nullable enable
-    public interface IInputProvider { }
-    public record Context
-    {
-        public IInputProvider InputProvider { get; init; }
-        public GameState State { get; init; }
-        public Updater<GameState> dState { init => State = value(State); }
-        public PMap<string, ResObj> Variables { get; init; }
-        public Updater<PMap<string, ResObj>> dVariables { init => Variables = value(Variables); }
-        public PList<Rule.IRule> Rules { get; init; }
-        public Updater<PList<Rule.IRule>> dRules { init => Rules = value(Rules); }
-        public Context WithResolution(ResObj resolution) { return resolution.ChangeContext(this); }
-    }
+    
     #endregion
 
     public interface IToken<out R> : Unsafe.IToken where R : class, ResObj
     {
-        public ITask<R?> ResolveWithRules(Context context);
-        public ITask<R?> Resolve(Context context);
+        public ITask<IOption<R>?> ResolveWithRules(IProgram program);
+        public ITask<IOption<R>?> Resolve(IProgram program);
     }
-
+    
+    public sealed record VariableIdentifier<R> : Unsafe.VariableIdentifier where R : class, ResObj
+    {
+        public VariableIdentifier() : base() { }
+        public override string ToString()
+        {
+            return $"[&{typeof(R).Name}:{_value}]";
+        }
+    }
     public abstract record Token<R> : IToken<R> where R : class, ResObj
     {
         public abstract bool IsFallible { get; }
-        public abstract ITask<R?> Resolve(Context context);
-        public async ITask<R?> ResolveWithRules(Context context)
+        public async ITask<IOption<R>?> Resolve(IProgram program)
         {
-            return context.Rules.Count == 0
-                ? await Resolve(context)
-                : await this.ApplyRules(context.Rules.Elements, out var applied).Resolve(context with
-                {
-                    dRules = Q => Q with { dElements = Q => Q.Filter(x => !applied.HasMatch(y => ReferenceEquals(x, y))) }
-                });
+            program.Output.WriteToken(this);
+            var o = await ResolveInternal(program);
+            program.Output.WriteResolution(o);
+            return o;
         }
-        public async ITask<ResObj?> ResolveUnsafe(Context context) { return await Resolve(context); }
-        public async ITask<ResObj?> ResolveWithRulesUnsafe(Context context) { return await ResolveWithRules(context); }
+        public async ITask<IOption<R>?> ResolveWithRules(IProgram program)
+        {
+            if (program.State.Rules.Count == 0) return await Resolve(program);
+            var resolvingToken = this.ApplyRules(program.State.Rules.Elements, out var applied);
+            program.Output.WriteRuleSteps(applied.Map(x => ((Unsafe.IToken)x.fromToken, x.rule)));
+            return await resolvingToken.Resolve(program.dState(Q => Q with
+            {
+                dRules = Q => Q with { dElements = Q => Q.Filter(x => !applied.HasMatch(y => ReferenceEquals(x, y.rule))) }
+            }));
+        }
+        public async ITask<IOption<ResObj>?> ResolveUnsafe(IProgram program) { return await ResolveInternal(program); }
+        public async ITask<IOption<ResObj>?> ResolveWithRulesUnsafe(IProgram program) { return await ResolveWithRules(program); }
+
+        protected abstract ITask<IOption<R>?> ResolveInternal(IProgram program);
     }
 
     public abstract record Infallible<R> : Token<R> where R : class, ResObj
     {
         public sealed override bool IsFallible => false;
-        public sealed override ITask<R?> Resolve(Context context) { return Task.FromResult(InfallibleResolve(context)).AsITask(); }
+        protected sealed override ITask<IOption<R>?> ResolveInternal(IProgram program) { return Task.FromResult(InfallibleResolve(program)).AsITask(); }
 
-        protected abstract R InfallibleResolve(Context context);
+        protected abstract IOption<R> InfallibleResolve(IProgram program);
+    }
+
+    // IMPORTANT: tokens now MUST be absolutely pure stateless in order for this to work.
+    // 'Lambda' is resolved multiple times as the same object.
+    public abstract record Accumulator<RElement, RGen, RInto> : Unsafe.TokenFunction<RInto>
+        where RElement : class, ResObj
+        where RGen : class, ResObj
+        where RInto : class, ResObj
+    {
+        public override bool IsFallibleFunction => _lambda.IsFallible;
+
+        protected abstract ITask<IOption<RInto>?> Accumulate(IProgram program, IEnumerable<(RElement element, RGen output)> outputs);
+        protected Accumulator(IToken<Resolution.IMulti<RElement>> iterator, VariableIdentifier<RElement> elementVariable, IToken<RGen> lambda) : base(iterator)
+        {
+            _elementIdentifier = elementVariable;
+            _lambda = lambda;
+        }
+        protected override async ITask<IOption<RInto>?> TransformTokens(IProgram program, IOption<ResObj>[] resolutions)
+        {
+            if (resolutions[0].CheckNone(out var multi)) return new None<RInto>();
+            var iterValues = ((Resolution.IMulti<RElement>)multi).Values;
+            var generatorTokens = iterValues
+                .Map(x => new Tokens.SubEnvironment<Resolutions.Multi<RGen>>(new Tokens.Variable<RElement>(_elementIdentifier, new Tokens.Fixed<RElement>(x)))
+                {
+                    SubToken = new Tokens.Multi.Yield<RGen>(_lambda)
+                });
+            var union = new Tokens.Multi.Union<RGen>(generatorTokens);
+            var tryGenerate = await union.Resolve(program);
+            while (tryGenerate is IOption<Resolution.IMulti<RGen>> generatorOutOption)
+            {
+                if (generatorOutOption.CheckNone(out var generatorOutputs)) return new None<RInto>();
+                if (await Accumulate(program, iterValues.ZipShort(generatorOutputs.Values)) is IOption<RInto> o) return o;
+                tryGenerate = await union.Resolve(program);
+            }
+            return null;
+        }
+        private readonly VariableIdentifier<RElement> _elementIdentifier;
+        private readonly IToken<RGen> _lambda;
+    }
+    public abstract record PureAccumulator<RElement, RGen, RInto> : Accumulator<RElement, RGen, RInto>
+        where RElement : class, ResObj
+        where RGen : class, ResObj
+        where RInto : class, ResObj
+    {
+        protected abstract RInto PureAccumulate(IEnumerable<(RElement element, RGen output)> outputs);
+        protected PureAccumulator(IToken<Resolution.IMulti<RElement>> iterator, VariableIdentifier<RElement> elementVariable, IToken<RGen> lambda) : base(iterator, elementVariable, lambda) { }
+        protected override ITask<IOption<RInto>?> Accumulate(IProgram _, IEnumerable<(RElement element, RGen output)> outputs) { return Task.FromResult(PureAccumulate(outputs).AsSome()).AsITask(); }
+        
     }
 
     #region Functions
-    // ---- [ Functions ] ----
+        // ---- [ Functions ] ----
 
     public interface IFunction<RArg1, ROut> : Unsafe.IHasArg1<RArg1>, Unsafe.IFunction<ROut>
         where RArg1 : class, ResObj
@@ -90,9 +145,11 @@ namespace Token
         public IToken<RArg1> Arg1 => (IToken<RArg1>)ArgTokens[0];
 
         protected Function(IToken<RArg1> in1) : base(in1) { }
-        protected abstract ITask<ROut?> Evaluate(Context context, RArg1 in1);
-        protected override ITask<ROut?> TransformTokens(Context context, List<ResObj> args) =>
-            Evaluate(context, (RArg1)args[0]);
+        protected abstract ITask<IOption<ROut>?> Evaluate(IProgram program, IOption<RArg1> in1);
+        protected override ITask<IOption<ROut>?> TransformTokens(IProgram program, IOption<ResObj>[] args)
+        {
+            return Evaluate(program, args[0].RemapAs(x => (RArg1)x));
+        }
     }
 
     /// <summary>
@@ -110,10 +167,12 @@ namespace Token
         public IToken<RArg1> Arg1 => (IToken<RArg1>)ArgTokens[0];
         public IToken<RArg2> Arg2 => (IToken<RArg2>)ArgTokens[1];
 
-        protected abstract ITask<ROut?> Evaluate(Context context, RArg1 in1, RArg2 in2);
+        protected abstract ITask<IOption<ROut>?> Evaluate(IProgram program, IOption<RArg1> in1, IOption<RArg2> in2);
         protected Function(IToken<RArg1> in1, IToken<RArg2> in2) : base(in1, in2) { }
-        protected override ITask<ROut?> TransformTokens(Context context, List<ResObj> args) =>
-            Evaluate(context, (RArg1)args[0], (RArg2)args[1]);
+        protected override ITask<IOption<ROut>?> TransformTokens(IProgram program, IOption<ResObj>[] args)
+        {
+            return Evaluate(program, args[0].RemapAs(x => (RArg1)x), args[1].RemapAs(x => (RArg2)x));
+        }
     }
 
     /// <summary>
@@ -134,15 +193,17 @@ namespace Token
         public IToken<RArg2> Arg2 => (IToken<RArg2>)ArgTokens[1];
         public IToken<RArg3> Arg3 => (IToken<RArg3>)ArgTokens[2];
 
-        protected abstract ITask<ROut?> Evaluate(Context context, RArg1 in1, RArg2 in2, RArg3 in3);
+        protected abstract ITask<IOption<ROut>?> Evaluate(IProgram program, IOption<RArg1> in1, IOption<RArg2> in2, IOption<RArg3> in3);
         protected Function(IToken<RArg1> in1, IToken<RArg2> in2, IToken<RArg3> in3) : base(in1, in2, in3) { }
-        protected override ITask<ROut?> TransformTokens(Context context, List<ResObj> args) =>
-            Evaluate(context, (RArg1)args[0], (RArg2)args[1], (RArg3)args[2]);
+        protected override ITask<IOption<ROut>?> TransformTokens(IProgram program, IOption<ResObj>[] args)
+        {
+            return Evaluate(program, args[0].RemapAs(x => (RArg1)x), args[1].RemapAs(x => (RArg2)x), args[2].RemapAs(x => (RArg3)x));
+        }
     }
 
     /// <summary>
     /// Tokens that inherit must have a constructor matching: <br></br>
-    /// <code>(IEnumerable&lt;IToken&lt;<typeparamref name="RArg"/>&gt;>&gt;)</code>
+    /// <code>(IEnumerable&lt;IToken&lt;<typeparamref name="RArg"/>&gt;&gt;)</code>
     /// </summary>
     /// <typeparam name="RArg"></typeparam>
     public abstract record Combiner<RArg, ROut> : Unsafe.TokenFunction<ROut>, ICombiner<RArg, ROut>
@@ -151,10 +212,12 @@ namespace Token
     {
         public IEnumerable<IToken<RArg>> Args => ArgTokens.Elements.Map(x => (IToken<RArg>)x);
 
-        protected abstract ITask<ROut?> Evaluate(Context context, IEnumerable<RArg> inputs);
+        protected abstract ITask<IOption<ROut>?> Evaluate(IProgram program, IEnumerable<IOption<RArg>> inputs);
         protected Combiner(IEnumerable<IToken<RArg>> tokens) : base(tokens) { }
-        protected Combiner(params IToken<RArg>[] tokens) : this(tokens as IEnumerable<IToken<RArg>>) { }
-        protected sealed override ITask<ROut?> TransformTokens(Context context, List<ResObj> tokens) { return Evaluate(context, tokens.Map(x => (RArg)x)); }
+        protected sealed override ITask<IOption<ROut>?> TransformTokens(IProgram program, IOption<ResObj>[] tokens)
+        {
+            return Evaluate(program, tokens.Map(x => x.RemapAs(x => (RArg)x)));
+        }
     }
     #region Pure Functions
     // -- [ Pure Functions ] --
@@ -166,7 +229,12 @@ namespace Token
 
         protected abstract ROut EvaluatePure(RArg1 in1);
         protected PureFunction(IToken<RArg1> in1) : base(in1) { }
-        protected sealed override ITask<ROut?> Evaluate(Context _, RArg1 in1) => Task.FromResult(EvaluatePure(in1)).AsITask();
+        protected sealed override ITask<IOption<ROut>?> Evaluate(IProgram _, IOption<RArg1> in1)
+        {
+            IOption<ROut> o = (in1.CheckNone(out var a)) ? new None<ROut>() :
+                EvaluatePure(a).AsSome();
+            return Task.FromResult(o).AsITask();
+        }
     }
     public abstract record PureFunction<RArg1, RArg2, ROut> : Function<RArg1, RArg2, ROut>
         where RArg1 : class, ResObj
@@ -177,7 +245,12 @@ namespace Token
 
         protected abstract ROut EvaluatePure(RArg1 in1, RArg2 in2);
         protected PureFunction(IToken<RArg1> in1, IToken<RArg2> in2) : base(in1, in2) { }
-        protected sealed override ITask<ROut?> Evaluate(Context _, RArg1 in1, RArg2 in2) => Task.FromResult(EvaluatePure(in1, in2)).AsITask();
+        protected sealed override ITask<IOption<ROut>?> Evaluate(IProgram _, IOption<RArg1> in1, IOption<RArg2> in2)
+        {
+            IOption<ROut> o = (in1.CheckNone(out var a) || in2.CheckNone(out var b)) ? new None<ROut>() :
+                EvaluatePure(a, b).AsSome();
+            return Task.FromResult(o).AsITask();
+        }
     }
     public abstract record PureFunction<RArg1, RArg2, RArg3, ROut> : Function<RArg1, RArg2, RArg3, ROut>
         where RArg1 : class, ResObj
@@ -189,7 +262,12 @@ namespace Token
 
         protected abstract ROut EvaluatePure(RArg1 in1, RArg2 in2, RArg3 in3);
         protected PureFunction(IToken<RArg1> in1, IToken<RArg2> in2, IToken<RArg3> in3) : base(in1, in2, in3) { }
-        protected sealed override ITask<ROut?> Evaluate(Context _, RArg1 in1, RArg2 in2, RArg3 in3) => Task.FromResult(EvaluatePure(in1, in2, in3)).AsITask();
+        protected sealed override ITask<IOption<ROut>?> Evaluate(IProgram _, IOption<RArg1> in1, IOption<RArg2> in2, IOption<RArg3> in3)
+        {
+            IOption<ROut> o = (in1.CheckNone(out var a) || in2.CheckNone(out var b) || in3.CheckNone(out var c)) ? new None<ROut>() :
+                EvaluatePure(a, b, c).AsSome();
+            return Task.FromResult(o).AsITask();
+        }
     }
     public abstract record PureCombiner<RArg, ROut> : Combiner<RArg, ROut>
         where RArg : class, ResObj
@@ -199,17 +277,16 @@ namespace Token
 
         protected abstract ROut EvaluatePure(IEnumerable<RArg> inputs);
         protected PureCombiner(IEnumerable<IToken<RArg>> tokens) : base(tokens) { }
-        protected PureCombiner(params IToken<RArg>[] tokens) : this(tokens as IEnumerable<IToken<RArg>>) { }
-        protected sealed override ITask<ROut?> Evaluate(Context _, IEnumerable<RArg> inputs) => Task.FromResult(EvaluatePure(inputs)).AsITask();
+        protected sealed override ITask<IOption<ROut>?> Evaluate(IProgram _, IEnumerable<IOption<RArg>> inputs) => Task.FromResult(EvaluatePure(inputs.Filter(x => x.IsSome()).Map(x => x.Unwrap())).AsSome()).AsITask();
     }
     // ----
     #endregion
     // --------
     #endregion
 
-    public static class Extensions
+    public static class _Extensions
     {
-        public static IToken<R> ApplyRules<R>(this IToken<R> token, IEnumerable<Rule.IRule> rules, out List<Rule.IRule> appliedRules) where R : class, ResObj
+        public static IToken<R> ApplyRules<R>(this IToken<R> token, IEnumerable<Rule.IRule> rules, out List<(IToken<R> fromToken, Rule.IRule rule)> appliedRules) where R : class, ResObj
         {
             var o = token;
             appliedRules = new();
@@ -217,8 +294,8 @@ namespace Token
             {
                 if (rule.TryApplyTyped(o) is IToken<R> newToken)
                 {
+                    appliedRules.Add((o, rule));
                     o = newToken;
-                    appliedRules.Add(rule);
                 }
             }
             return o;
@@ -236,8 +313,8 @@ namespace Token.Unsafe
     public interface IToken
     {
         public bool IsFallible { get; }
-        public ITask<ResObj?> ResolveWithRulesUnsafe(Context context);
-        public ITask<ResObj?> ResolveUnsafe(Context context);
+        public ITask<IOption<ResObj>?> ResolveWithRulesUnsafe(IProgram program);
+        public ITask<IOption<ResObj>?> ResolveUnsafe(IProgram program);
     }
 
     public interface IHasArg1<RArg> : Unsafe.IHasArg1 where RArg : class, ResObj
@@ -252,70 +329,68 @@ namespace Token.Unsafe
     }
 
     // shitty name for this interface-set. consider something like 'FromArgs', 'ProductOfArgs', 'ArgTransformer', or something.
-    public interface IFunction<ROut> : IToken<ROut> where ROut : class, ResObj { }
+    public interface IFunction<ROut> : IFunction, IToken<ROut> where ROut : class, ResObj { }
+    public interface IFunction : IToken { }
 
     public interface IHasArg1 : IToken { }
     public interface IHasArg2 : IHasArg1 { }
     public interface IHasArg3 : IHasArg2 { }
 
+    public abstract record VariableIdentifier
+    {
+        public VariableIdentifier()
+        {
+            _value = _assigner;
+            _assigner++;
+        }
+        public virtual bool Equals(VariableIdentifier? other) => other is not null && _value == other._value;
+        public override int GetHashCode() => _value.GetHashCode();
+        protected static int _assigner = 0;
+        protected readonly int _value;
+    }
     public abstract record TokenFunction<R> : Token<R> where R : class, ResObj
     {
         public abstract bool IsFallibleFunction { get; }
         public sealed override bool IsFallible => IsFallibleFunction || ArgTokens.Elements.Map(x => x.IsFallible).HasMatch(x => x == true);
-        public sealed override async ITask<R?> Resolve(Context context)
+        protected sealed override async ITask<IOption<R>?> ResolveInternal(IProgram program)
         {
-            // stateless behavior for now. (non-linear backwards timeline with nested functions)
-            _state.Index = 0;
-            _state.Contexts[_state.Index] = context;
-            while (_state.Index >= 0)
+            var tempStates = new IProgram[ArgTokens.Count + 1];
+            var resolvedInputs = new IOption<ResObj>[ArgTokens.Count];
+            tempStates[0] = program;
+            for (int i = 0; i >= 0; i++)
             {
-                if (_state.Index == ArgTokens.Count)
+                if (i == ArgTokens.Count)
                 {
-                    if (await TransformTokens(_state.Contexts[_state.Index], _state.Inputs) is R o) return o;
-                    _state.Index--;
+                    if (await TransformTokens(tempStates[i], resolvedInputs) is IOption<R> o) return o;
+                    i--;
                 }
-                switch (await ArgTokens[_state.Index].ResolveWithRulesUnsafe(_state.Contexts[_state.Index]))
+                if (await ArgTokens[i].ResolveWithRulesUnsafe(tempStates[i]) is not IOption<ResObj> resOpt)
                 {
-                    case ResObj resolution:
-                        _state.Inputs[_state.Index] = resolution;
-                        _state.Contexts[_state.Index + 1] = context.WithResolution(resolution);
-                        _state.Index++;
-                        continue;
-                    case null:
-                        while (--_state.Index >= 0 && !ArgTokens[_state.Index].IsFallible) { }
-                        continue;
+                    i--;
+                    while (i >= 0 && !ArgTokens[i].IsFallible) i--;
+                    i--; //to negate the i++ in the for.
+                    continue;
                 }
+                resolvedInputs[i] = resOpt;
+                if (resOpt.CheckNone(out var res))
+                {
+                    tempStates[i + 1] = tempStates[i];
+                    continue;
+                }
+                tempStates[i + 1] = tempStates[i].dState(Q => Q.WithResolution(res));
+                continue;
+
             }
-            _state.Index = 0;
             return null;
         }
 
         protected readonly PList<IToken> ArgTokens;
-        protected abstract ITask<R?> TransformTokens(Context context, List<ResObj> tokens);
+        protected abstract ITask<IOption<R>?> TransformTokens(IProgram program, IOption<ResObj>[] resolutions);
         protected TokenFunction(IEnumerable<IToken> tokens)
         {
             ArgTokens = new() { Elements = tokens };
-            _state = new(ArgTokens.Count);
         }
         protected TokenFunction(params IToken[] tokens) : this(tokens as IEnumerable<IToken>) { }
-
-        private class State
-        {
-            public int Index { get; set; }
-            public List<Context> Contexts { get; set; }
-            public List<ResObj> Inputs { get; set; }
-            public State(int argCount)
-            {
-                Index = 0;
-                Contexts = new((null as Context).Sequence(_ => null).Take(argCount + 1));
-                Inputs = new((null as ResObj).Sequence(_ => null).Take(argCount));
-            }
-        }
-        private State _state;
-        public TokenFunction(TokenFunction<R> original) : base(original)
-        {
-            ArgTokens = original.ArgTokens;
-            _state = new(ArgTokens.Count);
-        }
     }
+
 }
