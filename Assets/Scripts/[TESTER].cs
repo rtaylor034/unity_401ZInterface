@@ -47,7 +47,7 @@ public class TESTER : MonoBehaviour
         var rule_tutorial_2 = MakeProxy.AsRuleFor<t.Number.Add, r.Number>(P => P.pOriginalA().pAdd(P.pOriginalA()).pSubtract(P.pOriginalB())); // makes ALL add(A, B) tokens ('t.Number.Add') turn into subtract(add(A, A), B).
         //var rule_illogical = MakeProxy.AsRuleFor<t.Number.Add, r.Bool>(P => P.pOriginalA().pIsGreaterThan(P.pOriginalB()) -- consider applying this rule to subtract(add(<number>, <number>), <number>), it would become subtract(<bool>, <number>), which does not make sense.
 
-        var token_complicated = MakeToken.tRecursive<r.Number, r.Multi<r.Number>, r.Number>(new() // if you can figure out what this does, then you understand the language; yes its recursive (no recursion is not planned to be common)
+        var token_complicated = MakeToken.tRecursive<r.Number, r.Multi<r.Number>, r.Number>(new() // if you can figure out what this does, then you understand the language; yes its recursive (recursion is not planned to be common, but it will exist sometimes)
         {
             A = 0.tConst(),
             B = 1.Sequence(x => x + 1).Take(5).Map(x => x.tConst()).tToMulti(),
