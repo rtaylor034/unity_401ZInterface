@@ -2,18 +2,13 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Token;
 using TokenSyntax;
 using ProxySyntax;
-using Proxy;
 using UnityEngine;
 using System.Threading.Tasks;
-using MorseCode.ITask;
 using r = Resolutions;
 using t = Tokens;
-using Proxy.Creator;
 using Perfection;
-using FourZeroOne;
 public class TESTER : MonoBehaviour
 {
     private FourZeroOne.IProgram _program;

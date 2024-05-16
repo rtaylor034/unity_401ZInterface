@@ -40,11 +40,16 @@ namespace FourZeroOne.Programs.Standard
             Debug.Log($"{depthPad}* {resolution}");
             depth--;
         }
+        /// <summary>
+        /// Called whenever this program's <see cref="IProgram.State"/> is updated, <paramref name="state"/> containing the new state.
+        /// </summary>
+        /// <param name="state"></param>
         public void WriteState(State state)
         {
 
         }
 
+        // very temporary (obv), bare minumum to allow for selection token testing.
         private async ITask<IOption<List<R>>> SelectionLogic<R>(IEnumerable<R> outOf, int count)
         {
             var o = new List<R>(count);
