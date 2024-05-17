@@ -2,12 +2,13 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using TokenSyntax;
-using ProxySyntax;
+using FourZeroOne.Core.ProxySyntax;
+using FourZeroOne.Core.TokenSyntax;
+using t = FourZeroOne.Core.Tokens;
+using p = FourZeroOne.Core.Proxies;
+using r = FourZeroOne.Core.Resolutions;
 using UnityEngine;
 using System.Threading.Tasks;
-using r = Resolutions;
-using t = Tokens;
 using Perfection;
 public class TESTER : MonoBehaviour
 {
@@ -70,13 +71,13 @@ public class TESTER : MonoBehaviour
         {
             State = new()
             {
-                Rules = new() { Elements = Iter.Over<Rule.IRule>() },
+                Rules = new() { Elements = Iter.Over<FourZeroOne.Rule.IRule>() },
                 Variables = new(7),
                 Board = new() { }
             }
         };
         
-        while ((await new t.Select.One<r.Bool>(new t.Multi.Union<r.Bool>(Iter.Over(true, false).Map(x => new t.Multi.Yield<r.Bool>(new t.Fixed<r.Bool>(x))))).Resolve(_program)).Unwrap().IsTrue)
+        while ((await new t.IO.Select.One<r.Bool>(new t.Multi.Union<r.Bool>(Iter.Over(true, false).Map(x => new t.Multi.Yield<r.Bool>(new t.Fixed<r.Bool>(x))))).Resolve(_program)).Unwrap().IsTrue)
         {
             Debug.Log("===========[ START ]============");
             Debug.Log(await token_complicated.ResolveWithRules(_program));
