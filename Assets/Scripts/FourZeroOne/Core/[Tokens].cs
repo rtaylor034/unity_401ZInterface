@@ -12,6 +12,8 @@ namespace FourZeroOne.Core.Tokens
     using Token;
     using ResObj = Resolution.IResolution;
     using r = Resolutions;
+    using FourZeroOne.Core.Resolutions.Board;
+
     namespace Board
     {
         using rb = Resolutions.Board;
@@ -59,20 +61,28 @@ namespace FourZeroOne.Core.Tokens
             }
             namespace Get
             {
-                public sealed record HP : PureFunction<rb.Unit, r.Number>
+                public sealed record HP : Getter<rb.Unit, r.Number>
                 {
                     public HP(IToken<rb.Unit> of) : base(of) { }
-                    protected override r.Number EvaluatePure(rb.Unit unit)
+                    protected override r.Number EvaluateGet(IProgram program, rb.Unit source)
                     {
-                        return unit.HP;
+                        return program.State.Board.Units[source.UUID].HP;
                     }
                 }
-                public sealed record Effects : PureFunction<rb.Unit, r.Multi<rb.Unit.Effect>>
+                public sealed record Effects : Getter<rb.Unit, r.Multi<rb.Unit.Effect>>
                 {
                     public Effects(IToken<rb.Unit> of) : base(of) { }
-                    protected override r.Multi<rb.Unit.Effect> EvaluatePure(rb.Unit unit)
+                    protected override r.Multi<rb.Unit.Effect> EvaluateGet(IProgram program, rb.Unit source)
                     {
-                        return unit.Effects;
+                        return program.State.Board.Units[source.UUID].Effects;
+                    }
+                }
+                public sealed record Owner : Getter<rb.Unit, rb.Player>
+                {
+                    public Owner(IToken<rb.Unit> source) : base(source) { }
+                    protected override Player EvaluateGet(IProgram program, rb.Unit source)
+                    {
+                        return program.State.Board.Units[source.UUID].Owner;
                     }
                 }
             }

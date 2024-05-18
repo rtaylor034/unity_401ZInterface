@@ -277,6 +277,16 @@ namespace FourZeroOne.Token
     // --------
     #endregion
 
+    public abstract record Getter<RSource, RGet> : Function<RSource, RGet>
+        where RSource : class, ResObj
+        where RGet : class, ResObj
+    {
+        public sealed override bool IsFallibleFunction => false;
+        public Getter(IToken<RSource> source) : base(source) { }
+        protected abstract RGet EvaluateGet(IProgram program, RSource source);
+        protected sealed override ITask<IOption<RGet>?> Evaluate(IProgram program, IOption<RSource> in1) { return Task.FromResult(in1.RemapAs(x => EvaluateGet(program, x))).AsITask(); }
+    }
+
     public static class _Extensions
     {
         public static IToken<R> ApplyRules<R>(this IToken<R> token, IEnumerable<Rule.IRule> rules, out List<(IToken<R> fromToken, Rule.IRule rule)> appliedRules) where R : class, ResObj

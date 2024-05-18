@@ -57,6 +57,8 @@ namespace FourZeroOne.Core.Resolutions
             public Updater<Coordinates> dPosition { init => Position = value(Position); }
             public Multi<Effect> Effects { get; init; }
             public Updater<Multi<Effect>> dEffects { init => Effects = value(Effects); }
+            public Player Owner { get; init; } 
+            public Updater<Player> dOwner { init => Owner = value(Owner); }
             public Unit(int id)
             {
                 UUID = id;
@@ -72,6 +74,14 @@ namespace FourZeroOne.Core.Resolutions
                 {
                     Identity = identity;
                 }
+            }
+        }
+        public sealed record Player : NoOp
+        {
+            public readonly int UUID;
+            public Player(int id)
+            {
+                UUID = id;
             }
         }
     }
