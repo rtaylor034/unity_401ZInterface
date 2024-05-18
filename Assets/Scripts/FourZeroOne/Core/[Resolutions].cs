@@ -38,19 +38,25 @@ namespace FourZeroOne.Core.Resolutions
             };
         }
 
-        public abstract record Hex : NoOp, IPositioned
+        public abstract record Hex : NoOp, IPositioned, IStateTracked
         {
+            public int UUID => _uuid;
             public Coordinates Position { get; init; }
             public Updater<Coordinates> dPosition { init => Position = value(Position); }
+            public Hex(int id)
+            {
+                _uuid = id;
+            }
             public override bool ResEqual(IResolution? other)
             {
                 return (other is Hex h && Position.ResEqual(h.Position));
             }
+            private readonly int _uuid;
         }
 
-        public sealed record Unit : NoOp, IPositioned
+        public sealed record Unit : NoOp, IPositioned, IStateTracked
         {
-            public readonly int UUID;
+            public int UUID => _uuid;
             public Number HP { get; init; }
             public Updater<Number> dHP { init => HP = value(HP); }
             public Coordinates Position { get; init; }
@@ -61,7 +67,7 @@ namespace FourZeroOne.Core.Resolutions
             public Updater<Player> dOwner { init => Owner = value(Owner); }
             public Unit(int id)
             {
-                UUID = id;
+                _uuid = id;
             }
             public override bool ResEqual(IResolution? other)
             {
@@ -75,14 +81,16 @@ namespace FourZeroOne.Core.Resolutions
                     Identity = identity;
                 }
             }
+            private readonly int _uuid;
         }
-        public sealed record Player : NoOp
+        public sealed record Player : NoOp, IStateTracked
         {
-            public readonly int UUID;
+            public int UUID => _uuid;
             public Player(int id)
             {
-                UUID = id;
+                _uuid = id;
             }
+            private readonly int _uuid;
         }
     }
     public sealed record Number : NoOp

@@ -19,7 +19,10 @@ namespace FourZeroOne.Resolution
         public IEnumerable<R> Values { get; }
         public int Count { get; }
     }
-    
+    public interface IStateTracked : IResolution
+    {
+        public int UUID { get; }
+    }
     public abstract record Operation : Unsafe.Resolution
     {
         protected abstract State UpdateState(State context);
@@ -37,6 +40,7 @@ namespace FourZeroOne.Resolution
         {
             public Core.Resolutions.Board.Coordinates Position { get; }
         }
+        
     }
 }
 namespace FourZeroOne.Resolution.Unsafe

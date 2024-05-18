@@ -45,6 +45,11 @@ namespace FourZeroOne.Core.Tokens
                     return new r.Multi<rb.Hex>() { Values = program.State.Board.Hexes }.AsSome();
                 }
             }
+            public sealed record AtPresent : PresentStateGetter<rb.Hex>
+            {
+                public AtPresent(IToken<rb.Hex> source) : base(source) { }
+                protected override PIndexedSet<int, rb.Hex> GetStatePSet(IProgram program) { return program.State.Board.Hexes; }
+            }
             namespace Get
             {
 
@@ -59,32 +64,44 @@ namespace FourZeroOne.Core.Tokens
                     return new r.Multi<rb.Unit>() { Values = program.State.Board.Units }.AsSome();
                 }
             }
+            public sealed record AtPresent : PresentStateGetter<rb.Unit>
+            {
+                public AtPresent(IToken<rb.Unit> source) : base(source) { }
+                protected override PIndexedSet<int, rb.Unit> GetStatePSet(IProgram program) { return program.State.Board.Units; }
+            }
             namespace Get
             {
-                public sealed record HP : Getter<rb.Unit, r.Number>
+                public sealed record HP : PureFunction<rb.Unit, r.Number>
                 {
                     public HP(IToken<rb.Unit> of) : base(of) { }
-                    protected override r.Number EvaluateGet(IProgram program, rb.Unit source)
-                    {
-                        return program.State.Board.Units[source.UUID].HP;
-                    }
+                    protected override r.Number EvaluatePure(rb.Unit in1) { return in1.HP; }
                 }
-                public sealed record Effects : Getter<rb.Unit, r.Multi<rb.Unit.Effect>>
+                public sealed record Effects : PureFunction<rb.Unit, r.Multi<rb.Unit.Effect>>
                 {
                     public Effects(IToken<rb.Unit> of) : base(of) { }
-                    protected override r.Multi<rb.Unit.Effect> EvaluateGet(IProgram program, rb.Unit source)
-                    {
-                        return program.State.Board.Units[source.UUID].Effects;
-                    }
+                    protected override r.Multi<rb.Unit.Effect> EvaluatePure(rb.Unit in1) { return in1.Effects; }
+
                 }
-                public sealed record Owner : Getter<rb.Unit, rb.Player>
+                public sealed record Owner : PureFunction<rb.Unit, rb.Player>
                 {
                     public Owner(IToken<rb.Unit> source) : base(source) { }
-                    protected override Player EvaluateGet(IProgram program, rb.Unit source)
-                    {
-                        return program.State.Board.Units[source.UUID].Owner;
-                    }
+                    protected override rb.Player EvaluatePure(rb.Unit in1) { return in1.Owner; }
                 }
+            }
+        }
+        namespace Player
+        {
+            public sealed record AllPlayers : Infallible<r.Multi<rb.Player>>
+            {
+                protected override IOption<r.Multi<rb.Player>> InfallibleResolve(IProgram program)
+                {
+                    return new r.Multi<rb.Player>() { Values = program.State.Board.Players }.AsSome();
+                }
+            }
+            public sealed record AtPresent : PresentStateGetter<rb.Player>
+            {
+                public AtPresent(IToken<rb.Player> source) : base(source) { }
+                protected override PIndexedSet<int, rb.Player> GetStatePSet(IProgram program) { return program.State.Board.Players; }
             }
         }
     }
