@@ -51,10 +51,5 @@ namespace FourZeroOne.Resolution.Unsafe
         public virtual bool ResEqual(IResolution? other) => Equals(other);
         public State ChangeState(State before) => ChangeStateInternal(before);
         protected abstract State ChangeStateInternal(State context);
-        /// <summary>
-        /// <i>Use <see cref="State.WithResolution(Resolution)"/> instead.</i>
-        /// </summary>
-        /// <param name="context"></param>
-        /// <returns></returns>
     }
 }
