@@ -26,6 +26,10 @@ namespace ControlledTask
         {
             Awaiter.Resolve();
         }
+        public void Cease()
+        {
+            Awaiter.Cease();
+        }
 
         public MC.IAwaiter GetAwaiter() => Awaiter;
         public MC.IConfiguredTask ConfigureAwait(bool continueOnCapturedContext) => throw new System.NotImplementedException();
@@ -42,9 +46,13 @@ namespace ControlledTask
             }
             public void Resolve()
             {
+                Cease();
+                _continueAction();
+            }
+            public void Cease()
+            {
                 if (_completed) throw new Exception("Awaiter already resolved");
                 _completed = true;
-                _continueAction();
             }
             public void OnCompleted(Action continuation)
             {
@@ -83,6 +91,10 @@ namespace ControlledTask
         public void Resolve(T result)
         {
             Awaiter.Resolve(result);
+        }
+        public void Cease()
+        {
+            Awaiter.Cease();
         }
 
         public MC.IAwaiter<T> GetAwaiter() => Awaiter;

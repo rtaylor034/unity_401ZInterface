@@ -80,7 +80,12 @@ public class TESTER : MonoBehaviour
         while ((await new t.IO.Select.One<r.Bool>(new t.Multi.Union<r.Bool>(Iter.Over(true, false).Map(x => new t.Multi.Yield<r.Bool>(new t.Fixed<r.Bool>(x))))).Resolve(_program)).Unwrap().IsTrue)
         {
             Debug.Log("===========[ START ]============");
-            Debug.Log(await token_complicated.ResolveWithRules(_program));
+            //Debug.Log(await token_complicated.ResolveWithRules(_program));
+            var o = new ControlledTask.ControlledTask<TESTER>();
+            ResolveAfterSomeTime(o);
+            await Task.Delay(2000);
+            Debug.Log(await o);
+
             Debug.Log("===========[ END ]==============");
         }
         UnityEditor.EditorApplication.ExitPlaymode();
@@ -89,7 +94,12 @@ public class TESTER : MonoBehaviour
         b = a;
         
     }
-
+    async Task ResolveAfterSomeTime(ControlledTask.ControlledTask<TESTER> task)
+    {
+        await Task.Delay(1000);
+        Debug.Log("cease");
+        task.Cease();
+    }
     // Update is called once per frame
     async void Update()
     {
