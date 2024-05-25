@@ -13,6 +13,7 @@ namespace FourZeroOne.Core.Tokens
     using ResObj = Resolution.IResolution;
     using r = Resolutions;
     using FourZeroOne.Core.Resolutions.Board;
+    using Program;
 
     namespace Board
     {
@@ -42,13 +43,13 @@ namespace FourZeroOne.Core.Tokens
             {
                 protected override IOption<r.Multi<rb.Hex>> InfallibleResolve(IProgram program)
                 {
-                    return new r.Multi<rb.Hex>() { Values = program.State.Board.Hexes }.AsSome();
+                    return new r.Multi<rb.Hex>() { Values = program.GetState().Board.Hexes }.AsSome();
                 }
             }
             public sealed record AtPresent : PresentStateGetter<rb.Hex>
             {
                 public AtPresent(IToken<rb.Hex> source) : base(source) { }
-                protected override PIndexedSet<int, rb.Hex> GetStatePSet(IProgram program) { return program.State.Board.Hexes; }
+                protected override PIndexedSet<int, rb.Hex> GetStatePSet(IProgram program) { return program.GetState().Board.Hexes; }
             }
             namespace Get
             {
@@ -61,13 +62,13 @@ namespace FourZeroOne.Core.Tokens
             {
                 protected override IOption<r.Multi<rb.Unit>> InfallibleResolve(IProgram program)
                 {
-                    return new r.Multi<rb.Unit>() { Values = program.State.Board.Units }.AsSome();
+                    return new r.Multi<rb.Unit>() { Values = program.GetState().Board.Units }.AsSome();
                 }
             }
             public sealed record AtPresent : PresentStateGetter<rb.Unit>
             {
                 public AtPresent(IToken<rb.Unit> source) : base(source) { }
-                protected override PIndexedSet<int, rb.Unit> GetStatePSet(IProgram program) { return program.State.Board.Units; }
+                protected override PIndexedSet<int, rb.Unit> GetStatePSet(IProgram program) { return program.GetState().Board.Units; }
             }
             namespace Get
             {
@@ -95,13 +96,13 @@ namespace FourZeroOne.Core.Tokens
             {
                 protected override IOption<r.Multi<rb.Player>> InfallibleResolve(IProgram program)
                 {
-                    return new r.Multi<rb.Player>() { Values = program.State.Board.Players }.AsSome();
+                    return new r.Multi<rb.Player>() { Values = program.GetState().Board.Players }.AsSome();
                 }
             }
             public sealed record AtPresent : PresentStateGetter<rb.Player>
             {
                 public AtPresent(IToken<rb.Player> source) : base(source) { }
-                protected override PIndexedSet<int, rb.Player> GetStatePSet(IProgram program) { return program.State.Board.Players; }
+                protected override PIndexedSet<int, rb.Player> GetStatePSet(IProgram program) { return program.GetState().Board.Players; }
             }
         }
     }
@@ -358,13 +359,13 @@ namespace FourZeroOne.Core.Tokens
 
         protected override IOption<R> InfallibleResolve(IProgram program)
         {
-            return (program.State.Variables[_toIdentifier] is IOption<R> val) ? val :
+            return (program.GetState().Variables[_toIdentifier] is IOption<R> val) ? val :
                 throw new Exception($"Reference token resolved to non-existent or wrongly-typed object.\n" +
                 $"Identifier: {_toIdentifier}\n" +
                 $"Expected: {typeof(R).Name}\n" +
-                $"Recieved: {program.State.Variables[_toIdentifier]}\n" +
+                $"Recieved: {program.GetState().Variables[_toIdentifier]}\n" +
                 $"Current Scope:\n" +
-                $"{program.State.Variables.Elements.AccumulateInto("", (msg, x) => msg + $"> '{x.key}' : {x.val}\n")}");
+                $"{program.GetState().Variables.Elements.AccumulateInto("", (msg, x) => msg + $"> '{x.key}' : {x.val}\n")}");
         }
 
         private readonly VariableIdentifier<R> _toIdentifier;

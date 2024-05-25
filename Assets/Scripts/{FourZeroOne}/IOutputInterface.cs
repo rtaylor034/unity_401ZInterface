@@ -20,11 +20,11 @@ namespace FourZeroOne
         /// <i>Only called on final realization after all rules are applied.</i>
         /// </summary>
         /// <param name="token"></param>
-        public void WriteToken(IToken token);
+        public void WriteToken(State startingState, IToken token);
         /// <summary>
         /// Called when a token resolves to <paramref name="resolution"/>.
         /// </summary>
         /// <param name="resolution"></param>
-        public void WriteResolution(IOption<ResObj>? resolution);
+        public void WriteResolution(IOption<ResObj> resolution);
     }
 }

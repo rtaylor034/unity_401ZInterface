@@ -10,6 +10,6 @@ namespace FourZeroOne
     using ResObj = Resolution.IResolution;
     public interface IInputInterface
     {
-        public ITask<IOption<IEnumerable<R>>?> ReadSelection<R>(IEnumerable<R> from, int count) where R : class, ResObj;
+        public ITask<IOption<IEnumerable<R>>> ReadSelection<R>(IEnumerable<R> from, int count) where R : class, ResObj;
     }
 }

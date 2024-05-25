@@ -7,10 +7,11 @@ using MorseCode.ITask;
 namespace FourZeroOne.Token
 {
     using ResObj = Resolution.IResolution;
+    using Program;
     public interface IToken<out R> : Unsafe.IToken where R : class, ResObj
     {
-        public ITask<IOption<R>?> ResolveWithRules(IProgram program);
-        public ITask<IOption<R>?> Resolve(IProgram program);
+        public ITask<IOption<R>> ResolveWithRules(IProgram program);
+        public ITask<IOption<R>> Resolve(IProgram program);
     }
     
     public sealed record VariableIdentifier<R> : Unsafe.VariableIdentifier where R : class, ResObj
@@ -24,33 +25,41 @@ namespace FourZeroOne.Token
     public abstract record Token<R> : IToken<R> where R : class, ResObj
     {
         public abstract bool IsFallible { get; }
-        public async ITask<IOption<R>?> Resolve(IProgram program)
+        public async ITask<IOption<R>> Resolve(IProgram program)
         {
-            program.Output.WriteToken(this);
+            program.ObserveToken(this);
             var o = await ResolveInternal(program);
-            program.Output.WriteResolution(o);
+            program.ObserveResolution(o);
             return o;
         }
-        public async ITask<IOption<R>?> ResolveWithRules(IProgram program)
+        public async ITask<IOption<R>> ResolveWithRules(IProgram program)
         {
-            if (program.State.Rules.Count == 0) return await Resolve(program);
-            var resolvingToken = this.ApplyRules(program.State.Rules.Elements, out var applied);
-            program.Output.WriteRuleSteps(applied.Map(x => ((Unsafe.IToken)x.fromToken, x.rule)));
-            return await resolvingToken.Resolve(program.dState(Q => Q with
+            if (program.GetState().Rules.Count == 0) return await Resolve(program);
+            var resolvingToken = this.ApplyRules(program.GetState().Rules.Elements, out var applied);
+            program.ObserveRuleSteps(applied.Map(x => ((Unsafe.IToken)x.fromToken, x.rule)));
+            return await resolvingToken.Resolve(program);
+            
+            //put in 'ObserveRuleSteps' implementation
+            /*
+            return await resolvingToken.Resolve(program with
             {
-                dRules = Q => Q with { dElements = Q => Q.Filter(x => !applied.HasMatch(y => ReferenceEquals(x, y.rule))) }
-            }));
+                dState = Q => Q with
+                {
+                    dRules = Q => Q with { dElements = Q => Q.Filter(x => !applied.HasMatch(y => ReferenceEquals(x, y.rule))) }
+                }
+            });
+            */
         }
-        public async ITask<IOption<ResObj>?> ResolveUnsafe(IProgram program) { return await ResolveInternal(program); }
-        public async ITask<IOption<ResObj>?> ResolveWithRulesUnsafe(IProgram program) { return await ResolveWithRules(program); }
+        public async ITask<IOption<ResObj>> ResolveUnsafe(IProgram program) { return await ResolveInternal(program); }
+        public async ITask<IOption<ResObj>> ResolveWithRulesUnsafe(IProgram program) { return await ResolveWithRules(program); }
 
-        protected abstract ITask<IOption<R>?> ResolveInternal(IProgram program);
+        protected abstract ITask<IOption<R>> ResolveInternal(IProgram program);
     }
 
     public abstract record Infallible<R> : Token<R> where R : class, ResObj
     {
         public sealed override bool IsFallible => false;
-        protected sealed override ITask<IOption<R>?> ResolveInternal(IProgram program) { return Task.FromResult(InfallibleResolve(program)).AsITask(); }
+        protected sealed override ITask<IOption<R>> ResolveInternal(IProgram program) { return Task.FromResult(InfallibleResolve(program)).AsITask(); }
 
         protected abstract IOption<R> InfallibleResolve(IProgram program);
     }
@@ -313,11 +322,12 @@ namespace FourZeroOne.Token.Unsafe
 {
     using ResObj = Resolution.IResolution;
     using Token;
+    using Program;
     public interface IToken
     {
         public bool IsFallible { get; }
-        public ITask<IOption<ResObj>?> ResolveWithRulesUnsafe(IProgram program);
-        public ITask<IOption<ResObj>?> ResolveUnsafe(IProgram program);
+        public ITask<IOption<ResObj>> ResolveWithRulesUnsafe(IProgram program);
+        public ITask<IOption<ResObj>> ResolveUnsafe(IProgram program);
     }
 
     public interface IHasArg1<RArg> : Unsafe.IHasArg1 where RArg : class, ResObj
@@ -355,36 +365,9 @@ namespace FourZeroOne.Token.Unsafe
     {
         public abstract bool IsFallibleFunction { get; }
         public sealed override bool IsFallible => IsFallibleFunction || ArgTokens.Elements.Map(x => x.IsFallible).HasMatch(x => x == true);
-        protected sealed override async ITask<IOption<R>?> ResolveInternal(IProgram program)
+        protected sealed override async ITask<IOption<R>> ResolveInternal(IProgram program)
         {
-            var tempStates = new IProgram[ArgTokens.Count + 1];
-            var resolvedInputs = new IOption<ResObj>[ArgTokens.Count];
-            tempStates[0] = program;
-            for (int i = 0; i >= 0; i++)
-            {
-                if (i == ArgTokens.Count)
-                {
-                    if (await TransformTokens(tempStates[i], resolvedInputs) is IOption<R> o) return o;
-                    i--;
-                }
-                if (await ArgTokens[i].ResolveWithRulesUnsafe(tempStates[i]) is not IOption<ResObj> resOpt)
-                {
-                    i--;
-                    while (i >= 0 && !ArgTokens[i].IsFallible) i--;
-                    i--; //to negate the i++ in the for.
-                    continue;
-                }
-                resolvedInputs[i] = resOpt;
-                if (resOpt.CheckNone(out var res))
-                {
-                    tempStates[i + 1] = tempStates[i];
-                    continue;
-                }
-                tempStates[i + 1] = tempStates[i].dState(Q => Q.WithResolution(res));
-                continue;
-
-            }
-            return null;
+            throw new System.NotImplementedException();
         }
 
         protected readonly PList<IToken> ArgTokens;
