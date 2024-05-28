@@ -33,42 +33,40 @@ namespace ControlledTask
 
         public MC.IAwaiter GetAwaiter() => Awaiter;
         public MC.IConfiguredTask ConfigureAwait(bool continueOnCapturedContext) => throw new System.NotImplementedException();
-
-        public class ControlledAwaiter : MC.IAwaiter
-        {
-            private bool _completed;
-            public bool IsCompleted => _completed;
-            private Action _continueAction;
-
-            public ControlledAwaiter()
-            {
-                _completed = false;
-            }
-            public void Resolve()
-            {
-                Cease();
-                _continueAction();
-            }
-            public void Cease()
-            {
-                if (_completed) throw new Exception("Awaiter already resolved");
-                _completed = true;
-            }
-            public void OnCompleted(Action continuation)
-            {
-                _continueAction = continuation;
-            }
-            // yea, no idea how this is supposed to be different than non-unsafe OnCompleted(). if we crash we crash.
-            // the documentation also isnt very helpful. sucks to suck!
-            public void UnsafeOnCompleted(Action continuation)
-            {
-                _continueAction = continuation;
-            }
-
-            public void GetResult() { }
-        }
     }
+    public class ControlledAwaiter : MC.IAwaiter
+    {
+        private bool _completed;
+        public bool IsCompleted => _completed;
+        private Action _continueAction;
 
+        public ControlledAwaiter()
+        {
+            _completed = false;
+        }
+        public void Resolve()
+        {
+            Cease();
+            _continueAction();
+        }
+        public void Cease()
+        {
+            if (_completed) throw new Exception("Awaiter already resolved");
+            _completed = true;
+        }
+        public void OnCompleted(Action continuation)
+        {
+            _continueAction = continuation;
+        }
+        // yea, no idea how this is supposed to be different than non-unsafe OnCompleted(). if we crash we crash.
+        // the documentation also isnt very helpful. sucks to suck!
+        public void UnsafeOnCompleted(Action continuation)
+        {
+            _continueAction = continuation;
+        }
+
+        public void GetResult() { }
+    }
     public class ControlledTask<T> : MC.ITask<T>
     {
         public ControlledAwaiter<T> Awaiter { get; private set; }
@@ -102,19 +100,19 @@ namespace ControlledTask
 
         MC.IConfiguredTask<T> MC.ITask<T>.ConfigureAwait(bool continueOnCapturedContext) => throw new System.NotImplementedException();
         MC.IConfiguredTask MC.ITask.ConfigureAwait(bool continueOnCapturedContext) => throw new System.NotImplementedException();
+    }
 
-        public class ControlledAwaiter<B> : ControlledTask.ControlledAwaiter, MC.IAwaiter<B>
+    public class ControlledAwaiter<T> : ControlledAwaiter, MC.IAwaiter<T>
+    {
+        private T _result;
+
+        public ControlledAwaiter() : base() { }
+        public void Resolve(T result)
         {
-            private B _result;
-
-            public ControlledAwaiter() : base() { }
-            public void Resolve(B result)
-            {
-                _result = result;
-                base.Resolve();
-            }
-            // reeks
-            public new B GetResult() => _result;
+            _result = result;
+            base.Resolve();
         }
+        // reeks
+        public new T GetResult() => _result;
     }
 }

@@ -367,11 +367,16 @@ namespace FourZeroOne.Token.Unsafe
         public sealed override bool IsFallible => IsFallibleFunction || ArgTokens.Elements.Map(x => x.IsFallible).HasMatch(x => x == true);
         protected sealed override async ITask<IOption<R>> ResolveInternal(IProgram program)
         {
-            throw new System.NotImplementedException();
+            for (int i = 0; i < ArgTokens.Count; i++)
+            {
+                //silly as fuck ?
+                await ArgTokens[i].ResolveWithRulesUnsafe(program);
+            }
+            return await TransformTokens(program, program.GetArgs());
         }
 
         protected readonly PList<IToken> ArgTokens;
-        protected abstract ITask<IOption<R>?> TransformTokens(IProgram program, IOption<ResObj>[] resolutions);
+        protected abstract ITask<IOption<R>> TransformTokens(IProgram program, IOption<ResObj>[] resolutions);
         protected TokenFunction(IEnumerable<IToken> tokens)
         {
             ArgTokens = new() { Elements = tokens };
