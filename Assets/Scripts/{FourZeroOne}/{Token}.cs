@@ -8,6 +8,8 @@ namespace FourZeroOne.Token
 {
     using ResObj = Resolution.IResolution;
     using Program;
+    using r = Core.Resolutions;
+
     public interface IToken<out R> : Unsafe.IToken where R : class, ResObj
     {
         // "ToNodes(IProgram program)".
@@ -25,76 +27,15 @@ namespace FourZeroOne.Token
     }
     public abstract record Token<R> : IToken<R> where R : class, ResObj
     {
-        public virtual Unsafe.IToken[] ArgTokens => new Unsafe.IToken[0];
-        public abstract bool IsFallible { get; }
-        public async ITask<IOption<R>> Resolve(IProgram program)
+        public Unsafe.IToken[] ArgTokens => _argTokens;
+        public Token(params Unsafe.IToken[] args)
         {
-            program.ObserveToken(this);
-            var o = await ResolveInternal(program);
-            program.ObserveResolution(o);
-            return o;
+            _argTokens = args;
         }
-        public async ITask<IOption<R>> ResolveWithRules(IProgram program)
-        {
-            if (program.GetState().Rules.Count == 0) return await Resolve(program);
-            var resolvingToken = this.ApplyRules(program.GetState().Rules.Elements, out var applied);
-            program.ObserveRuleSteps(applied.Map(x => ((Unsafe.IToken)x.fromToken, x.rule)));
-            return await resolvingToken.Resolve(program);
-        }
-        public async ITask<IOption<ResObj>> ResolveUnsafe(IProgram program) { return await ResolveInternal(program); }
-        public async ITask<IOption<ResObj>> ResolveWithRulesUnsafe(IProgram program) { return await ResolveWithRules(program); }
-
-        protected abstract ITask<IOption<R>> ResolveInternal(IProgram program);
-    }
-
-    public abstract record Infallible<R> : Token<R> where R : class, ResObj
-    {
-        public sealed override bool IsFallible => false;
-        protected sealed override ITask<IOption<R>> ResolveInternal(IProgram program) { return Task.FromResult(InfallibleResolve(program)).AsITask(); }
-
-        protected abstract IOption<R> InfallibleResolve(IProgram program);
-    }
-
-    // IMPORTANT: tokens now MUST be absolutely pure stateless in order for this to work.
-    // 'Lambda' is resolved multiple times as the same object.
-    public abstract record Accumulator<RElement, RGen, RInto> : Unsafe.TokenFunction<RInto>
-        where RElement : class, ResObj
-        where RGen : class, ResObj
-        where RInto : class, ResObj
-    {
-        public override bool IsFallibleFunction => _lambda.IsFallible;
-
-        protected abstract ITask<IOption<RInto>> Accumulate(IProgram program, IEnumerable<(RElement element, RGen output)> outputs);
-        protected Accumulator(IToken<Resolution.IMulti<RElement>> iterator, VariableIdentifier<RElement> elementVariable, IToken<RGen> lambda) : base(iterator)
-        {
-            _elementIdentifier = elementVariable;
-            _lambda = lambda;
-        }
-        protected override async ITask<IOption<RInto>> TransformTokens(IProgram program, IOption<ResObj>[] resolutions)
-        {
-            if (resolutions[0].CheckNone(out var multi)) return new None<RInto>();
-            var iterValues = ((Resolution.IMulti<RElement>)multi).Values;
-            var generatorTokens = iterValues
-                .Map(x => new Core.Tokens.SubEnvironment<Core.Resolutions.Multi<RGen>>(new Core.Tokens.Variable<RElement>(_elementIdentifier, new Core.Tokens.Fixed<RElement>(x)))
-                {
-                    SubToken = new Core.Tokens.Multi.Yield<RGen>(_lambda)
-                });
-            return (await new Core.Tokens.Multi.Union<RGen>(generatorTokens).Resolve(program)).Check(out var genResolutions) ?
-                await Accumulate(program, iterValues.ZipShort(genResolutions.Values)) :
-                new None<RInto>();
-        }
-        private readonly VariableIdentifier<RElement> _elementIdentifier;
-        private readonly IToken<RGen> _lambda;
-    }
-    public abstract record PureAccumulator<RElement, RGen, RInto> : Accumulator<RElement, RGen, RInto>
-        where RElement : class, ResObj
-        where RGen : class, ResObj
-        where RInto : class, ResObj
-    {
-        protected abstract RInto PureAccumulate(IEnumerable<(RElement element, RGen output)> outputs);
-        protected PureAccumulator(IToken<Resolution.IMulti<RElement>> iterator, VariableIdentifier<RElement> elementVariable, IToken<RGen> lambda) : base(iterator, elementVariable, lambda) { }
-        protected override ITask<IOption<RInto>> Accumulate(IProgram _, IEnumerable<(RElement element, RGen output)> outputs) { return Task.FromResult(PureAccumulate(outputs).AsSome()).AsITask(); }
-        
+        public Token(IEnumerable<Unsafe.IToken> args) : this(args.ToList().ToArray()) { }
+        public abstract ITask<IOption<R>> Resolve(IProgram program, IOption<ResObj>[] args);
+        public ITask<IOption<ResObj>> ResolveUnsafe(IProgram program, IOption<ResObj>[] args) { return Resolve(program, args); }
+        private Unsafe.IToken[] _argTokens;
     }
 
     #region Functions
@@ -119,24 +60,42 @@ namespace FourZeroOne.Token
     where RArgs : class, ResObj
     where ROut : class, ResObj
     { }
+
+    public abstract record Value<R> : Token<R> where R : class, ResObj
+    {
+        public sealed override ITask<IOption<R>> Resolve(IProgram program, IOption<ResObj>[] _)
+        {
+            return Evaluate(program);
+        }
+        protected Value() : base() { }
+        protected abstract ITask<IOption<R>> Evaluate(IProgram program);
+    }
+    public abstract record PureValue<R> : Value<R> where R : class, ResObj
+    {
+        protected PureValue() : base() { }
+        protected sealed override ITask<IOption<R>> Evaluate(IProgram _)
+        {
+            return Task.FromResult(EvaluatePure().AsSome()).AsITask();
+        }
+        protected abstract R EvaluatePure();
+    }
     /// <summary>
     /// Core.Tokens that inherit must have a constructor matching: <br></br>
     /// <code>(IToken&lt;<typeparamref name="RArg1"/>&gt;)</code>
     /// </summary>
     /// <typeparam name="RArg1"></typeparam>
-    public abstract record Function<RArg1, ROut> : Unsafe.TokenFunction<ROut>,
-        IFunction<RArg1, ROut>
+    public abstract record Function<RArg1, ROut> : Token<ROut>
         where RArg1 : class, ResObj
         where ROut : class, ResObj
     {
         public IToken<RArg1> Arg1 => (IToken<RArg1>)ArgTokens[0];
-
-        protected Function(IToken<RArg1> in1) : base(in1) { }
-        protected abstract ITask<IOption<ROut>> Evaluate(IProgram program, IOption<RArg1> in1);
-        protected override ITask<IOption<ROut>> TransformTokens(IProgram program, IOption<ResObj>[] args)
+        public sealed override ITask<IOption<ROut>> Resolve(IProgram program, IOption<ResObj>[] args)
         {
             return Evaluate(program, args[0].RemapAs(x => (RArg1)x));
         }
+
+        protected abstract ITask<IOption<ROut>> Evaluate(IProgram program, IOption<RArg1> in1);
+        protected Function(IToken<RArg1> in1) : base(in1) { }
     }
 
     /// <summary>
@@ -145,7 +104,7 @@ namespace FourZeroOne.Token
     /// </summary>
     /// <typeparam name="RArg1"></typeparam>
     /// <typeparam name="RArg2"></typeparam>
-    public abstract record Function<RArg1, RArg2, ROut> : Unsafe.TokenFunction<ROut>,
+    public abstract record Function<RArg1, RArg2, ROut> : Token<ROut>,
         IFunction<RArg1, RArg2, ROut>
         where RArg1 : class, ResObj
         where RArg2 : class, ResObj
@@ -153,13 +112,13 @@ namespace FourZeroOne.Token
     {
         public IToken<RArg1> Arg1 => (IToken<RArg1>)ArgTokens[0];
         public IToken<RArg2> Arg2 => (IToken<RArg2>)ArgTokens[1];
-
-        protected abstract ITask<IOption<ROut>> Evaluate(IProgram program, IOption<RArg1> in1, IOption<RArg2> in2);
-        protected Function(IToken<RArg1> in1, IToken<RArg2> in2) : base(in1, in2) { }
-        protected override ITask<IOption<ROut>> TransformTokens(IProgram program, IOption<ResObj>[] args)
+        public sealed override ITask<IOption<ROut>> Resolve(IProgram program, IOption<ResObj>[] args)
         {
             return Evaluate(program, args[0].RemapAs(x => (RArg1)x), args[1].RemapAs(x => (RArg2)x));
         }
+
+        protected abstract ITask<IOption<ROut>> Evaluate(IProgram program, IOption<RArg1> in1, IOption<RArg2> in2);
+        protected Function(IToken<RArg1> in1, IToken<RArg2> in2) : base(in1, in2) { }
     }
 
     /// <summary>
@@ -169,7 +128,7 @@ namespace FourZeroOne.Token
     /// <typeparam name="RArg1"></typeparam>
     /// <typeparam name="RArg2"></typeparam>
     /// <typeparam name="RArg3"></typeparam>
-    public abstract record Function<RArg1, RArg2, RArg3, ROut> : Unsafe.TokenFunction<ROut>,
+    public abstract record Function<RArg1, RArg2, RArg3, ROut> : Token<ROut>,
         IFunction<RArg1, RArg2, RArg3, ROut>
         where RArg1 : class, ResObj
         where RArg2 : class, ResObj
@@ -179,13 +138,14 @@ namespace FourZeroOne.Token
         public IToken<RArg1> Arg1 => (IToken<RArg1>)ArgTokens[0];
         public IToken<RArg2> Arg2 => (IToken<RArg2>)ArgTokens[1];
         public IToken<RArg3> Arg3 => (IToken<RArg3>)ArgTokens[2];
-
-        protected abstract ITask<IOption<ROut>> Evaluate(IProgram program, IOption<RArg1> in1, IOption<RArg2> in2, IOption<RArg3> in3);
-        protected Function(IToken<RArg1> in1, IToken<RArg2> in2, IToken<RArg3> in3) : base(in1, in2, in3) { }
-        protected override ITask<IOption<ROut>> TransformTokens(IProgram program, IOption<ResObj>[] args)
+        public sealed override ITask<IOption<ROut>> Resolve(IProgram program, IOption<ResObj>[] args)
         {
             return Evaluate(program, args[0].RemapAs(x => (RArg1)x), args[1].RemapAs(x => (RArg2)x), args[2].RemapAs(x => (RArg3)x));
         }
+
+        protected abstract ITask<IOption<ROut>> Evaluate(IProgram program, IOption<RArg1> in1, IOption<RArg2> in2, IOption<RArg3> in3);
+        protected Function(IToken<RArg1> in1, IToken<RArg2> in2, IToken<RArg3> in3) : base(in1, in2, in3) { }
+        
     }
 
     /// <summary>
@@ -193,18 +153,19 @@ namespace FourZeroOne.Token
     /// <code>(IEnumerable&lt;IToken&lt;<typeparamref name="RArg"/>&gt;&gt;)</code>
     /// </summary>
     /// <typeparam name="RArg"></typeparam>
-    public abstract record Combiner<RArg, ROut> : Unsafe.TokenFunction<ROut>, ICombiner<RArg, ROut>
+    public abstract record Combiner<RArg, ROut> : Token<ROut>, ICombiner<RArg, ROut>
         where RArg : class, ResObj
         where ROut : class, ResObj
     {
-        public IEnumerable<IToken<RArg>> Args => ArgTokens.Elements.Map(x => (IToken<RArg>)x);
-
-        protected abstract ITask<IOption<ROut>> Evaluate(IProgram program, IEnumerable<IOption<RArg>> inputs);
-        protected Combiner(IEnumerable<IToken<RArg>> tokens) : base(tokens) { }
-        protected sealed override ITask<IOption<ROut>> TransformTokens(IProgram program, IOption<ResObj>[] tokens)
+        public IEnumerable<IToken<RArg>> Args => ArgTokens.Map(x => (IToken<RArg>)x);
+        public sealed override ITask<IOption<ROut>> Resolve(IProgram program, IOption<ResObj>[] tokens)
         {
             return Evaluate(program, tokens.Map(x => x.RemapAs(x => (RArg)x)));
         }
+
+        protected abstract ITask<IOption<ROut>> Evaluate(IProgram program, IEnumerable<IOption<RArg>> inputs);
+        protected Combiner(IEnumerable<IToken<RArg>> tokens) : base(tokens) { }
+
     }
     #region Pure Functions
     // -- [ Pure Functions ] --
@@ -212,7 +173,6 @@ namespace FourZeroOne.Token
         where RArg1 : class, ResObj
         where ROut : class, ResObj
     {
-        public sealed override bool IsFallibleFunction => false;
 
         protected abstract ROut EvaluatePure(RArg1 in1);
         protected PureFunction(IToken<RArg1> in1) : base(in1) { }
@@ -228,8 +188,6 @@ namespace FourZeroOne.Token
         where RArg2 : class, ResObj
         where ROut : class, ResObj
     {
-        public sealed override bool IsFallibleFunction => false;
-
         protected abstract ROut EvaluatePure(RArg1 in1, RArg2 in2);
         protected PureFunction(IToken<RArg1> in1, IToken<RArg2> in2) : base(in1, in2) { }
         protected sealed override ITask<IOption<ROut>> Evaluate(IProgram _, IOption<RArg1> in1, IOption<RArg2> in2)
@@ -245,7 +203,6 @@ namespace FourZeroOne.Token
         where RArg3 : class, ResObj
         where ROut : class, ResObj
     {
-        public sealed override bool IsFallibleFunction => false;
 
         protected abstract ROut EvaluatePure(RArg1 in1, RArg2 in2, RArg3 in3);
         protected PureFunction(IToken<RArg1> in1, IToken<RArg2> in2, IToken<RArg3> in3) : base(in1, in2, in3) { }
@@ -260,7 +217,6 @@ namespace FourZeroOne.Token
         where RArg : class, ResObj
         where ROut : class, ResObj
     {
-        public sealed override bool IsFallibleFunction => false;
 
         protected abstract ROut EvaluatePure(IEnumerable<RArg> inputs);
         protected PureCombiner(IEnumerable<IToken<RArg>> tokens) : base(tokens) { }
@@ -274,33 +230,9 @@ namespace FourZeroOne.Token
     public abstract record PresentStateGetter<RSource> : Function<RSource, RSource>
         where RSource : class, Resolution.IStateTracked
     {
-        public sealed override bool IsFallibleFunction => false;
         public PresentStateGetter(IToken<RSource> source) : base(source) { }
         protected abstract PIndexedSet<int, RSource> GetStatePSet(IProgram program);
         protected sealed override ITask<IOption<RSource>> Evaluate(IProgram program, IOption<RSource> in1) { return Task.FromResult(in1.RemapAs(x => GetStatePSet(program)[x.UUID])).AsITask(); }
-    }
-
-    public static class _Extensions
-    {
-        public static IToken<R> ApplyRules<R>(this IToken<R> token, IEnumerable<Rule.IRule> rules, out List<(IToken<R> fromToken, Rule.IRule rule)> appliedRules) where R : class, ResObj
-        {
-            var o = token;
-            appliedRules = new();
-            foreach (var rule in rules)
-            {
-                if (rule.TryApplyTyped(o) is IToken<R> newToken)
-                {
-                    appliedRules.Add((o, rule));
-                    o = newToken;
-                }
-            }
-            return o;
-        }
-        public static IToken<R> ApplyRule<R>(this IToken<R> token, Rule.IRule? rule) where R : class, ResObj
-        {
-            return (rule is not null) ? token.ApplyRules(rule.Yield(), out var _) : token;
-        }
-
     }
 }
 namespace FourZeroOne.Token.Unsafe
@@ -311,8 +243,6 @@ namespace FourZeroOne.Token.Unsafe
     public interface IToken
     {
         public IToken[] ArgTokens { get; }
-        public bool IsFallible { get; }
-        public ITask<IOption<ResObj>> ResolveWithRulesUnsafe(IProgram program);
         public ITask<IOption<ResObj>> ResolveUnsafe(IProgram program, IOption<ResObj>[] args);
     }
 
@@ -346,30 +276,6 @@ namespace FourZeroOne.Token.Unsafe
         public override int GetHashCode() => _value.GetHashCode();
         protected static int _assigner = 0;
         protected readonly int _value;
-    }
-    public abstract record TokenFunction<R> : Token<R> where R : class, ResObj
-    {
-        public abstract bool IsFallibleFunction { get; }
-        public sealed override 
-        public sealed override bool IsFallible => IsFallibleFunction || _argTokens.Map(x => x.IsFallible).HasMatch(x => x == true);
-        protected sealed override async ITask<IOption<R>> ResolveInternal(IProgram program)
-        {
-            // REPLACE WITH program.GetArgs(IToken[]...)
-            for (int i = 0; i < _argTokens.Length; i++)
-            {
-                //silly as fuck ?
-                await _argTokens[i].ResolveWithRulesUnsafe(program);
-            }
-            return await TransformTokens(program, program.GetArgs());
-        }
-
-        protected readonly IToken[] _argTokens;
-        protected abstract ITask<IOption<R>> TransformTokens(IProgram program, IOption<ResObj>[] resolutions);
-        protected TokenFunction(IEnumerable<IToken> tokens) : this(new List<IToken>(tokens).ToArray()) { }
-        protected TokenFunction(params IToken[] tokens)
-        {
-            _argTokens = tokens;
-        }
     }
 
 }

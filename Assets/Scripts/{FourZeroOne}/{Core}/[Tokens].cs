@@ -244,24 +244,20 @@ namespace FourZeroOne.Core.Tokens
 
     public record PerformAction<R> : Function<r.Action<R>, R> where R : class, ResObj
     {
-        public override bool IsFallibleFunction => throw new NotImplementedException();
         public PerformAction(IToken<r.Action<R>> a) : base(a) { }
 
         protected override async ITask<IOption<R>> Evaluate(IProgram program, IOption<r.Action<R>> in1)
         {
-            return in1.Check(out var action) ? await program.ResolveAction(action.Token) : new None<R>();
+            return in1.Check(out var action) ? await program.PerformAction(action.Token) : new None<R>();
         }
     }
-    public record SubEnvironment<ROut> : Token.Unsafe.TokenFunction<ROut>
+    public record SubEnvironment<ROut> : PureFunction<Resolution.IMulti<ResObj>, ROut, ROut>
         where ROut : class, ResObj
     {
-        public IToken<ROut> SubToken { get; init; }
-        public SubEnvironment(IEnumerable<Token.Unsafe.IToken> envModifiers) : base(envModifiers) { }
-        public SubEnvironment(params Token.Unsafe.IToken[] envModifiers) : base(envModifiers) { }
-        public sealed override bool IsFallibleFunction => SubToken.IsFallible;
-        protected sealed override ITask<IOption<ROut>> TransformTokens(IProgram program, IOption<ResObj>[] _)
+        public SubEnvironment(IToken<Resolution.IMulti<ResObj>> envModifiers, IToken<ROut> evalToken) : base(envModifiers, evalToken) { }
+        protected override ROut EvaluatePure(Resolution.IMulti<ResObj> _, ROut evalResolution)
         {
-            return SubToken.ResolveWithRules(program);
+            return evalResolution;
         }
     }
 
@@ -299,13 +295,13 @@ namespace FourZeroOne.Core.Tokens
         }
     }
 
-    public record IfElse<R> : Function<r.Bool, R> where R : class, ResObj
+    // there should only be 1 token that returns an action and it should be fixed
+    public record IfElse<R> : Function<r.Bool, r.Action<R>, r.Action<R>, r.Action<R>> where R : class, ResObj
     {
         // HACK: this should in theory be (condition.Resolve()) ? Pass.IsFallible : Fail.IsFallible, but we obv cant resolve condition here.
-        public override bool IsFallibleFunction => false;
         public IToken<R> Pass { get; init; }
         public IToken<R> Fail { get; init; }
-        public IfElse(IToken<r.Bool> condition) : base(condition)
+        public IfElse(IToken<r.Bool> condition, IToken<r.Action<R>> positive, IToken<r.Action<R>> negative) : base(condition, positive, negative)
         {
             _passedLastResolution = new None<bool>();
         }
@@ -350,13 +346,16 @@ namespace FourZeroOne.Core.Tokens
 
         private readonly Rule.IRule _rule;
     }
-    public sealed record Fixed<R> : Infallible<R> where R : class, ResObj
+    public sealed record Fixed<R> : PureValue<R> where R : class, ResObj
     {
         public Fixed(R resolution)
         {
             _resolution = resolution;
         }
-        protected override IOption<R> InfallibleResolve(IProgram _) { return _resolution.AsSome(); }
+        protected override IOption<R> EvaluatePure()
+        {
+            return _resolution.AsSome();
+        }
         private readonly R _resolution;
     }
     public sealed record Nolla<R> : Infallible<R> where R : class, ResObj

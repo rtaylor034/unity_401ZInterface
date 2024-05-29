@@ -19,7 +19,7 @@ namespace FourZeroOne.Core.Proxies
             _token = token;
         }
         public Direct<TTo, R> Fix<TTo>() where TTo : IToken<R> => new(_token);
-        public override IToken<R> Realize(TOrig _, Rule.IRule? __) => _token;
+        public override IToken<R> Realize(TOrig _, IOption<Rule.IRule> __) => _token;
 
         private readonly IToken<R> _token;
     }
@@ -30,10 +30,10 @@ namespace FourZeroOne.Core.Proxies
         where RArg : class, ResObj
         where ROut : class, ResObj
     {
-        public override IToken<ROut> Realize(TOrig original, Rule.IRule? rule)
+        public override IToken<ROut> Realize(TOrig original, IOption<Rule.IRule> rule)
         {
             return (TNew)typeof(TNew).GetConstructor(new Type[] { typeof(IEnumerable<IToken<RArg>>) })
-                .Invoke(new object[] { original.Args.Map(x => x.ApplyRule(rule)) }) ;
+                .Invoke(new object[] { original.Args.Map(x => RuleApplied(rule, x)) }) ;
         }
     }
 
@@ -62,7 +62,7 @@ namespace FourZeroOne.Core.Proxies
             _envModifiers = new() { Elements = proxies };
         }
         public SubEnvironment(params IProxy<TOrig, ResObj>[] proxies) : this((IEnumerable<IProxy<TOrig, ResObj>>)proxies) { }
-        public override IToken<ROut> Realize(TOrig original, Rule.IRule? rule)
+        public override IToken<ROut> Realize(TOrig original, IOption<Rule.IRule> rule)
         {
             return new Tokens.SubEnvironment<ROut>(_envModifiers.Elements.Map(x => x.UnsafeContextualRealize(original, rule)))
             {
@@ -100,7 +100,7 @@ namespace FourZeroOne.Core.Proxies
             _identifier = identifier;
             _objectProxy = proxy;
         }
-        public override IToken<Resolutions.DeclareVariable<R>> Realize(TOrig original, Rule.IRule? rule)
+        public override IToken<Resolutions.DeclareVariable<R>> Realize(TOrig original, IOption<Rule.IRule> rule)
         {
             return new Tokens.Variable<R>(_identifier, _objectProxy.Realize(original, rule));
         }
@@ -118,7 +118,7 @@ namespace FourZeroOne.Core.Proxies
         {
             Condition = condition;
         }
-        public override IToken<R> Realize(TOrig original, Rule.IRule? rule)
+        public override IToken<R> Realize(TOrig original, IOption<Rule.IRule> rule)
         {
             return new Tokens.IfElse<R>(Condition.Realize(original, rule))
             {
@@ -130,23 +130,23 @@ namespace FourZeroOne.Core.Proxies
     // ---- [ OriginalArgs ] ----
     public sealed record OriginalArg1<TOrig, RArg> : Proxy<TOrig, RArg> where TOrig : IHasArg1<RArg> where RArg : class, ResObj
     {
-        public override IToken<RArg> Realize(TOrig original, Rule.IRule? rule)
+        public override IToken<RArg> Realize(TOrig original, IOption<Rule.IRule> rule)
         {
-            return rule is not null ? rule.TryApplyTyped(original.Arg1).Or(original.Arg1) : original.Arg1;
+            return RuleApplied(rule, original.Arg1);
         }
     }
     public sealed record OriginalArg2<TOrig, RArg> : Proxy<TOrig, RArg> where TOrig : IHasArg2<RArg> where RArg : class, ResObj
     {
-        public override IToken<RArg> Realize(TOrig original, Rule.IRule? rule)
+        public override IToken<RArg> Realize(TOrig original, IOption<Rule.IRule> rule)
         {
-            return rule is not null ? rule.TryApplyTyped(original.Arg2).Or(original.Arg2) : original.Arg2;
+            return RuleApplied(rule, original.Arg2);
         }
     }
     public sealed record OriginalArg3<TOrig, RArg> : Proxy<TOrig, RArg> where TOrig : IHasArg3<RArg> where RArg : class, ResObj
     {
-        public override IToken<RArg> Realize(TOrig original, Rule.IRule? rule)
+        public override IToken<RArg> Realize(TOrig original, IOption<Rule.IRule> rule)
         {
-            return rule is not null ? rule.TryApplyTyped(original.Arg3).Or(original.Arg3) : original.Arg3;
+            return RuleApplied(rule, original.Arg3);
         }
     }
     // --------

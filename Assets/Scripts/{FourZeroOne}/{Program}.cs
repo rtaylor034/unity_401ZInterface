@@ -13,7 +13,7 @@ namespace FourZeroOne.Program
     {
         public State GetState();
         public IOption<ResObj>[] GetArgs();
-        public ITask<IOption<R>> ResolveAction<R>(IToken<R> action) where R : class, ResObj;
+        public ITask<IOption<R>> PerformAction<R>(IToken<R> action) where R : class, ResObj;
         public void ObserveToken(IToken token);
         public void ObserveResolution(IOption<ResObj> resolution);
         public void ObserveRuleSteps(IEnumerable<(IToken fromToken, Rule.IRule appliedRule)> steps);
@@ -63,7 +63,20 @@ namespace FourZeroOne.Program
 
         }
 
-        private 
+        private static IToken<R> ApplyRules<R>(IToken<R> token, IEnumerable<Rule.IRule> rules, out List<(IToken<R> fromToken, Rule.IRule rule)> appliedRules) where R : class, ResObj
+        {
+            var o = token;
+            appliedRules = new();
+            foreach (var rule in rules)
+            {
+                if (rule.TryApplyTyped(o) is IToken<R> newToken)
+                {
+                    appliedRules.Add((o, rule));
+                    o = newToken;
+                }
+            }
+            return o;
+        }
 
         private ControlledTask<T> SetTokenThread<T>(ControlledTask<T> task)
         {
