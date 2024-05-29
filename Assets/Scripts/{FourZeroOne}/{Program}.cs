@@ -21,7 +21,7 @@ namespace FourZeroOne.Program
     public abstract class Program : IProgram
     {
         public State GetState() => _currentState;
-        public ITask<IOption<R>> PerformAction<R>(IToken<R> action) where R : class, ResObj;
+        public ITask<IOption<R>> PerformAction<R>(IToken<R> action) where R : class, ResObj
         {
             throw new System.NotImplementedException();
         }
