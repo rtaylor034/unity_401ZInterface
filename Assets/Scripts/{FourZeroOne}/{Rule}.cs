@@ -1,6 +1,6 @@
 using System;
 using ResObj = FourZeroOne.Resolution.IResolution;
-
+using Perfection;
 #nullable enable
 // A 'Rule' is just a wrapper around a proxy that can 'try' to apply it.
 namespace FourZeroOne.Rule
@@ -9,8 +9,8 @@ namespace FourZeroOne.Rule
     
     public interface IRule
     {
-        public Token.IToken<R>? TryApplyTyped<R>(Token.IToken<R> original) where R : class, ResObj;
-        public Token.Unsafe.IToken? TryApply(Token.Unsafe.IToken original);
+        public IOption<Token.IToken<R>> TryApplyTyped<R>(Token.IToken<R> original) where R : class, ResObj;
+        public IOption<Token.Unsafe.IToken> TryApply(Token.Unsafe.IToken original);
     }
 
     public record Rule<TFor, R> : IRule where TFor : Token.IToken<R> where R : class, ResObj
@@ -23,13 +23,13 @@ namespace FourZeroOne.Rule
         {
             return _proxy.Realize(original, this);
         }
-        public Token.Unsafe.IToken? TryApply(Token.Unsafe.IToken original)
+        public IOption<Token.Unsafe.IToken> TryApply(Token.Unsafe.IToken original)
         {
-            return (original is TFor match) ? Apply(match) : null;
+            return (original is TFor match) ? Apply(match).AsSome() : original.None();
         }
-        public Token.IToken<ROut>? TryApplyTyped<ROut>(Token.IToken<ROut> original) where ROut : class, ResObj
+        public IOption<Token.IToken<ROut>> TryApplyTyped<ROut>(Token.IToken<ROut> original) where ROut : class, ResObj
         {
-            return (original is TFor match) ? (Token.IToken<ROut>)Apply(match) : null;
+            return (original is TFor match) ? ((Token.IToken<ROut>)Apply(match)).AsSome() : original.None();
         }
         private readonly IProxy<TFor, R> _proxy;
     }

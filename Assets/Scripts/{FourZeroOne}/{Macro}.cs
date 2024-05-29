@@ -9,10 +9,11 @@ namespace FourZeroOne.Macro
     using ResObj = Resolution.IResolution;
     using r = Core.Resolutions;
     using Token;
+    using Program;
     public record Macro<R> : Token<R> where R : class, ResObj
     {
         public override bool IsFallible => Expand().IsFallible;
-        protected override ITask<IOption<R>?> ResolveInternal(IProgram program)
+        protected override ITask<IOption<R>> ResolveInternal(IProgram program)
         {
             return Expand().ResolveWithRules(program);
         }

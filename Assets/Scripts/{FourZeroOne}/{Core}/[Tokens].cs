@@ -115,11 +115,11 @@ namespace FourZeroOne.Core.Tokens
                 public override bool IsFallibleFunction => true;
                 public One(IToken<Resolution.IMulti<R>> from) : base(from) { }
 
-                protected async override ITask<IOption<R>?> Evaluate(IProgram program, IOption<Resolution.IMulti<R>> fromOpt)
+                protected async override ITask<IOption<R>> Evaluate(IProgram program, IOption<Resolution.IMulti<R>> fromOpt)
                 {
                     if (fromOpt.CheckNone(out var from)) return new None<R>();
                     if (await program.Input.ReadSelection(from.Values, 1) is not IOption<IEnumerable<R>> selOpt) return null;
-                    return (selOpt.Check(out var sel)) ? sel.First()?.AsSome() : new None<R>();
+                    return (selOpt.Check(out var sel)) ? sel.First().AsSome() : new None<R>();
                 }
             }
 
@@ -129,7 +129,7 @@ namespace FourZeroOne.Core.Tokens
                 public override bool IsFallibleFunction => true;
                 public Multiple(IToken<Resolution.IMulti<R>> from, IToken<r.Number> count) : base(from, count) { }
 
-                protected override async ITask<IOption<r.Multi<R>>?> Evaluate(IProgram program, IOption<Resolution.IMulti<R>> fromOpt, IOption<r.Number> countOpt)
+                protected override async ITask<IOption<r.Multi<R>>> Evaluate(IProgram program, IOption<Resolution.IMulti<R>> fromOpt, IOption<r.Number> countOpt)
                 {
                     if (fromOpt.CheckNone(out var from) || countOpt.CheckNone(out var count)) return new None<r.Multi<R>>();
                     if (await program.Input.ReadSelection(from.Values, count.Value) is not IOption<IEnumerable<R>> selOpt) return null;
@@ -241,6 +241,17 @@ namespace FourZeroOne.Core.Tokens
             }
         }
     }
+
+    public record PerformAction<R> : Function<r.Action<R>, R> where R : class, ResObj
+    {
+        public override bool IsFallibleFunction => throw new NotImplementedException();
+        public PerformAction(IToken<r.Action<R>> a) : base(a) { }
+
+        protected override async ITask<IOption<R>> Evaluate(IProgram program, IOption<r.Action<R>> in1)
+        {
+            return in1.Check(out var action) ? await program.ResolveAction(action.Token) : new None<R>();
+        }
+    }
     public record SubEnvironment<ROut> : Token.Unsafe.TokenFunction<ROut>
         where ROut : class, ResObj
     {
@@ -248,7 +259,7 @@ namespace FourZeroOne.Core.Tokens
         public SubEnvironment(IEnumerable<Token.Unsafe.IToken> envModifiers) : base(envModifiers) { }
         public SubEnvironment(params Token.Unsafe.IToken[] envModifiers) : base(envModifiers) { }
         public sealed override bool IsFallibleFunction => SubToken.IsFallible;
-        protected sealed override ITask<IOption<ROut>?> TransformTokens(IProgram program, IOption<ResObj>[] _)
+        protected sealed override ITask<IOption<ROut>> TransformTokens(IProgram program, IOption<ResObj>[] _)
         {
             return SubToken.ResolveWithRules(program);
         }
@@ -298,7 +309,7 @@ namespace FourZeroOne.Core.Tokens
         {
             _passedLastResolution = new None<bool>();
         }
-        protected override async ITask<IOption<R>?> Evaluate(IProgram program, IOption<r.Bool> in1)
+        protected override async ITask<IOption<R>> Evaluate(IProgram program, IOption<r.Bool> in1)
         {
             if (in1.CheckNone(out var condition)) return new None<R>();
             _passedLastResolution = condition.IsTrue.AsSome();
@@ -315,7 +326,7 @@ namespace FourZeroOne.Core.Tokens
             _identifier = identifier;
         }
         public override bool IsFallible => _objectToken.IsFallible;
-        protected override async ITask<IOption<r.DeclareVariable<R>>?> ResolveInternal(IProgram program)
+        protected override async ITask<IOption<r.DeclareVariable<R>>> ResolveInternal(IProgram program)
         {
             return (await _objectToken.ResolveWithRules(program) is IOption<R> resOpt) ?
                 new r.DeclareVariable<R>(_identifier) { Object = resOpt }.AsSome() : null;

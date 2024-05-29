@@ -130,15 +130,24 @@ namespace FourZeroOne.Core.Proxies
     // ---- [ OriginalArgs ] ----
     public sealed record OriginalArg1<TOrig, RArg> : Proxy<TOrig, RArg> where TOrig : IHasArg1<RArg> where RArg : class, ResObj
     {
-        public override IToken<RArg> Realize(TOrig original, Rule.IRule? rule) { return original.Arg1.ApplyRule(rule); }
+        public override IToken<RArg> Realize(TOrig original, Rule.IRule? rule)
+        {
+            return rule is not null ? rule.TryApplyTyped(original.Arg1).Or(original.Arg1) : original.Arg1;
+        }
     }
     public sealed record OriginalArg2<TOrig, RArg> : Proxy<TOrig, RArg> where TOrig : IHasArg2<RArg> where RArg : class, ResObj
     {
-        public override IToken<RArg> Realize(TOrig original, Rule.IRule? rule) { return original.Arg2.ApplyRule(rule); }
+        public override IToken<RArg> Realize(TOrig original, Rule.IRule? rule)
+        {
+            return rule is not null ? rule.TryApplyTyped(original.Arg2).Or(original.Arg2) : original.Arg2;
+        }
     }
     public sealed record OriginalArg3<TOrig, RArg> : Proxy<TOrig, RArg> where TOrig : IHasArg3<RArg> where RArg : class, ResObj
     {
-        public override IToken<RArg> Realize(TOrig original, Rule.IRule? rule) { return original.Arg3.ApplyRule(rule); }
+        public override IToken<RArg> Realize(TOrig original, Rule.IRule? rule)
+        {
+            return rule is not null ? rule.TryApplyTyped(original.Arg3).Or(original.Arg3) : original.Arg3;
+        }
     }
     // --------
 

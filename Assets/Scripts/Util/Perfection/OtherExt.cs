@@ -16,17 +16,6 @@ public static class Misc
         return list;
     }
 }
-public static class Null
-{
-    public static T Or<T>(this T? obj, T nullAlternative)
-    {
-        return (obj is null) ? nullAlternative : obj;
-    }
-    public static T OrElse<T>(this T? obj, Func<T> nullAlternative)
-    {
-        return (obj is null) ? nullAlternative() : obj;
-    }
-}
 public static class Integer
 {
     public static int Abs(this int value) => Math.Abs(value);

@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System;
 
+#nullable enable
 namespace Perfection
 {
     public interface IOption<out T> { }
@@ -60,6 +61,18 @@ namespace Perfection
             return new None<T>();
         }
         public static bool IsSome<T>(this IOption<T> option) { return option.Check(out var _); }
+        public static IOption<T> NullToNone<T>(this T? value)
+        {
+            return value is not null ? value.AsSome() : new None<T>();
+        }
+        public static T Or<T>(this IOption<T> option, T noneValue)
+        {
+            return option.Check(out var val) ? val : noneValue;
+        }
+        public static T OrElse<T>(this IOption<T> option, Func<T> noneEval)
+        {
+            return option.Check(out var val) ? val : noneEval();
+        }
     }
     
 }

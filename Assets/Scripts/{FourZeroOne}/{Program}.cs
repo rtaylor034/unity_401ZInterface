@@ -6,12 +6,14 @@ using MorseCode.ITask;
 namespace FourZeroOne.Program
 {
     using ResObj = Resolution.IResolution;
-    using Token.Unsafe;
+    using IToken = Token.Unsafe.IToken;
+    using Token;
     using ControlledTask;
     public interface IProgram
     {
         public State GetState();
         public IOption<ResObj>[] GetArgs();
+        public ITask<IOption<R>> ResolveAction<R>(IToken<R> action) where R : class, ResObj;
         public void ObserveToken(IToken token);
         public void ObserveResolution(IOption<ResObj> resolution);
         public void ObserveRuleSteps(IEnumerable<(IToken fromToken, Rule.IRule appliedRule)> steps);
@@ -60,6 +62,8 @@ namespace FourZeroOne.Program
         {
 
         }
+
+        private 
 
         private ControlledTask<T> SetTokenThread<T>(ControlledTask<T> task)
         {

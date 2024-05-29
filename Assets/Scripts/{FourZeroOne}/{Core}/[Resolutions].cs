@@ -93,6 +93,11 @@ namespace FourZeroOne.Core.Resolutions
             private readonly int _uuid;
         }
     }
+
+    public sealed record Action<R> : NoOp where R : class, ResObj
+    {
+        public IToken<R> Token { get; init; }
+    }
     public sealed record Number : NoOp
     {
         public int Value { get; init; }
@@ -106,7 +111,7 @@ namespace FourZeroOne.Core.Resolutions
         public static implicit operator Bool(bool value) => new() { IsTrue = value };
     }
 
-    public sealed record Multi<R> : Operation, IMulti<R> where R : ResObj
+    public sealed record Multi<R> : Operation, IMulti<R> where R : class, ResObj
     {
         public int Count => _list.Count;
         public IEnumerable<R> Values { get => _list.Elements; init => _list = new() { Elements = value }; }

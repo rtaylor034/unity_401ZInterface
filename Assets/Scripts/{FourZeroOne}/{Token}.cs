@@ -10,8 +10,9 @@ namespace FourZeroOne.Token
     using Program;
     public interface IToken<out R> : Unsafe.IToken where R : class, ResObj
     {
-        public ITask<IOption<R>> ResolveWithRules(IProgram program);
-        public ITask<IOption<R>> Resolve(IProgram program);
+        // "ToNodes(IProgram program)".
+        // "Resolve(IOption<ResObj>[]...)"
+        public ITask<IOption<R>> Resolve(IProgram program, IOption<ResObj>[] args);
     }
     
     public sealed record VariableIdentifier<R> : Unsafe.VariableIdentifier where R : class, ResObj
@@ -24,6 +25,7 @@ namespace FourZeroOne.Token
     }
     public abstract record Token<R> : IToken<R> where R : class, ResObj
     {
+        public virtual Unsafe.IToken[] ArgTokens => new Unsafe.IToken[0];
         public abstract bool IsFallible { get; }
         public async ITask<IOption<R>> Resolve(IProgram program)
         {
@@ -38,17 +40,6 @@ namespace FourZeroOne.Token
             var resolvingToken = this.ApplyRules(program.GetState().Rules.Elements, out var applied);
             program.ObserveRuleSteps(applied.Map(x => ((Unsafe.IToken)x.fromToken, x.rule)));
             return await resolvingToken.Resolve(program);
-            
-            //put in 'ObserveRuleSteps' implementation
-            /*
-            return await resolvingToken.Resolve(program with
-            {
-                dState = Q => Q with
-                {
-                    dRules = Q => Q with { dElements = Q => Q.Filter(x => !applied.HasMatch(y => ReferenceEquals(x, y.rule))) }
-                }
-            });
-            */
         }
         public async ITask<IOption<ResObj>> ResolveUnsafe(IProgram program) { return await ResolveInternal(program); }
         public async ITask<IOption<ResObj>> ResolveWithRulesUnsafe(IProgram program) { return await ResolveWithRules(program); }
@@ -319,16 +310,17 @@ namespace FourZeroOne.Token.Unsafe
     using Program;
     public interface IToken
     {
+        public IToken[] ArgTokens { get; }
         public bool IsFallible { get; }
         public ITask<IOption<ResObj>> ResolveWithRulesUnsafe(IProgram program);
-        public ITask<IOption<ResObj>> ResolveUnsafe(IProgram program);
+        public ITask<IOption<ResObj>> ResolveUnsafe(IProgram program, IOption<ResObj>[] args);
     }
 
-    public interface IHasArg1<RArg> : Unsafe.IHasArg1 where RArg : class, ResObj
+    public interface IHasArg1<RArg> : IHasArg1 where RArg : class, ResObj
     { public IToken<RArg> Arg1 { get; } }
-    public interface IHasArg2<RArg> : Unsafe.IHasArg2 where RArg : class, ResObj
+    public interface IHasArg2<RArg> : IHasArg2 where RArg : class, ResObj
     { public IToken<RArg> Arg2 { get; } }
-    public interface IHasArg3<RArg> : Unsafe.IHasArg3 where RArg : class, ResObj
+    public interface IHasArg3<RArg> : IHasArg3 where RArg : class, ResObj
     { public IToken<RArg> Arg3 { get; } }
     public interface IHasCombinerArgs<RArgs> : IToken where RArgs : class, ResObj
     {
@@ -358,24 +350,26 @@ namespace FourZeroOne.Token.Unsafe
     public abstract record TokenFunction<R> : Token<R> where R : class, ResObj
     {
         public abstract bool IsFallibleFunction { get; }
-        public sealed override bool IsFallible => IsFallibleFunction || ArgTokens.Elements.Map(x => x.IsFallible).HasMatch(x => x == true);
+        public sealed override 
+        public sealed override bool IsFallible => IsFallibleFunction || _argTokens.Map(x => x.IsFallible).HasMatch(x => x == true);
         protected sealed override async ITask<IOption<R>> ResolveInternal(IProgram program)
         {
-            for (int i = 0; i < ArgTokens.Count; i++)
+            // REPLACE WITH program.GetArgs(IToken[]...)
+            for (int i = 0; i < _argTokens.Length; i++)
             {
                 //silly as fuck ?
-                await ArgTokens[i].ResolveWithRulesUnsafe(program);
+                await _argTokens[i].ResolveWithRulesUnsafe(program);
             }
             return await TransformTokens(program, program.GetArgs());
         }
 
-        protected readonly PList<IToken> ArgTokens;
+        protected readonly IToken[] _argTokens;
         protected abstract ITask<IOption<R>> TransformTokens(IProgram program, IOption<ResObj>[] resolutions);
-        protected TokenFunction(IEnumerable<IToken> tokens)
+        protected TokenFunction(IEnumerable<IToken> tokens) : this(new List<IToken>(tokens).ToArray()) { }
+        protected TokenFunction(params IToken[] tokens)
         {
-            ArgTokens = new() { Elements = tokens };
+            _argTokens = tokens;
         }
-        protected TokenFunction(params IToken[] tokens) : this(tokens as IEnumerable<IToken>) { }
     }
 
 }
