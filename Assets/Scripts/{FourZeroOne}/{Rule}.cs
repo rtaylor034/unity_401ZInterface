@@ -21,7 +21,7 @@ namespace FourZeroOne.Rule
         }
         public Token.IToken<R> Apply(TFor original)
         {
-            return _proxy.Realize(original, this);
+            return _proxy.Realize(original, this.AsSome());
         }
         public IOption<Token.Unsafe.IToken> TryApply(Token.Unsafe.IToken original)
         {

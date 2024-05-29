@@ -12,7 +12,6 @@ namespace FourZeroOne.Core.Tokens
     using Token;
     using ResObj = Resolution.IResolution;
     using r = Resolutions;
-    using FourZeroOne.Core.Resolutions.Board;
     using Program;
 
     namespace Board
@@ -255,9 +254,9 @@ namespace FourZeroOne.Core.Tokens
         where ROut : class, ResObj
     {
         public SubEnvironment(IToken<Resolution.IMulti<ResObj>> envModifiers, IToken<ROut> evalToken) : base(envModifiers, evalToken) { }
-        protected override ROut EvaluatePure(Resolution.IMulti<ResObj> _, ROut evalResolution)
+        protected override ROut EvaluatePure(Resolution.IMulti<ResObj> _, ROut in2)
         {
-            return evalResolution;
+            return in2;
         }
     }
 
@@ -298,50 +297,37 @@ namespace FourZeroOne.Core.Tokens
     // there should only be 1 token that returns an action and it should be fixed
     public record IfElse<R> : Function<r.Bool, r.Action<R>, r.Action<R>, r.Action<R>> where R : class, ResObj
     {
-        // HACK: this should in theory be (condition.Resolve()) ? Pass.IsFallible : Fail.IsFallible, but we obv cant resolve condition here.
-        public IToken<R> Pass { get; init; }
-        public IToken<R> Fail { get; init; }
-        public IfElse(IToken<r.Bool> condition, IToken<r.Action<R>> positive, IToken<r.Action<R>> negative) : base(condition, positive, negative)
+        public IfElse(IToken<r.Bool> condition, IToken<r.Action<R>> positive, IToken<r.Action<R>> negative) : base(condition, positive, negative) { }
+        protected override ITask<IOption<r.Action<R>>> Evaluate(IProgram program, IOption<r.Bool> in1, IOption<r.Action<R>> in2, IOption<r.Action<R>> in3)
         {
-            _passedLastResolution = new None<bool>();
+            return Task.FromResult( in1.RemapAs(x => x.IsTrue ? in2 : in3).Press() ).AsITask();
         }
-        protected override async ITask<IOption<R>> Evaluate(IProgram program, IOption<r.Bool> in1)
-        {
-            if (in1.CheckNone(out var condition)) return new None<R>();
-            _passedLastResolution = condition.IsTrue.AsSome();
-            return await ((condition.IsTrue) ? Pass : Fail).ResolveWithRules(program);
-        }
-        //unused
-        private IOption<bool> _passedLastResolution;
     }
     public sealed record Variable<R> : Token<r.DeclareVariable<R>> where R : class, ResObj
     {
-        public Variable(VariableIdentifier<R> identifier, IToken<R> token)
+        public Variable(VariableIdentifier<R> identifier, IToken<R> token) : base(token)
         {
-            _objectToken = token;
             _identifier = identifier;
         }
-        public override bool IsFallible => _objectToken.IsFallible;
-        protected override async ITask<IOption<r.DeclareVariable<R>>> ResolveInternal(IProgram program)
+        public override ITask<IOption<r.DeclareVariable<R>>> Resolve(IProgram program, IOption<ResObj>[] args)
         {
-            return (await _objectToken.ResolveWithRules(program) is IOption<R> resOpt) ?
-                new r.DeclareVariable<R>(_identifier) { Object = resOpt }.AsSome() : null;
+            var refObject = (IOption<R>)args[0];
+            return Task.FromResult(refObject.RemapAs(x => new r.DeclareVariable<R>(_identifier) { Object = refObject })).AsITask();
         }
 
-        private readonly IToken<R> _objectToken;
         private readonly VariableIdentifier<R> _identifier;
     }
 
-    public sealed record Rule<R> : Infallible<r.DeclareRule> where R : class, ResObj
+    public sealed record Rule<R> : PureValue<r.DeclareRule> where R : class, ResObj
     {
         public Rule(Rule.IRule rule)
         {
             _rule = rule;
         }
 
-        protected override IOption<r.DeclareRule> InfallibleResolve(IProgram program)
+        protected override r.DeclareRule EvaluatePure()
         {
-            return new r.DeclareRule() { Rule = _rule }.AsSome();
+            return new r.DeclareRule() { Rule = _rule };
         }
 
         private readonly Rule.IRule _rule;
@@ -352,30 +338,31 @@ namespace FourZeroOne.Core.Tokens
         {
             _resolution = resolution;
         }
-        protected override IOption<R> EvaluatePure()
+        protected override R EvaluatePure()
         {
-            return _resolution.AsSome();
+            return _resolution;
         }
         private readonly R _resolution;
     }
-    public sealed record Nolla<R> : Infallible<R> where R : class, ResObj
+    public sealed record Nolla<R> : Value<R> where R : class, ResObj
     {
         public Nolla() { }
-        protected override IOption<R> InfallibleResolve(IProgram _) { return new None<R>(); }
+        protected override ITask<IOption<R>> Evaluate(IProgram _) { return Task.FromResult(new None<R>()).AsITask(); }
     }
-    public sealed record Reference<R> : Infallible<R> where R : class, ResObj
+    public sealed record Reference<R> : Value<R> where R : class, ResObj
     {
         public Reference(VariableIdentifier<R> toIdentifier) => _toIdentifier = toIdentifier;
 
-        protected override IOption<R> InfallibleResolve(IProgram program)
+        protected override ITask<IOption<R>> Evaluate(IProgram program)
         {
-            return (program.GetState().Variables[_toIdentifier] is IOption<R> val) ? val :
+            var o = (program.GetState().Variables[_toIdentifier] is IOption<R> val) ? val :
                 throw new Exception($"Reference token resolved to non-existent or wrongly-typed object.\n" +
                 $"Identifier: {_toIdentifier}\n" +
                 $"Expected: {typeof(R).Name}\n" +
                 $"Recieved: {program.GetState().Variables[_toIdentifier]}\n" +
                 $"Current Scope:\n" +
                 $"{program.GetState().Variables.Elements.AccumulateInto("", (msg, x) => msg + $"> '{x.key}' : {x.val}\n")}");
+            return Task.FromResult(o).AsITask();
         }
 
         private readonly VariableIdentifier<R> _toIdentifier;

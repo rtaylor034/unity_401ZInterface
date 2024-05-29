@@ -73,6 +73,10 @@ namespace Perfection
         {
             return option.Check(out var val) ? val : noneEval();
         }
+        public static IOption<T> Press<T>(this IOption<IOption<T>> option)
+        {
+            return option.Check(out var inner) ? (inner.Check(out var val) ? val.AsSome() : new None<T>()) : new None<T>();
+        }
     }
     
 }

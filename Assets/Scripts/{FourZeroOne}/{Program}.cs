@@ -12,7 +12,6 @@ namespace FourZeroOne.Program
     public interface IProgram
     {
         public State GetState();
-        public IOption<ResObj>[] GetArgs();
         public ITask<IOption<R>> PerformAction<R>(IToken<R> action) where R : class, ResObj;
         public void ObserveToken(IToken token);
         public void ObserveResolution(IOption<ResObj> resolution);
@@ -22,7 +21,7 @@ namespace FourZeroOne.Program
     public abstract class Program : IProgram
     {
         public State GetState() => _currentState;
-        public IOption<ResObj>[] GetArgs()
+        public ITask<IOption<R>> PerformAction<R>(IToken<R> action) where R : class, ResObj;
         {
             throw new System.NotImplementedException();
         }
