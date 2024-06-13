@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 using Perfection;
 public class TESTER : MonoBehaviour
 {
-    private FourZeroOne.IProgram _program;
+    private FourZeroOne.IRuntime _runtime;
     // Start is called before the first frame update
     async void Start()
     {
@@ -67,7 +67,7 @@ public class TESTER : MonoBehaviour
                     })
                 })
         }); 
-        _program = new FourZeroOne.Programs.Standard.Program()
+        _runtime = new FourZeroOne.Runtimes.Standard.Runtime()
         {
             State = new()
             {
@@ -77,10 +77,10 @@ public class TESTER : MonoBehaviour
             }
         };
         
-        while ((await new t.IO.Select.One<r.Bool>(new t.Multi.Union<r.Bool>(Iter.Over(true, false).Map(x => new t.Multi.Yield<r.Bool>(new t.Fixed<r.Bool>(x))))).Resolve(_program)).Unwrap().IsTrue)
+        while ((await new t.IO.Select.One<r.Bool>(new t.Multi.Union<r.Bool>(Iter.Over(true, false).Map(x => new t.Multi.Yield<r.Bool>(new t.Fixed<r.Bool>(x))))).Resolve(_runtime)).Unwrap().IsTrue)
         {
             Debug.Log("===========[ START ]============");
-            //Debug.Log(await token_complicated.ResolveWithRules(_program));
+            //Debug.Log(await token_complicated.ResolveWithRules(_runtime));
             var o = new ControlledTask.ControlledTask<TESTER>();
             ResolveAfterSomeTime(o);
             await Task.Delay(2000);

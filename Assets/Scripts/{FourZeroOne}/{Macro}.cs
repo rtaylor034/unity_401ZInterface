@@ -9,13 +9,13 @@ namespace FourZeroOne.Macro
     using ResObj = Resolution.IResolution;
     using r = Core.Resolutions;
     using Token;
-    using Program;
+    using Runtime;
     public record Macro<R> : Token<R> where R : class, ResObj
     {
         public override bool IsFallible => Expand().IsFallible;
-        protected override ITask<IOption<R>> ResolveInternal(IProgram program)
+        protected override ITask<IOption<R>> ResolveInternal(IRuntime runtime)
         {
-            return Expand().ResolveWithRules(program);
+            return Expand().ResolveWithRules(runtime);
         }
         protected Macro(Proxy.Unsafe.IProxy<R> proxy)
         {

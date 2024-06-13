@@ -2,17 +2,17 @@
 using UnityEngine;
 using Perfection;
 #nullable enable
-namespace FourZeroOne.Programs.Standard
+namespace FourZeroOne.Runtimes.Standard
 {
-    public record Program : IProgram
+    public record Runtime : IRuntime
     {
         public State State { get => _state; init { _io.WriteState(value); _state = value; } }
-        public IProgram dState(Updater<State> updater) => this with { State = updater(State) };
+        public IRuntime dState(Updater<State> updater) => this with { State = updater(State) };
         public IInputInterface Input => _io;
         public IOutputInterface Output => _io;
-        public Program()
+        public Runtime()
         {
-            var gameObject = new GameObject("Standard Program IO");
+            var gameObject = new GameObject("Standard Runtime IO");
             _io = gameObject.AddComponent<IO>();
 
         }

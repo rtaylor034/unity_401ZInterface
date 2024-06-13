@@ -3,56 +3,35 @@ using System.Collections.Generic;
 using Perfection;
 using MorseCode.ITask;
 #nullable enable
-namespace FourZeroOne.Program
+namespace FourZeroOne.Runtime
 {
     using ResObj = Resolution.IResolution;
     using IToken = Token.Unsafe.IToken;
     using Token;
     using ControlledTask;
-    public interface IProgram
+    public interface IRuntime
     {
         public State GetState();
         public ITask<IOption<R>> PerformAction<R>(IToken<R> action) where R : class, ResObj;
-        public void ObserveToken(IToken token);
-        public void ObserveResolution(IOption<ResObj> resolution);
-        public void ObserveRuleSteps(IEnumerable<(IToken fromToken, Rule.IRule appliedRule)> steps);
         public ITask<IOption<IEnumerable<R>>> ReadSelection<R>(IEnumerable<R> from, int count) where R : class, ResObj;
     }
-    public abstract class Program : IProgram
+    public abstract class Runtime : IRuntime
     {
         public State GetState() => _currentState;
         public ITask<IOption<R>> PerformAction<R>(IToken<R> action) where R : class, ResObj
         {
             throw new System.NotImplementedException();
         }
-
-        public void ObserveToken(IToken token)
+        public ITask<R> EvaluateToken<R>(State startingState, IToken<R> token) where R : class, ResObj
         {
-            _evalStack.Push((_currentState, token));
-            RecieveToken(token);
+            throw new System.NotImplementedException();
         }
-        public void ObserveResolution(IOption<ResObj> resolution)
-        {
-            var evalState = _evalStack.Pop().state;
-            if (resolution.Check(out var some)) _currentState = evalState.WithResolution(some);
-            RecieveResolution(resolution);
-        }
-        public void ObserveRuleSteps(IEnumerable<(IToken fromToken, Rule.IRule appliedRule)> steps)
-        {
-            _currentState = _currentState with
-            {
-                dRules = Q => Q with
-                {
-                    dElements = Q => Q.Filter(x => !steps.HasMatch(y => ReferenceEquals(x, y.appliedRule)))
-                }
-            };
-            RecieveRuleSteps(steps);
-        }
-        
         public ITask<IOption<IEnumerable<R>>> ReadSelection<R>(IEnumerable<R> from, int count) where R : class, ResObj
         {
             return SetTokenThread(SelectionImplementation(from, count));
         }
+
+
         protected abstract void RecieveToken(IToken token);
         protected abstract void RecieveResolution(IOption<ResObj> resolution);
         protected abstract void RecieveRuleSteps(IEnumerable<(IToken token, Rule.IRule appliedRule)> steps);

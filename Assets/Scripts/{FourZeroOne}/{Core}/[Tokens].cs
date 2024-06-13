@@ -12,7 +12,7 @@ namespace FourZeroOne.Core.Tokens
     using Token;
     using ResObj = Resolution.IResolution;
     using r = Resolutions;
-    using Program;
+    using Runtime;
 
     namespace Board
     {
@@ -40,15 +40,15 @@ namespace FourZeroOne.Core.Tokens
         {
             public sealed record AllHexes : Infallible<r.Multi<rb.Hex>>
             {
-                protected override IOption<r.Multi<rb.Hex>> InfallibleResolve(IProgram program)
+                protected override IOption<r.Multi<rb.Hex>> InfallibleResolve(IRuntime runtime)
                 {
-                    return new r.Multi<rb.Hex>() { Values = program.GetState().Board.Hexes }.AsSome();
+                    return new r.Multi<rb.Hex>() { Values = runtime.GetState().Board.Hexes }.AsSome();
                 }
             }
             public sealed record AtPresent : PresentStateGetter<rb.Hex>
             {
                 public AtPresent(IToken<rb.Hex> source) : base(source) { }
-                protected override PIndexedSet<int, rb.Hex> GetStatePSet(IProgram program) { return program.GetState().Board.Hexes; }
+                protected override PIndexedSet<int, rb.Hex> GetStatePSet(IRuntime runtime) { return runtime.GetState().Board.Hexes; }
             }
             namespace Get
             {
@@ -59,15 +59,15 @@ namespace FourZeroOne.Core.Tokens
         {
             public sealed record AllUnits : Infallible<r.Multi<rb.Unit>>
             {
-                protected override IOption<r.Multi<rb.Unit>> InfallibleResolve(IProgram program)
+                protected override IOption<r.Multi<rb.Unit>> InfallibleResolve(IRuntime runtime)
                 {
-                    return new r.Multi<rb.Unit>() { Values = program.GetState().Board.Units }.AsSome();
+                    return new r.Multi<rb.Unit>() { Values = runtime.GetState().Board.Units }.AsSome();
                 }
             }
             public sealed record AtPresent : PresentStateGetter<rb.Unit>
             {
                 public AtPresent(IToken<rb.Unit> source) : base(source) { }
-                protected override PIndexedSet<int, rb.Unit> GetStatePSet(IProgram program) { return program.GetState().Board.Units; }
+                protected override PIndexedSet<int, rb.Unit> GetStatePSet(IRuntime runtime) { return runtime.GetState().Board.Units; }
             }
             namespace Get
             {
@@ -93,15 +93,15 @@ namespace FourZeroOne.Core.Tokens
         {
             public sealed record AllPlayers : Infallible<r.Multi<rb.Player>>
             {
-                protected override IOption<r.Multi<rb.Player>> InfallibleResolve(IProgram program)
+                protected override IOption<r.Multi<rb.Player>> InfallibleResolve(IRuntime runtime)
                 {
-                    return new r.Multi<rb.Player>() { Values = program.GetState().Board.Players }.AsSome();
+                    return new r.Multi<rb.Player>() { Values = runtime.GetState().Board.Players }.AsSome();
                 }
             }
             public sealed record AtPresent : PresentStateGetter<rb.Player>
             {
                 public AtPresent(IToken<rb.Player> source) : base(source) { }
-                protected override PIndexedSet<int, rb.Player> GetStatePSet(IProgram program) { return program.GetState().Board.Players; }
+                protected override PIndexedSet<int, rb.Player> GetStatePSet(IRuntime runtime) { return runtime.GetState().Board.Players; }
             }
         }
     }
@@ -114,10 +114,10 @@ namespace FourZeroOne.Core.Tokens
                 public override bool IsFallibleFunction => true;
                 public One(IToken<Resolution.IMulti<R>> from) : base(from) { }
 
-                protected async override ITask<IOption<R>> Evaluate(IProgram program, IOption<Resolution.IMulti<R>> fromOpt)
+                protected async override ITask<IOption<R>> Evaluate(IRuntime runtime, IOption<Resolution.IMulti<R>> fromOpt)
                 {
                     if (fromOpt.CheckNone(out var from)) return new None<R>();
-                    if (await program.Input.ReadSelection(from.Values, 1) is not IOption<IEnumerable<R>> selOpt) return null;
+                    if (await runtime.Input.ReadSelection(from.Values, 1) is not IOption<IEnumerable<R>> selOpt) return null;
                     return (selOpt.Check(out var sel)) ? sel.First().AsSome() : new None<R>();
                 }
             }
@@ -128,10 +128,10 @@ namespace FourZeroOne.Core.Tokens
                 public override bool IsFallibleFunction => true;
                 public Multiple(IToken<Resolution.IMulti<R>> from, IToken<r.Number> count) : base(from, count) { }
 
-                protected override async ITask<IOption<r.Multi<R>>> Evaluate(IProgram program, IOption<Resolution.IMulti<R>> fromOpt, IOption<r.Number> countOpt)
+                protected override async ITask<IOption<r.Multi<R>>> Evaluate(IRuntime runtime, IOption<Resolution.IMulti<R>> fromOpt, IOption<r.Number> countOpt)
                 {
                     if (fromOpt.CheckNone(out var from) || countOpt.CheckNone(out var count)) return new None<r.Multi<R>>();
-                    if (await program.Input.ReadSelection(from.Values, count.Value) is not IOption<IEnumerable<R>> selOpt) return null;
+                    if (await runtime.Input.ReadSelection(from.Values, count.Value) is not IOption<IEnumerable<R>> selOpt) return null;
                     return selOpt.RemapAs(v => new r.Multi<R>() { Values = v });
                 }
             }
@@ -245,9 +245,9 @@ namespace FourZeroOne.Core.Tokens
     {
         public PerformAction(IToken<r.Action<R>> a) : base(a) { }
 
-        protected override async ITask<IOption<R>> Evaluate(IProgram program, IOption<r.Action<R>> in1)
+        protected override async ITask<IOption<R>> Evaluate(IRuntime runtime, IOption<r.Action<R>> in1)
         {
-            return in1.Check(out var action) ? await program.PerformAction(action.Token) : new None<R>();
+            return in1.Check(out var action) ? await runtime.PerformAction(action.Token) : new None<R>();
         }
     }
     public record SubEnvironment<ROut> : PureFunction<Resolution.IMulti<ResObj>, ROut, ROut>
@@ -298,7 +298,7 @@ namespace FourZeroOne.Core.Tokens
     public record IfElse<R> : Function<r.Bool, r.Action<R>, r.Action<R>, r.Action<R>> where R : class, ResObj
     {
         public IfElse(IToken<r.Bool> condition, IToken<r.Action<R>> positive, IToken<r.Action<R>> negative) : base(condition, positive, negative) { }
-        protected override ITask<IOption<r.Action<R>>> Evaluate(IProgram program, IOption<r.Bool> in1, IOption<r.Action<R>> in2, IOption<r.Action<R>> in3)
+        protected override ITask<IOption<r.Action<R>>> Evaluate(IRuntime runtime, IOption<r.Bool> in1, IOption<r.Action<R>> in2, IOption<r.Action<R>> in3)
         {
             return Task.FromResult( in1.RemapAs(x => x.IsTrue ? in2 : in3).Press() ).AsITask();
         }
@@ -309,7 +309,7 @@ namespace FourZeroOne.Core.Tokens
         {
             _identifier = identifier;
         }
-        public override ITask<IOption<r.DeclareVariable<R>>> Resolve(IProgram program, IOption<ResObj>[] args)
+        public override ITask<IOption<r.DeclareVariable<R>>> Resolve(IRuntime runtime, IOption<ResObj>[] args)
         {
             var refObject = (IOption<R>)args[0];
             return Task.FromResult(refObject.RemapAs(x => new r.DeclareVariable<R>(_identifier) { Object = refObject })).AsITask();
@@ -347,21 +347,21 @@ namespace FourZeroOne.Core.Tokens
     public sealed record Nolla<R> : Value<R> where R : class, ResObj
     {
         public Nolla() { }
-        protected override ITask<IOption<R>> Evaluate(IProgram _) { return Task.FromResult(new None<R>()).AsITask(); }
+        protected override ITask<IOption<R>> Evaluate(IRuntime _) { return Task.FromResult(new None<R>()).AsITask(); }
     }
     public sealed record Reference<R> : Value<R> where R : class, ResObj
     {
         public Reference(VariableIdentifier<R> toIdentifier) => _toIdentifier = toIdentifier;
 
-        protected override ITask<IOption<R>> Evaluate(IProgram program)
+        protected override ITask<IOption<R>> Evaluate(IRuntime runtime)
         {
-            var o = (program.GetState().Variables[_toIdentifier] is IOption<R> val) ? val :
+            var o = (runtime.GetState().Variables[_toIdentifier] is IOption<R> val) ? val :
                 throw new Exception($"Reference token resolved to non-existent or wrongly-typed object.\n" +
                 $"Identifier: {_toIdentifier}\n" +
                 $"Expected: {typeof(R).Name}\n" +
-                $"Recieved: {program.GetState().Variables[_toIdentifier]}\n" +
+                $"Recieved: {runtime.GetState().Variables[_toIdentifier]}\n" +
                 $"Current Scope:\n" +
-                $"{program.GetState().Variables.Elements.AccumulateInto("", (msg, x) => msg + $"> '{x.key}' : {x.val}\n")}");
+                $"{runtime.GetState().Variables.Elements.AccumulateInto("", (msg, x) => msg + $"> '{x.key}' : {x.val}\n")}");
             return Task.FromResult(o).AsITask();
         }
 

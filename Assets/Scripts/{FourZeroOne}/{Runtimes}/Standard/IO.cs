@@ -11,7 +11,7 @@ using System;
 // very placeholder behavior.
 // eventually seperate input and output provider.
 // the input provider should just have a reference to the output provider to get selection objects.
-namespace FourZeroOne.Programs.Standard
+namespace FourZeroOne.Runtimes.Standard
 {
     using Token.Unsafe;
     using Token;
@@ -41,7 +41,7 @@ namespace FourZeroOne.Programs.Standard
             depth--;
         }
         /// <summary>
-        /// Called whenever this program's <see cref="IProgram.State"/> is updated, <paramref name="state"/> containing the new state.
+        /// Called whenever this runtime's <see cref="IRuntime.State"/> is updated, <paramref name="state"/> containing the new state.
         /// </summary>
         /// <param name="state"></param>
         public void WriteState(State state)
