@@ -15,7 +15,7 @@ namespace FourZeroOne.Runtime
         public ITask<IOption<R>> PerformAction<R>(IToken<R> action) where R : class, ResObj;
         public ITask<IOption<IEnumerable<R>>> ReadSelection<R>(IEnumerable<R> from, int count) where R : class, ResObj;
     }
-    public abstract class Runtime : IRuntime
+    public abstract class TimelineBased : IRuntime
     {
         public State GetState() => _currentState;
         public ITask<IOption<R>> PerformAction<R>(IToken<R> action) where R : class, ResObj
@@ -30,7 +30,6 @@ namespace FourZeroOne.Runtime
         {
             return SetTokenThread(SelectionImplementation(from, count));
         }
-
 
         protected abstract void RecieveToken(IToken token);
         protected abstract void RecieveResolution(IOption<ResObj> resolution);
@@ -61,8 +60,26 @@ namespace FourZeroOne.Runtime
             _tokenThread = task.Awaiter;
             return task;
         }
-        private Stack<(State state, IToken token)> _evalStack;
         private State _currentState;
         private ControlledAwaiter _tokenThread;
+        private IEnumerable<IToken> _oprerationStack;
+        private IEnumerable<ResObj> _resolutionStack;
+
+
+        //shunting yard 2 stacks algorthm
+        // tokens[- + #]   resolutions[5 6 6]
+        // '+' pops 2 resolutions, uses (reversed order) as args, pushes result back to resolutions[] and pops itself.
+        // 0 arg tokens literally just push a resolution to stack and get popped.
+        // every time a token resolves, add it and its resolution to timeline.
+        // each timeline node should store current state of both stacks.
+        private record Frame
+        {
+            public readonly IToken Token;
+            public readonly ResObj Resolution;
+            public readonly State PreviousState;
+            public readonly IEnumerable<IToken> OperationStackFrame;
+            public readonly IEnumerable<ResObj> ResolutionStackFrame;
+
+        }
     }
 }
