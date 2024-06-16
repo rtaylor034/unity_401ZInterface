@@ -15,7 +15,9 @@ namespace FourZeroOne.Runtime
         public ITask<IOption<R>> PerformAction<R>(IToken<R> action) where R : class, ResObj;
         public ITask<IOption<IEnumerable<R>>> ReadSelection<R>(IEnumerable<R> from, int count) where R : class, ResObj;
     }
-    public abstract class TimelineBased : IRuntime
+
+    //garbage collector reliant/heavy implementation
+    public abstract class FrameSaving : IRuntime
     {
         public State GetState() => _currentState;
         public ITask<IOption<R>> PerformAction<R>(IToken<R> action) where R : class, ResObj
@@ -35,11 +37,56 @@ namespace FourZeroOne.Runtime
         protected abstract void RecieveResolution(IOption<ResObj> resolution);
         protected abstract void RecieveRuleSteps(IEnumerable<(IToken token, Rule.IRule appliedRule)> steps);
         protected abstract ControlledTask<IOption<IEnumerable<R>>> SelectionImplementation<R>(IEnumerable<R> from, int count) where R : class, ResObj;
-        protected void SwitchToNode()
+
+        protected void GotoFrame(Frame frame)
+        {
+            _oprerationStack = frame.OperationStack;
+            _resolutionStack = frame.ResolutionStack;
+            Run();
+        }
+
+        protected record Frame
+        {
+            public IToken Token { get; init; }
+            public ResObj Resolution { get; init; }
+            public State PreviousState { get; init; }
+            public LinkedStack<IToken> OperationStack { get; init; }
+            public LinkedStack<ResObj> ResolutionStack { get; init; }
+        }
+        protected record LinkedStack<T>
+        {
+            public readonly IOption<LinkedStack<T>> Link;
+            public readonly T Value;
+            public LinkedStack(T value)
+            {
+                Value = value;
+                Link = this.None();
+            }
+            public LinkedStack<T> Linked(T value)
+            {
+                return new(this, value);
+            }
+            public LinkedStack<T> Chain(IEnumerable<T> values)
+            {
+                return values.AccumulateInto(this, (stack, x) => stack.Linked(x));
+            }
+            public LinkedStack<T> Chain(params T[] values) { return Chain(values.IEnumerable()); }
+            private LinkedStack(LinkedStack<T> link, T value)
+            {
+                Link = link.AsSome();
+                Value = value;
+            }
+        }
+
+        private async void Run()
+        {
+            var runTask = SetEvalThread(new ControlledTask());
+            await RunInternal();
+        }
+        private async ITask RunInternal()
         {
 
         }
-
         private static IToken<R> ApplyRules<R>(IToken<R> token, IEnumerable<Rule.IRule> rules, out List<(IToken<R> fromToken, Rule.IRule rule)> appliedRules) where R : class, ResObj
         {
             var o = token;
@@ -55,31 +102,15 @@ namespace FourZeroOne.Runtime
             return o;
         }
 
-        private ControlledTask<T> SetTokenThread<T>(ControlledTask<T> task)
+        private ControlledTask SetEvalThread(ControlledTask task)
         {
-            _tokenThread = task.Awaiter;
+            _evalThread = task.Awaiter;
             return task;
         }
         private State _currentState;
-        private ControlledAwaiter _tokenThread;
-        private IEnumerable<IToken> _oprerationStack;
-        private IEnumerable<ResObj> _resolutionStack;
+        private ControlledAwaiter _evalThread;
+        private LinkedStack<IToken> _oprerationStack;
+        private LinkedStack<ResObj> _resolutionStack;
 
-
-        //shunting yard 2 stacks algorthm
-        // tokens[- + #]   resolutions[5 6 6]
-        // '+' pops 2 resolutions, uses (reversed order) as args, pushes result back to resolutions[] and pops itself.
-        // 0 arg tokens literally just push a resolution to stack and get popped.
-        // every time a token resolves, add it and its resolution to timeline.
-        // each timeline node should store current state of both stacks.
-        private record Frame
-        {
-            public readonly IToken Token;
-            public readonly ResObj Resolution;
-            public readonly State PreviousState;
-            public readonly IEnumerable<IToken> OperationStackFrame;
-            public readonly IEnumerable<ResObj> ResolutionStackFrame;
-
-        }
     }
 }

@@ -7,7 +7,12 @@ using MC = MorseCode.ITask;
 
 namespace ControlledTask
 {
-    public class ControlledTask : MC.ITask
+    public interface ICeasableTask : MC.ITask
+    {
+        public void Cease();
+    }
+    public interface ICeasableTask<out T> : MC.ITask<T>, ICeasableTask { }
+    public class ControlledTask : ICeasableTask
     {
         public ControlledAwaiter Awaiter { get; private set; }
 
@@ -67,7 +72,7 @@ namespace ControlledTask
 
         public void GetResult() { }
     }
-    public class ControlledTask<T> : MC.ITask<T>
+    public class ControlledTask<T> : ICeasableTask<T>
     {
         public ControlledAwaiter<T> Awaiter { get; private set; }
         public T Result => Awaiter.GetResult();
