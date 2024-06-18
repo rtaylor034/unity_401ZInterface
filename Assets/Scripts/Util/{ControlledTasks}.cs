@@ -5,8 +5,9 @@ using MC = MorseCode.ITask;
 
 // Made with duct tape and dreams.
 
-namespace ControlledTask
+namespace ControlledTasks
 {
+    //make ControlledTask.FromResult
     public interface ICeasableTask : MC.ITask
     {
         public void Cease();
@@ -14,6 +15,18 @@ namespace ControlledTask
     public interface ICeasableTask<out T> : MC.ITask<T>, ICeasableTask { }
     public class ControlledTask : ICeasableTask
     {
+        public static ControlledTask CompletedTask => _completedTask;
+        static ControlledTask()
+        {
+            _completedTask = new ControlledTask();
+            _completedTask.Resolve();
+        }
+        public static ControlledTask<TResult> FromResult<TResult>(TResult result)
+        {
+            var o = new ControlledTask<TResult>();
+            o.Resolve(result);
+            return o;
+        }
         public ControlledAwaiter Awaiter { get; private set; }
 
         /// <summary>
@@ -38,6 +51,8 @@ namespace ControlledTask
 
         public MC.IAwaiter GetAwaiter() => Awaiter;
         public MC.IConfiguredTask ConfigureAwait(bool continueOnCapturedContext) => throw new System.NotImplementedException();
+
+        private static ControlledTask _completedTask;
     }
     public class ControlledAwaiter : MC.IAwaiter
     {
@@ -85,7 +100,7 @@ namespace ControlledTask
         {
             Awaiter = new ControlledAwaiter<T>();
         }
-
+       
         /// <summary>
         /// <inheritdoc cref="ControlledTask.Resolve"/> <br></br>
         /// > Yields <paramref name="result"/>.

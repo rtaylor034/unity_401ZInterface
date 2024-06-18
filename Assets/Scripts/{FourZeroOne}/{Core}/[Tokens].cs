@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Perfection;
-using MorseCode.ITask;
+using ControlledTasks;
 using FourZeroOne;
 
 #nullable enable
@@ -16,7 +16,7 @@ namespace FourZeroOne.Core.Tokens
 
     namespace Board
     {
-        using rb = Resolutions.Board;
+        using rb = r.Board;
         namespace Coordinates
         {
             public sealed record Of : PureFunction<Resolution.Board.IPositioned, rb.Coordinates>
@@ -114,7 +114,7 @@ namespace FourZeroOne.Core.Tokens
                 public override bool IsFallibleFunction => true;
                 public One(IToken<Resolution.IMulti<R>> from) : base(from) { }
 
-                protected async override ITask<IOption<R>> Evaluate(IRuntime runtime, IOption<Resolution.IMulti<R>> fromOpt)
+                protected async override ICeasableTask<IOption<R>> Evaluate(IRuntime runtime, IOption<Resolution.IMulti<R>> fromOpt)
                 {
                     if (fromOpt.CheckNone(out var from)) return new None<R>();
                     if (await runtime.Input.ReadSelection(from.Values, 1) is not IOption<IEnumerable<R>> selOpt) return null;
@@ -128,7 +128,7 @@ namespace FourZeroOne.Core.Tokens
                 public override bool IsFallibleFunction => true;
                 public Multiple(IToken<Resolution.IMulti<R>> from, IToken<r.Number> count) : base(from, count) { }
 
-                protected override async ITask<IOption<r.Multi<R>>> Evaluate(IRuntime runtime, IOption<Resolution.IMulti<R>> fromOpt, IOption<r.Number> countOpt)
+                protected override async ICeasableTask<IOption<r.Multi<R>>> Evaluate(IRuntime runtime, IOption<Resolution.IMulti<R>> fromOpt, IOption<r.Number> countOpt)
                 {
                     if (fromOpt.CheckNone(out var from) || countOpt.CheckNone(out var count)) return new None<r.Multi<R>>();
                     if (await runtime.Input.ReadSelection(from.Values, count.Value) is not IOption<IEnumerable<R>> selOpt) return null;
@@ -245,7 +245,7 @@ namespace FourZeroOne.Core.Tokens
     {
         public PerformAction(IToken<r.Action<R>> a) : base(a) { }
 
-        protected override async ITask<IOption<R>> Evaluate(IRuntime runtime, IOption<r.Action<R>> in1)
+        protected override async ICeasableTask<IOption<R>> Evaluate(IRuntime runtime, IOption<r.Action<R>> in1)
         {
             return in1.Check(out var action) ? await runtime.PerformAction(action.Token) : new None<R>();
         }
@@ -293,14 +293,14 @@ namespace FourZeroOne.Core.Tokens
             RecursiveProxy = recursiveProxy;
         }
     }
-
+    
     // there should only be 1 token that returns an action and it should be fixed
     public record IfElse<R> : Function<r.Bool, r.Action<R>, r.Action<R>, r.Action<R>> where R : class, ResObj
     {
         public IfElse(IToken<r.Bool> condition, IToken<r.Action<R>> positive, IToken<r.Action<R>> negative) : base(condition, positive, negative) { }
-        protected override ITask<IOption<r.Action<R>>> Evaluate(IRuntime runtime, IOption<r.Bool> in1, IOption<r.Action<R>> in2, IOption<r.Action<R>> in3)
+        protected override ICeasableTask<IOption<r.Action<R>>> Evaluate(IRuntime runtime, IOption<r.Bool> in1, IOption<r.Action<R>> in2, IOption<r.Action<R>> in3)
         {
-            return Task.FromResult( in1.RemapAs(x => x.IsTrue ? in2 : in3).Press() ).AsITask();
+            return ControlledTask.FromResult( in1.RemapAs(x => x.IsTrue ? in2 : in3).Press() );
         }
     }
     public sealed record Variable<R> : Token<r.DeclareVariable<R>> where R : class, ResObj
@@ -309,10 +309,10 @@ namespace FourZeroOne.Core.Tokens
         {
             _identifier = identifier;
         }
-        public override ITask<IOption<r.DeclareVariable<R>>> Resolve(IRuntime runtime, IOption<ResObj>[] args)
+        public override ICeasableTask<IOption<r.DeclareVariable<R>>> Resolve(IRuntime runtime, IOption<ResObj>[] args)
         {
             var refObject = (IOption<R>)args[0];
-            return Task.FromResult(refObject.RemapAs(x => new r.DeclareVariable<R>(_identifier) { Object = refObject })).AsITask();
+            return ControlledTask.FromResult(refObject.RemapAs(x => new r.DeclareVariable<R>(_identifier) { Object = refObject }));
         }
 
         private readonly VariableIdentifier<R> _identifier;
@@ -347,13 +347,13 @@ namespace FourZeroOne.Core.Tokens
     public sealed record Nolla<R> : Value<R> where R : class, ResObj
     {
         public Nolla() { }
-        protected override ITask<IOption<R>> Evaluate(IRuntime _) { return Task.FromResult(new None<R>()).AsITask(); }
+        protected override ICeasableTask<IOption<R>> Evaluate(IRuntime _) { return ControlledTask.FromResult(new None<R>()); }
     }
     public sealed record Reference<R> : Value<R> where R : class, ResObj
     {
         public Reference(VariableIdentifier<R> toIdentifier) => _toIdentifier = toIdentifier;
 
-        protected override ITask<IOption<R>> Evaluate(IRuntime runtime)
+        protected override ICeasableTask<IOption<R>> Evaluate(IRuntime runtime)
         {
             var o = (runtime.GetState().Variables[_toIdentifier] is IOption<R> val) ? val :
                 throw new Exception($"Reference token resolved to non-existent or wrongly-typed object.\n" +
@@ -362,7 +362,7 @@ namespace FourZeroOne.Core.Tokens
                 $"Recieved: {runtime.GetState().Variables[_toIdentifier]}\n" +
                 $"Current Scope:\n" +
                 $"{runtime.GetState().Variables.Elements.AccumulateInto("", (msg, x) => msg + $"> '{x.key}' : {x.val}\n")}");
-            return Task.FromResult(o).AsITask();
+            return ControlledTask.FromResult(o);
         }
 
         private readonly VariableIdentifier<R> _toIdentifier;

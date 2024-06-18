@@ -1,7 +1,7 @@
 
 using System.Collections.Generic;
 using Perfection;
-using MorseCode.ITask;
+using ControlledTasks;
 
 #nullable enable
 namespace FourZeroOne.Macro
@@ -13,7 +13,7 @@ namespace FourZeroOne.Macro
     public record Macro<R> : Token<R> where R : class, ResObj
     {
         public override bool IsFallible => Expand().IsFallible;
-        protected override ITask<IOption<R>> ResolveInternal(IRuntime runtime)
+        protected override ICeasableTask<IOption<R>> ResolveInternal(IRuntime runtime)
         {
             return Expand().ResolveWithRules(runtime);
         }

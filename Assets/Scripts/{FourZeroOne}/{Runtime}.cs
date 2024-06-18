@@ -1,34 +1,34 @@
 
 using System.Collections.Generic;
 using Perfection;
-using MorseCode.ITask;
+using ControlledTasks;
 #nullable enable
 namespace FourZeroOne.Runtime
 {
     using ResObj = Resolution.IResolution;
     using IToken = Token.Unsafe.IToken;
     using Token;
-    using ControlledTask;
+    using ControlledTasks;
     public interface IRuntime
     {
         public State GetState();
-        public ITask<IOption<R>> PerformAction<R>(IToken<R> action) where R : class, ResObj;
-        public ITask<IOption<IEnumerable<R>>> ReadSelection<R>(IEnumerable<R> from, int count) where R : class, ResObj;
+        public ICeasableTask<IOption<R>> PerformAction<R>(IToken<R> action) where R : class, ResObj;
+        public ICeasableTask<IOption<IEnumerable<R>>> ReadSelection<R>(IEnumerable<R> from, int count) where R : class, ResObj;
     }
 
     //garbage collector reliant/heavy implementation
     public abstract class FrameSaving : IRuntime
     {
         public State GetState() => _currentState;
-        public ITask<IOption<R>> PerformAction<R>(IToken<R> action) where R : class, ResObj
+        public ICeasableTask<IOption<R>> PerformAction<R>(IToken<R> action) where R : class, ResObj
         {
             throw new System.NotImplementedException();
         }
-        public ITask<R> EvaluateToken<R>(State startingState, IToken<R> token) where R : class, ResObj
+        public ICeasableTask<R> EvaluateToken<R>(State startingState, IToken<R> token) where R : class, ResObj
         {
             throw new System.NotImplementedException();
         }
-        public ITask<IOption<IEnumerable<R>>> ReadSelection<R>(IEnumerable<R> from, int count) where R : class, ResObj
+        public ICeasableTask<IOption<IEnumerable<R>>> ReadSelection<R>(IEnumerable<R> from, int count) where R : class, ResObj
         {
             return SetTokenThread(SelectionImplementation(from, count));
         }
@@ -62,15 +62,11 @@ namespace FourZeroOne.Runtime
                 Value = value;
                 Link = this.None();
             }
-            public LinkedStack<T> Linked(T value)
-            {
-                return new(this, value);
-            }
-            public LinkedStack<T> Chain(IEnumerable<T> values)
+            public LinkedStack<T> Linked(IEnumerable<T> values)
             {
                 return values.AccumulateInto(this, (stack, x) => stack.Linked(x));
             }
-            public LinkedStack<T> Chain(params T[] values) { return Chain(values.IEnumerable()); }
+            public LinkedStack<T> Linked(params T[] values) { return Linked(values.IEnumerable()); }
             private LinkedStack(LinkedStack<T> link, T value)
             {
                 Link = link.AsSome();
@@ -80,12 +76,7 @@ namespace FourZeroOne.Runtime
 
         private async void Run()
         {
-            var runTask = SetEvalThread(new ControlledTask());
-            await RunInternal();
-        }
-        private async ITask RunInternal()
-        {
-
+            
         }
         private static IToken<R> ApplyRules<R>(IToken<R> token, IEnumerable<Rule.IRule> rules, out List<(IToken<R> fromToken, Rule.IRule rule)> appliedRules) where R : class, ResObj
         {
@@ -102,11 +93,6 @@ namespace FourZeroOne.Runtime
             return o;
         }
 
-        private ControlledTask SetEvalThread(ControlledTask task)
-        {
-            _evalThread = task.Awaiter;
-            return task;
-        }
         private State _currentState;
         private ControlledAwaiter _evalThread;
         private LinkedStack<IToken> _oprerationStack;
