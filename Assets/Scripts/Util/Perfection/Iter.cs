@@ -53,6 +53,12 @@ namespace Perfection
             return o;
         }
 
+        public static int Count<T> (this IEnumerable<T> enumerable)
+        {
+            int o = 0;
+            foreach (var v in enumerable) o++;
+            return o;
+        }
         public static IEnumerable<T> Until<T>(this IEnumerable<T> enumerable, Predicate<T> breakCondition)
         {
             foreach (var v in enumerable)

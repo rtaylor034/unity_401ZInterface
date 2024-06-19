@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using Perfection;
 using ControlledTasks;
+using System.Threading.Tasks;
 #nullable enable
 namespace FourZeroOne.Runtime
 {
     using ResObj = Resolution.IResolution;
+    using Resolved = IOption<Resolution.IResolution>;
     using IToken = Token.Unsafe.IToken;
     using Token;
     using ControlledTasks;
@@ -48,39 +50,82 @@ namespace FourZeroOne.Runtime
         protected record Frame
         {
             public IToken Token { get; init; }
-            public ResObj Resolution { get; init; }
-            public State PreviousState { get; init; }
-            public LinkedStack<IToken> OperationStack { get; init; }
-            public LinkedStack<ResObj> ResolutionStack { get; init; }
+            public Resolved Resolution { get; init; }
+            public State State { get; init; }
+            public IOption<LinkedStack<IToken>> OperationStack { get; init; }
+            public IOption<LinkedStack<Resolved>> ResolutionStack { get; init; }
         }
-        protected record LinkedStack<T>
+        protected class LinkedStack<T>
         {
             public readonly IOption<LinkedStack<T>> Link;
             public readonly T Value;
+            public readonly int Depth;
             public LinkedStack(T value)
             {
                 Value = value;
                 Link = this.None();
+                Depth = 0;
             }
-            public static IOption<LinkedStack<T>> Linked(IOption<LinkedStack<T>> parent, IEnumerable<T> values)
+            public static IOption<LinkedStack<T>> Linked(IOption<LinkedStack<T>> parent, int depth, IEnumerable<T> values)
             {
-                return values.AccumulateInto(parent, (stack, x) => new LinkedStack<T>(stack, x).AsSome());
+                return values.AccumulateInto(parent, (stack, x) => new LinkedStack<T>(stack, x, depth).AsSome());
             }
-            public static IOption<LinkedStack<T>> Linked(IOption<LinkedStack<T>> parent, params T[] values) { return Linked(parent, values.IEnumerable()); }
-            private LinkedStack(IOption<LinkedStack<T>> link, T value)
+            public static IOption<LinkedStack<T>> Linked(IOption<LinkedStack<T>> parent, int depth, params T[] values) { return Linked(parent, depth, values.IEnumerable()); }
+            private LinkedStack(IOption<LinkedStack<T>> link, T value, int depth)
             {
                 Link = link;
                 Value = value;
+                Depth = depth;
             }
         }
 
-        private ICeasableTask<ResObj> Run()
+        private async Task Run()
         {
-            var operationLink = _operationStack.Unwrap();
-            var token = operationLink.Value;
-            _operationStack = operationLink.Link.
-            
+            while (_operationStack.Check(out var op))
+            {
+                var argTokens = op.Value.ArgTokens;
+                if (argTokens.Length == 0 || (_resolutionStack.CheckNone(out var node) && node.Depth == op.Depth + 1))
+                {
+                    var argPass = new Resolved[argTokens.Length];
+                    for (int i = argPass.Length; i >= 0; i--)
+                    { 
+                        argPass[i] = PopFromStack(ref _resolutionStack).Value;
+                    }
+                    _evalThread = op.Value.ResolveUnsafe(this, argPass);
+                    var resolution = await _evalThread;
+                    if (resolution.Check(out var notNolla)) _currentState = _currentState.WithResolution(notNolla);
+                    PushToStack(ref _resolutionStack, op.Depth, resolution);
+                    PopFromStack(ref _operationStack);
+                    AddFrame(op.Value, resolution);
+                    continue;
+                }
+
+                PushToStack(ref _operationStack, op.Depth + 1, op.Value.ArgTokens.AsMutList().Reversed());
+            }
         }
+        private void AddFrame(IToken token, Resolved resolution)
+        {
+            var frame = new Frame()
+            {
+                Resolution = resolution,
+                Token = token,
+                State = _currentState,
+                OperationStack = _operationStack,
+                ResolutionStack = _resolutionStack,
+            };
+            throw new System.NotImplementedException();
+        }
+        private static void PushToStack<T>(ref IOption<LinkedStack<T>> stack, int depth, IEnumerable<T> values)
+        {
+            stack = LinkedStack<T>.Linked(stack, depth, values);
+        }
+        private static LinkedStack<T> PopFromStack<T>(ref IOption<LinkedStack<T>> stack)
+        {
+            var o = stack.Check(out var popped) ? popped : throw new System.Exception("[Runtime] tried to pop from empty LinkedStack.");
+            if (stack.Check(out var node)) stack = node.Link;
+            return o;
+        }
+        private static void PushToStack<T>(ref IOption<LinkedStack<T>> stack, int depth, params T[] values) { PushToStack(ref stack, depth, values.IEnumerable()); }
         private static IToken<R> ApplyRules<R>(IToken<R> token, IEnumerable<Rule.IRule> rules, out List<(IToken<R> fromToken, Rule.IRule rule)> appliedRules) where R : class, ResObj
         {
             var o = token;
@@ -97,9 +142,10 @@ namespace FourZeroOne.Runtime
         }
 
         private State _currentState;
-        private ControlledAwaiter _evalThread;
+        private ICeasableTask<Resolved> _evalThread;
+        private IOption<LinkedStack<Frame>> _frameStack;
         private IOption<LinkedStack<IToken>> _operationStack;
-        private IOption<LinkedStack<ResObj>> _resolutionStack;
+        private IOption<LinkedStack<Resolved>> _resolutionStack;
 
     }
 }
