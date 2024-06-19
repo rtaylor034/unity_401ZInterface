@@ -148,9 +148,9 @@ namespace Perfection
 
         public static IEnumerable<T> IEnumerable<T>(this IEnumerable<T> enumerable) => enumerable;
 
-        public static List<T> ToMutList<T>(this IEnumerable<T> enumerable) { return new List<T>(enumerable); }
-        public static PList<T> ToList<T>(this IEnumerable<T> enumerable) { return new() { Elements = enumerable }; }
-        public static PSet<T> ToSet<T>(this IEnumerable<T> enumerable, int modulo) { return new(modulo) { Elements = enumerable }; }
+        public static List<T> AsMutList<T>(this IEnumerable<T> enumerable) { return new List<T>(enumerable); }
+        public static PList<T> AsList<T>(this IEnumerable<T> enumerable) { return new() { Elements = enumerable }; }
+        public static PSet<T> AsSet<T>(this IEnumerable<T> enumerable, int modulo) { return new(modulo) { Elements = enumerable }; }
         public static PIndexedSet<I, T> ToIndexedSet<I, T>(this IEnumerable<T> enumerable, Func<T, I> indexGenerator, int modulo) { return new(indexGenerator, modulo) { Elements = enumerable }; }
         public static PMap<K, T> ToMap<K, T>(this IEnumerable<(K, T)> mapPairs, int modulo) { return new(modulo) { Elements = mapPairs }; }
 

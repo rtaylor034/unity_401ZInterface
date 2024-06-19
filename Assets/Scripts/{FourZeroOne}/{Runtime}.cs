@@ -30,7 +30,7 @@ namespace FourZeroOne.Runtime
         }
         public ICeasableTask<IOption<IEnumerable<R>>> ReadSelection<R>(IEnumerable<R> from, int count) where R : class, ResObj
         {
-            return SetTokenThread(SelectionImplementation(from, count));
+            return SelectionImplementation(from, count);
         }
 
         protected abstract void RecieveToken(IToken token);
@@ -40,7 +40,7 @@ namespace FourZeroOne.Runtime
 
         protected void GotoFrame(Frame frame)
         {
-            _oprerationStack = frame.OperationStack;
+            _operationStack = frame.OperationStack;
             _resolutionStack = frame.ResolutionStack;
             Run();
         }
@@ -62,20 +62,23 @@ namespace FourZeroOne.Runtime
                 Value = value;
                 Link = this.None();
             }
-            public LinkedStack<T> Linked(IEnumerable<T> values)
+            public static IOption<LinkedStack<T>> Linked(IOption<LinkedStack<T>> parent, IEnumerable<T> values)
             {
-                return values.AccumulateInto(this, (stack, x) => stack.Linked(x));
+                return values.AccumulateInto(parent, (stack, x) => new LinkedStack<T>(stack, x).AsSome());
             }
-            public LinkedStack<T> Linked(params T[] values) { return Linked(values.IEnumerable()); }
-            private LinkedStack(LinkedStack<T> link, T value)
+            public static IOption<LinkedStack<T>> Linked(IOption<LinkedStack<T>> parent, params T[] values) { return Linked(parent, values.IEnumerable()); }
+            private LinkedStack(IOption<LinkedStack<T>> link, T value)
             {
-                Link = link.AsSome();
+                Link = link;
                 Value = value;
             }
         }
 
-        private async void Run()
+        private ICeasableTask<ResObj> Run()
         {
+            var operationLink = _operationStack.Unwrap();
+            var token = operationLink.Value;
+            _operationStack = operationLink.Link.
             
         }
         private static IToken<R> ApplyRules<R>(IToken<R> token, IEnumerable<Rule.IRule> rules, out List<(IToken<R> fromToken, Rule.IRule rule)> appliedRules) where R : class, ResObj
@@ -95,8 +98,8 @@ namespace FourZeroOne.Runtime
 
         private State _currentState;
         private ControlledAwaiter _evalThread;
-        private LinkedStack<IToken> _oprerationStack;
-        private LinkedStack<ResObj> _resolutionStack;
+        private IOption<LinkedStack<IToken>> _operationStack;
+        private IOption<LinkedStack<ResObj>> _resolutionStack;
 
     }
 }
