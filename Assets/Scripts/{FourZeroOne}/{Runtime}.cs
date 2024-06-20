@@ -10,7 +10,6 @@ namespace FourZeroOne.Runtime
     using Resolved = IOption<Resolution.IResolution>;
     using IToken = Token.Unsafe.IToken;
     using Token;
-    using ControlledTasks;
     public interface IRuntime
     {
         public State GetState();
@@ -21,12 +20,21 @@ namespace FourZeroOne.Runtime
     //garbage collector reliant/heavy implementation
     public abstract class FrameSaving : IRuntime
     {
+        public FrameSaving(State startingState, IToken program)
+        {
+            _currentState = startingState;
+            _operationStack = new LinkedStack<IToken>(program).AsSome();
+            _resolutionStack = new None<LinkedStack<Resolved>>();
+            _evalThread = ControlledTask.FromResult(new None<ResObj>());
+            _frameStack = new None<LinkedStack<Frame>>();
+            AddFrame(program, new None<Resolved>());
+        }
+        public async Task<ResObj> Run()
+        {
+
+        }
         public State GetState() => _currentState;
         public ICeasableTask<IOption<R>> PerformAction<R>(IToken<R> action) where R : class, ResObj
-        {
-            throw new System.NotImplementedException();
-        }
-        public ICeasableTask<R> EvaluateToken<R>(State startingState, IToken<R> token) where R : class, ResObj
         {
             throw new System.NotImplementedException();
         }
@@ -40,26 +48,30 @@ namespace FourZeroOne.Runtime
         protected abstract void RecieveRuleSteps(IEnumerable<(IToken token, Rule.IRule appliedRule)> steps);
         protected abstract ControlledTask<IOption<IEnumerable<R>>> SelectionImplementation<R>(IEnumerable<R> from, int count) where R : class, ResObj;
 
-        protected void GotoFrame(Frame frame)
+        protected void GoToFrame(LinkedStack<Frame> frameStack)
         {
+            var frame = frameStack.Value;
             _operationStack = frame.OperationStack;
             _resolutionStack = frame.ResolutionStack;
-            Run();
+            _currentState = frame.State;
+            _frameStack = frameStack.AsSome();
+            _evalThread.Cease();
+            RunInternal();
         }
 
         protected record Frame
         {
             public IToken Token { get; init; }
-            public Resolved Resolution { get; init; }
+            public IOption<Resolved> Resolution { get; init; }
             public State State { get; init; }
             public IOption<LinkedStack<IToken>> OperationStack { get; init; }
             public IOption<LinkedStack<Resolved>> ResolutionStack { get; init; }
         }
-        protected class LinkedStack<T>
+        protected record LinkedStack<T>
         {
             public readonly IOption<LinkedStack<T>> Link;
-            public readonly T Value;
             public readonly int Depth;
+            public T Value { get; init; } 
             public LinkedStack(T value)
             {
                 Value = value;
@@ -79,11 +91,19 @@ namespace FourZeroOne.Runtime
             }
         }
 
-        private async Task Run()
+        private async void RunInternal()
         {
-            while (_operationStack.Check(out var op))
+            while (_operationStack.Check(out var opTBD))
             {
+                var op = opTBD with
+                {
+                    Value = ApplyRules(opTBD.Value, _currentState.Rules.Elements, out var appliedRules)
+                };
+                RecieveRuleSteps(appliedRules);
+                RecieveToken(op.Value);
+                _operationStack = op.AsSome();
                 var argTokens = op.Value.ArgTokens;
+                
                 if (argTokens.Length == 0 || (_resolutionStack.CheckNone(out var node) && node.Depth == op.Depth + 1))
                 {
                     var argPass = new Resolved[argTokens.Length];
@@ -93,17 +113,20 @@ namespace FourZeroOne.Runtime
                     }
                     _evalThread = op.Value.ResolveUnsafe(this, argPass);
                     var resolution = await _evalThread;
+                    RecieveResolution(resolution);
                     if (resolution.Check(out var notNolla)) _currentState = _currentState.WithResolution(notNolla);
                     PushToStack(ref _resolutionStack, op.Depth, resolution);
                     PopFromStack(ref _operationStack);
-                    AddFrame(op.Value, resolution);
+                    AddFrame(op.Value, resolution.AsSome());
                     continue;
                 }
 
                 PushToStack(ref _operationStack, op.Depth + 1, op.Value.ArgTokens.AsMutList().Reversed());
             }
+            UnityEngine.Debug.Assert(_resolutionStack.Check(out var finalNode) && !finalNode.Link.IsSome());
+            _masterThread.Resolve(finalNode.Value);
         }
-        private void AddFrame(IToken token, Resolved resolution)
+        private void AddFrame(IToken token, IOption<Resolved> resolution)
         {
             var frame = new Frame()
             {
@@ -113,7 +136,7 @@ namespace FourZeroOne.Runtime
                 OperationStack = _operationStack,
                 ResolutionStack = _resolutionStack,
             };
-            throw new System.NotImplementedException();
+            PushToStack(ref _frameStack, 0, frame);
         }
         private static void PushToStack<T>(ref IOption<LinkedStack<T>> stack, int depth, IEnumerable<T> values)
         {
@@ -126,13 +149,13 @@ namespace FourZeroOne.Runtime
             return o;
         }
         private static void PushToStack<T>(ref IOption<LinkedStack<T>> stack, int depth, params T[] values) { PushToStack(ref stack, depth, values.IEnumerable()); }
-        private static IToken<R> ApplyRules<R>(IToken<R> token, IEnumerable<Rule.IRule> rules, out List<(IToken<R> fromToken, Rule.IRule rule)> appliedRules) where R : class, ResObj
+        private static IToken ApplyRules(IToken token, IEnumerable<Rule.IRule> rules, out List<(IToken fromToken, Rule.IRule rule)> appliedRules)
         {
             var o = token;
             appliedRules = new();
             foreach (var rule in rules)
             {
-                if (rule.TryApplyTyped(o) is IToken<R> newToken)
+                if (rule.TryApply(o).Check(out var newToken))
                 {
                     appliedRules.Add((o, rule));
                     o = newToken;
@@ -142,6 +165,7 @@ namespace FourZeroOne.Runtime
         }
 
         private State _currentState;
+        private ControlledTask<Resolved> _masterThread;
         private ICeasableTask<Resolved> _evalThread;
         private IOption<LinkedStack<Frame>> _frameStack;
         private IOption<LinkedStack<IToken>> _operationStack;
